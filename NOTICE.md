@@ -34,3 +34,4 @@ SOFTWARE.
 |---|---|---|
 | `internal/infra/paths/paths.go` | `internal/infra/paths/paths.go` (lines 1-28) | renamed to NOTTED_HOME and ~/.notted; added DBPath, AudioDir, ModelsDir |
 | `Makefile` | `Makefile` (lines 32-33, 87-88, 107-108) | kept dev/build/test only; added check and frontend gates; no release, brew or network targets |
+| `internal/infra/store/store.go` | `internal/infra/db/sqlite.go` (lines 18-44) | path parameter, 0700 folder, busy timeout, one connection, versioned migrations |
