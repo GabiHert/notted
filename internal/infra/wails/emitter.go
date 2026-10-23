@@ -23,6 +23,16 @@ func (e *Emitter) SetContext(ctx context.Context) {
 	e.ctx = ctx
 }
 
+// Context returns the Wails context, or a background context before startup.
+func (e *Emitter) Context() context.Context {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	if e.ctx == nil {
+		return context.Background()
+	}
+	return e.ctx
+}
+
 // Emit sends an event; before startup it drops the event silently.
 func (e *Emitter) Emit(name string, payload any) {
 	e.mu.RLock()

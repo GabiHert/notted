@@ -4,4 +4,10 @@ import {wails} from '../models';
 
 export function AppName():Promise<string>;
 
-export function Emitter():Promise<wails.Emitter>;
+export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
+
+export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;
+
+export function StopRecording(arg1:string):Promise<void>;

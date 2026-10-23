@@ -6,6 +6,18 @@ export function AppName() {
   return window['go']['wails']['App']['AppName']();
 }
 
-export function Emitter() {
-  return window['go']['wails']['App']['Emitter']();
+export function GetMeeting(arg1) {
+  return window['go']['wails']['App']['GetMeeting'](arg1);
+}
+
+export function ListMeetings() {
+  return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function StartRecording(arg1, arg2) {
+  return window['go']['wails']['App']['StartRecording'](arg1, arg2);
+}
+
+export function StopRecording(arg1) {
+  return window['go']['wails']['App']['StopRecording'](arg1);
 }

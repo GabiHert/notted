@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+
+	"github.com/bhlabz/notted/internal/application/port"
 )
 
 // silentBelowDBFS is the level under which a file counts as silent.
@@ -72,4 +74,18 @@ func FromBytes(data []byte) (Info, error) {
 	}
 	info.Silent = info.RMSdBFS < silentBelowDBFS
 	return info, nil
+}
+
+// Inspector adapts Read to port.AudioInspector.
+type Inspector struct{}
+
+var _ port.AudioInspector = Inspector{}
+
+// Inspect reads path and reports whether it is silent.
+func (Inspector) Inspect(path string) (port.WavInfo, error) {
+	info, err := Read(path)
+	if err != nil {
+		return port.WavInfo{}, err
+	}
+	return port.WavInfo{Silent: info.Silent}, nil
 }

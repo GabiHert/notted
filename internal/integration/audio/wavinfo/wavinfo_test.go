@@ -3,6 +3,8 @@ package wavinfo
 import (
 	"encoding/binary"
 	"math"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -99,5 +101,33 @@ func TestDecodeWAVStillWorks(t *testing.T) {
 	s, rate, err := DecodeWAV(buildWAV(16000, 1, []int16{16384, -16384}))
 	if err != nil || rate != 16000 || len(s) != 2 || s[0] != 0.5 {
 		t.Fatalf("got %v %d %v", s, rate, err)
+	}
+}
+
+func TestInspectorReportsSilence(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "z.wav")
+	h := make([]byte, 44)
+	copy(h, "RIFF")
+	binary.LittleEndian.PutUint32(h[4:], 36+3200)
+	copy(h[8:], "WAVEfmt ")
+	binary.LittleEndian.PutUint32(h[16:], 16)
+	binary.LittleEndian.PutUint16(h[20:], 1)
+	binary.LittleEndian.PutUint16(h[22:], 1)
+	binary.LittleEndian.PutUint32(h[24:], 16000)
+	binary.LittleEndian.PutUint32(h[28:], 32000)
+	binary.LittleEndian.PutUint16(h[32:], 2)
+	binary.LittleEndian.PutUint16(h[34:], 16)
+	copy(h[36:], "data")
+	binary.LittleEndian.PutUint32(h[40:], 3200)
+	if err := os.WriteFile(p, append(h, make([]byte, 3200)...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Inspector{}.Inspect(p)
+	if err != nil || !got.Silent {
+		t.Fatalf("got %+v, %v", got, err)
+	}
+	if _, err := (Inspector{}).Inspect(filepath.Join(dir, "missing.wav")); err == nil {
+		t.Fatal("want error")
 	}
 }
