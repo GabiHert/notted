@@ -22,8 +22,16 @@ export function ListClients():Promise<Array<string>>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
 
+export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>;
+
 export function SetMeetingClient(arg1:string,arg2:string):Promise<void>;
 
 export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;
 
+export function StartSession(arg1:string):Promise<void>;
+
 export function StopRecording(arg1:string):Promise<void>;
+
+export function StopSession(arg1:string):Promise<void>;
+
+export function WriteSession(arg1:string,arg2:string):Promise<void>;

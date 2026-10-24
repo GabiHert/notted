@@ -42,6 +42,10 @@ export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
 }
 
+export function ResizeSession(arg1, arg2, arg3) {
+  return window['go']['wails']['App']['ResizeSession'](arg1, arg2, arg3);
+}
+
 export function SetMeetingClient(arg1, arg2) {
   return window['go']['wails']['App']['SetMeetingClient'](arg1, arg2);
 }
@@ -50,6 +54,18 @@ export function StartRecording(arg1, arg2) {
   return window['go']['wails']['App']['StartRecording'](arg1, arg2);
 }
 
+export function StartSession(arg1) {
+  return window['go']['wails']['App']['StartSession'](arg1);
+}
+
 export function StopRecording(arg1) {
   return window['go']['wails']['App']['StopRecording'](arg1);
+}
+
+export function StopSession(arg1) {
+  return window['go']['wails']['App']['StopSession'](arg1);
+}
+
+export function WriteSession(arg1, arg2) {
+  return window['go']['wails']['App']['WriteSession'](arg1, arg2);
 }

@@ -3,6 +3,7 @@ module github.com/bhlabz/notted
 go 1.26
 
 require (
+	github.com/creack/pty v1.1.24
 	github.com/google/uuid v1.6.0
 	github.com/k2-fsa/sherpa-onnx-go v1.13.3
 	github.com/mattn/go-sqlite3 v1.14.34

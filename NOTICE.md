@@ -41,3 +41,4 @@ SOFTWARE.
 | `internal/integration/speech/download.go` | `internal/integration/voiceruntime/download.go` (lines 1-237) | folders as parameters; raw-file install |
 | `internal/integration/claude/env.go` | `internal/application/service/job_manager.go` (lines 1827-1848) | renamed LoginShellEnv; added CleanEnv and LookPath |
 | `internal/integration/claude/runner.go` | `internal/application/service/job_manager.go` (lines 844-982) | fixed read-only argument lists; no shell; no stream-json; credentials removed; never the permission-skipping flag |
+| `internal/integration/process/manager.go` | `internal/integration/process/manager.go` (lines 85-115, 245-494, 551-562) | generic argv from the caller; no shell, persona, MCP, output file or remote; Wails events per meeting; no automatic respawn; the permission-skipping flag removed |

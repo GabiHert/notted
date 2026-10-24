@@ -16,6 +16,7 @@ import (
 	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
 	"github.com/bhlabz/notted/internal/integration/claude"
 	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/bhlabz/notted/internal/integration/process"
 	"github.com/bhlabz/notted/internal/integration/speech"
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -54,7 +55,9 @@ func Run(assets embed.FS) error {
 	})
 	archive := service.NewArchiveService(st, st, git.New(claude.LoginShellEnv), emitter)
 	summary := service.NewSummaryService(st, st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, claude.Runner{EnvFn: claude.LoginShellEnv}, archive, emitter)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Meetings: st, Models: models})
+	term := process.NewManager(emitter)
+	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",
@@ -78,6 +81,7 @@ func Run(assets embed.FS) error {
 			}
 		},
 		OnShutdown: func(ctx context.Context) {
+			session.StopAll()
 			recording.StopAll()
 			trans.Close()
 			engine.Unload()
