@@ -37,6 +37,13 @@ func meetingFile(date string, m domain.Meeting, profile string) string {
 func transcriptFile(title string, segs []domain.Segment) string {
 	var b strings.Builder
 	b.WriteString("# Transcript: " + title + "\n\n")
+	b.WriteString(transcriptLines(segs))
+	return b.String()
+}
+
+// transcriptLines is one "[hh:mm:ss] (track) text" line per segment, each ending in a newline.
+func transcriptLines(segs []domain.Segment) string {
+	var b strings.Builder
 	for _, s := range segs {
 		text := strings.Join(strings.Fields(s.Text), " ")
 		n := s.StartMs / 1000

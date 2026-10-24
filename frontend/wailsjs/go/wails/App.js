@@ -18,6 +18,10 @@ export function ExportMeeting(arg1) {
   return window['go']['wails']['App']['ExportMeeting'](arg1);
 }
 
+export function GenerateSummary(arg1) {
+  return window['go']['wails']['App']['GenerateSummary'](arg1);
+}
+
 export function GetMeeting(arg1) {
   return window['go']['wails']['App']['GetMeeting'](arg1);
 }

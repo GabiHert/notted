@@ -53,7 +53,8 @@ func Run(assets embed.FS) error {
 		return wavinfo.DecodeWAV(b)
 	})
 	archive := service.NewArchiveService(st, st, git.New(claude.LoginShellEnv), emitter)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Meetings: st, Models: models})
+	summary := service.NewSummaryService(st, st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, claude.Runner{EnvFn: claude.LoginShellEnv}, archive, emitter)
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",

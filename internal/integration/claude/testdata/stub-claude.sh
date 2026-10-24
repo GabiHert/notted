@@ -12,5 +12,9 @@ done
 [ -n "${STUB_STDERR:-}" ] && printf '%s\n' "$STUB_STDERR" >&2
 [ -n "${STUB_CHILD:-}" ] && { sleep 30 & echo $! > "$STUB_CHILD"; }
 [ -n "${STUB_SLEEP:-}" ] && sleep "$STUB_SLEEP"
-printf '%s' "${STUB_REPLY:-# Summary: stub}"
+if [ -n "${STUB_REPLY_SUGGEST:-}" ] && grep -q '`suggest` format' "$out/stdin"; then
+  printf '%s' "$STUB_REPLY_SUGGEST"
+else
+  printf '%s' "${STUB_REPLY:-# Summary: stub}"
+fi
 exit "${STUB_EXIT:-0}"
