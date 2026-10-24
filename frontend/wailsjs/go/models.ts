@@ -32,6 +32,26 @@ export namespace wails {
 	        this.suggestionsMd = source["suggestionsMd"];
 	    }
 	}
+	export class ModelStatusDTO {
+	    language: string;
+	    ready: boolean;
+	    missing: string;
+	    downloadBytes: number;
+	    downloading: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ModelStatusDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.language = source["language"];
+	        this.ready = source["ready"];
+	        this.missing = source["missing"];
+	        this.downloadBytes = source["downloadBytes"];
+	        this.downloading = source["downloading"];
+	    }
+	}
 
 }
 

@@ -6,8 +6,16 @@ export function AppName() {
   return window['go']['wails']['App']['AppName']();
 }
 
+export function DownloadModels(arg1) {
+  return window['go']['wails']['App']['DownloadModels'](arg1);
+}
+
 export function GetMeeting(arg1) {
   return window['go']['wails']['App']['GetMeeting'](arg1);
+}
+
+export function GetModelStatus(arg1) {
+  return window['go']['wails']['App']['GetModelStatus'](arg1);
 }
 
 export function ListMeetings() {

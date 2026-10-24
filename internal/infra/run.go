@@ -13,6 +13,7 @@ import (
 	"github.com/bhlabz/notted/internal/infra/wails"
 	"github.com/bhlabz/notted/internal/integration/audio"
 	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
+	"github.com/bhlabz/notted/internal/integration/speech"
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -38,7 +39,10 @@ func Run(assets embed.FS) error {
 	}
 	emitter := &wails.Emitter{}
 	recording := service.NewRecordingService(st, audio.NewSupervisor(helperPath()), emitter, paths.AudioDir, wavinfo.Inspector{})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Meetings: st})
+	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
+	detector := speech.NewDetector(paths.ModelsDir())
+	models := speech.NewModelManager(paths.ModelsDir(), engine, detector)
+	app := wails.New(emitter, wails.Deps{Recording: recording, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",
@@ -57,6 +61,7 @@ func Run(assets embed.FS) error {
 		},
 		OnShutdown: func(ctx context.Context) {
 			recording.StopAll()
+			engine.Unload()
 			if err := st.Close(); err != nil {
 				log.Printf("close store: %v", err)
 			}

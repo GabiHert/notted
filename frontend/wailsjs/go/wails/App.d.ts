@@ -4,7 +4,11 @@ import {wails} from '../models';
 
 export function AppName():Promise<string>;
 
+export function DownloadModels(arg1:string):Promise<void>;
+
 export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
+
+export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
 

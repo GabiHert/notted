@@ -1,0 +1,30 @@
+{
+  "schema": 2,
+  "version": "whisper small + small.en (int8) + silero vad",
+  "models": [
+    {
+      "name": "whisper small.en",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.en.tar.bz2",
+      "sha256": "0cdba2b8aaab69e04847f3427cc9709574112e67913a1a84b7fec3a8729faa9a",
+      "size": 635693775,
+      "dir": "sherpa-onnx-whisper-small.en",
+      "lang": "en"
+    },
+    {
+      "name": "whisper small",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2",
+      "sha256": "486a46afbb7ba798507190ffe02fea2dd726049af212e774537efac6afb210a6",
+      "size": 639387718,
+      "dir": "sherpa-onnx-whisper-small",
+      "lang": "pt-BR"
+    },
+    {
+      "name": "silero vad",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
+      "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
+      "size": 643854,
+      "dir": "silero_vad",
+      "file": "silero_vad.onnx"
+    }
+  ]
+}

@@ -36,3 +36,6 @@ SOFTWARE.
 | `Makefile` | `Makefile` (lines 32-33, 87-88, 107-108) | kept dev/build/test only; added check and frontend gates; no release, brew or network targets |
 | `internal/infra/store/store.go` | `internal/infra/db/sqlite.go` (lines 18-44) | path parameter, 0700 folder, busy timeout, one connection, versioned migrations |
 | `internal/integration/audio/wavinfo/decode.go` | `internal/integration/voice/engine/wav.go` (lines 1-123) | package renamed; also exposes the fmt fields |
+| `internal/integration/speech/sherpa.go` | `internal/integration/voice/engine/sherpaengine/sherpaengine.go` (lines 1-97, 124-132, 199-292, 354-381, 472-555) | speech-to-text only; Kokoro removed; language per call; decodes with wavinfo.DecodeWAV |
+| `internal/integration/speech/manifest.go` | `internal/integration/voiceruntime/manifest.go` (lines 13-110) | NOTTED_MODEL_MANIFEST; per-language selection; raw-file artifacts |
+| `internal/integration/speech/download.go` | `internal/integration/voiceruntime/download.go` (lines 1-237) | folders as parameters; raw-file install |

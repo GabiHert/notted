@@ -4,6 +4,7 @@ go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/k2-fsa/sherpa-onnx-go v1.13.3
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/wailsapp/wails/v2 v2.12.0
 )
@@ -15,6 +16,9 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
+	github.com/k2-fsa/sherpa-onnx-go-linux v1.13.3 // indirect
+	github.com/k2-fsa/sherpa-onnx-go-macos v1.13.3 // indirect
+	github.com/k2-fsa/sherpa-onnx-go-windows v1.13.3 // indirect
 	github.com/labstack/echo/v4 v4.13.3 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect

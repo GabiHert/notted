@@ -10,17 +10,26 @@ type App struct {
 	emitter   *Emitter
 	recording *service.RecordingService
 	meetings  port.MeetingStore
+	models    port.ModelManager
+	events    port.EventEmitter
 }
 
 // Deps are the services the bound methods call.
 type Deps struct {
 	Recording *service.RecordingService
 	Meetings  port.MeetingStore
+	Models    port.ModelManager
+	// Events overrides the event sink; it defaults to the emitter given to New.
+	Events port.EventEmitter
 }
 
 // New builds the app around its event emitter and the services it calls.
 func New(e *Emitter, d Deps) *App {
-	return &App{emitter: e, recording: d.Recording, meetings: d.Meetings}
+	events := d.Events
+	if events == nil {
+		events = e
+	}
+	return &App{emitter: e, recording: d.Recording, meetings: d.Meetings, models: d.Models, events: events}
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.
