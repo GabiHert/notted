@@ -407,7 +407,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
               <input id="nt-checkout" ref={archiveInput} value={checkoutPath} onChange={(e) => setCheckoutPath(e.target.value)} />
               <Choose label={ARCHIVE_TITLE} onClick={pickArchive} disabled={busy !== ""} />
             </div>
-            <span className="nt-setup__help">The full path of your local clone of the meetings archive.</span>
+            <span className="nt-setup__help">The full path of your meetings archive folder. Any folder works: Notted sets it up.</span>
             {setupPanel && (
               <section className="nt-setup__inline" role="region" aria-labelledby="nt-archive-setup-title">
                 <h3 id="nt-archive-setup-title" ref={setupHeading} tabIndex={-1} className="nt-setup__sub">

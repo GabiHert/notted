@@ -43,7 +43,7 @@ describe("fields and typed save", () => {
     expect(screen.getByLabelText("acme")).toHaveValue("/work/acme");
     expect(screen.getByLabelText("globex")).toHaveValue("");
     expect(screen.getByLabelText("globex")).toHaveAttribute("placeholder", "/full/path/to/the/project");
-    expect(screen.getByText("The full path of your local clone of the meetings archive.")).toBeInTheDocument();
+    expect(screen.getByText("The full path of your meetings archive folder. Any folder works: Notted sets it up.")).toBeInTheDocument();
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Optional. A folder per project that Claude Code may read during that project's meetings.")).toBeInTheDocument();
     expect(screen.getByText("Your file in instructions/people/ of the archive.")).toBeInTheDocument();
