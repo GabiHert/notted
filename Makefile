@@ -1,12 +1,19 @@
 # Copied from github.com/brienze1/quant (Makefile), MIT License,
 # Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
 export PATH := $(HOME)/.gvm/pkgsets/go1.26.3/global/bin:$(HOME)/.nvm/versions/node/v24.16.0/bin:$(PATH)
-.PHONY: dev build test test-go test-fe check
+.PHONY: dev helper build test test-go test-fe check
+APP := build/bin/Notted.app
 dev:
 	wails dev
-build:
-	wails build -platform darwin/arm64
+helper:
+	bash helpers/audiocap/build.sh
+build: helper
+	MACOSX_DEPLOYMENT_TARGET=14.0 CGO_CFLAGS=-mmacosx-version-min=14.0 CGO_LDFLAGS=-mmacosx-version-min=14.0 wails build -platform darwin/arm64
 	touch frontend/dist/.gitkeep
+	cp helpers/audiocap/build/audiocap $(APP)/Contents/MacOS/audiocap
+	codesign -f -s - --identifier tech.bhlabs.notted.audiocap $(APP)/Contents/MacOS/audiocap
+	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Notted
+	bash scripts/check-bundle.sh
 test-go:
 	go vet ./...
 	go test ./...

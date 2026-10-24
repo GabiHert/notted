@@ -8,3 +8,4 @@ frontend/dist/*
 *.wav
 !**/testdata/**/*.wav
 *.sqlite
+build/appicon.png
