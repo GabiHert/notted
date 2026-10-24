@@ -217,7 +217,7 @@ func TestUpdateFlowBuildFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := f.waitState("installing", "failed")
-	want := "make build failed. Notted did not change. The output above shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
+	want := "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
 	if st.State != "failed" || st.Message != want {
 		t.Fatalf("status = %+v", st)
 	}
@@ -241,7 +241,7 @@ func TestUpdateFlowDivergedPull(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := f.waitState("installing", "failed")
-	if st.State != "failed" || st.Message != "git pull failed. Notted did not change. The output above shows why." {
+	if st.State != "failed" || st.Message != "git pull failed. Notted did not change. The output below shows why." {
 		t.Fatalf("status = %+v", st)
 	}
 	if _, err := os.Stat(filepath.Join(f.src, "build")); err == nil {

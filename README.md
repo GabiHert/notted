@@ -58,13 +58,27 @@ shows **Create my file** when your own file for that project is missing.
 Notted never commits these changes: deleting and creating files only changes the archive folder,
 like any edit.
 
+## Update Notted
+
+Notted can update itself from your own clone of its source. In **Settings**, under **Update
+Notted**, click **Choose…** and pick the folder of your Notted clone. **Update Notted** then:
+
+1. checks that the clone is on `main` with no uncommitted changes, and stops if it is not;
+2. runs `git pull --ff-only` on `main`, with your own git and your own login;
+3. runs `make build` without the network (if an update adds dependencies, run `make build` once in Terminal first);
+4. quits Notted, puts `build/bin/Notted.app` in place of the app you are running, and reopens it.
+
+Nothing runs until you click **Update Notted**. A failed pull or build leaves your app as it was
+and shows the output. The installer copies the new app next to the old one, swaps the two with
+renames, and keeps the old copy until the new one has started. Its log is `~/.notted/update.log`.
+
 ## What Notted downloads
 
-On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 640 MB for Portuguese `small`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only network call Notted makes; the `claude` program talks to Anthropic on its own.
+On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 640 MB for Portuguese `small`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only network call Notted makes; the `claude` program talks to Anthropic on its own. **Update Notted** runs your own git pull, which talks to your clone's remote.
 
 ## Your data
 
-Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/` and `models/`. Audio never leaves the Mac and is never committed. The archive folder gets only `meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`, and only after you say yes.
+Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/`, `models/` and `update.log`. Audio never leaves the Mac and is never committed. The archive folder gets only `meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`, and only after you say yes.
 
 ## Claude Code
 

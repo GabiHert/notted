@@ -235,7 +235,7 @@ func (s *UpdateService) run(j updateJob) {
 		if timedOut {
 			s.fail("git pull did not finish within 5 minutes. Notted did not change.")
 		} else {
-			s.fail("git pull failed. Notted did not change. The output above shows why.")
+			s.fail("git pull failed. Notted did not change. The output below shows why.")
 		}
 		return
 	}
@@ -245,7 +245,7 @@ func (s *UpdateService) run(j updateJob) {
 		if timedOut {
 			s.fail("make build did not finish within 30 minutes. Notted did not change.")
 		} else {
-			s.fail("make build failed. Notted did not change. The output above shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again.")
+			s.fail("make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again.")
 		}
 		return
 	}

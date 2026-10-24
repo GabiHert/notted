@@ -30,6 +30,11 @@ export function initPreview(): View {
     case "setup-delete-confirm":
     case "setup-my-file":
     case "setup-my-file-created":
+    case "update-idle":
+    case "update-no-source":
+    case "update-running":
+    case "update-failed":
+    case "update-installing":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -96,6 +101,11 @@ function autoDriveSettings(screen: string) {
     sel.dispatchEvent(new Event("change", { bubbles: true }));
     return true;
   };
+  const scrollTo = (selector: string) => () => {
+    const el = document.querySelector(selector);
+    el?.scrollIntoView({ block: "start" });
+    return Boolean(el);
+  };
   const typeInto = (selector: string, value: string) => () => {
     const input = document.querySelector<HTMLInputElement>(selector);
     if (!input) return false;
@@ -123,6 +133,11 @@ function autoDriveSettings(screen: string) {
     "setup-delete-profile": [open("Delete a profile…")],
     "setup-delete-confirm": [open("Delete a profile…"), byLabel("Delete profile bruno")],
     "setup-my-file-created": [byLabel("Create your file for globex")],
+    "update-idle": [scrollTo(".nt-update")],
+    "update-no-source": [scrollTo(".nt-update")],
+    "update-running": [scrollTo(".nt-update")],
+    "update-failed": [scrollTo(".nt-update")],
+    "update-installing": [scrollTo(".nt-update")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

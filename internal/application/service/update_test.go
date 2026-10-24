@@ -482,7 +482,7 @@ func TestStartFailures(t *testing.T) {
 	oldPull, oldBuild := pullTimeout, buildTimeout
 	t.Cleanup(func() { pullTimeout, buildTimeout = oldPull, oldBuild })
 	pullTimeout, buildTimeout = 50*time.Millisecond, 50*time.Millisecond
-	buildFailed := "make build failed. Notted did not change. The output above shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
+	buildFailed := "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
 	cases := []struct {
 		name      string
 		setup     func(h *uh)
@@ -490,7 +490,7 @@ func TestStartFailures(t *testing.T) {
 		installer bool
 	}{
 		{"pull error", func(h *uh) { h.stream.set("git", streamStep{err: errors.New("exit status 1")}) },
-			func(h *uh) string { return "git pull failed. Notted did not change. The output above shows why." }, false},
+			func(h *uh) string { return "git pull failed. Notted did not change. The output below shows why." }, false},
 		{"pull timeout", func(h *uh) { h.stream.set("git", streamStep{block: true}) },
 			func(h *uh) string { return "git pull did not finish within 5 minutes. Notted did not change." }, false},
 		{"build error", func(h *uh) { h.stream.set("make", streamStep{err: errors.New("exit status 2")}) },

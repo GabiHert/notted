@@ -101,13 +101,44 @@ export async function GetSettings() {
   if (screen === "setup-new-project" || screen === "setup-project-created") return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
   if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
-  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt"))
+  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
 }
 export async function SetSettings(_s: unknown) {
   if (screen === "settings-save-failed") throw new Error("The archive folder does not exist: /archive");
 }
+
+const SOURCE = "/Users/ana/code/notted";
+const updateLines = [
+  "$ git pull --ff-only --no-rebase --no-autostash",
+  "Updating 2a8d067..47d92f5",
+  "Fast-forward",
+  " frontend/src/components/UpdateCard.tsx | 120 ++++++++++",
+  " 1 file changed, 120 insertions(+)",
+  "$ make build",
+  "bash helpers/audiocap/build.sh",
+  "built /Users/ana/code/notted/helpers/audiocap/build/audiocap",
+  "Wails CLI v2.12.0",
+  "• Generating bindings: Done.",
+  "• Compiling frontend: Done.",
+  "• Compiling application: Done.",
+  "• Packaging application: Done.",
+  'sign-bundle: signing with "Notted Local Signing"',
+  "check-bundle: OK (signed with Notted Local Signing)",
+];
+const failedLines = [...updateLines.slice(0, 11), "go: github.com/acme/widgets@v1.2.0: module lookup disabled by GOPROXY=off", "make: *** [build] Error 1"];
+export async function GetUpdateStatus() {
+  const base = { sourcePath: SOURCE, installedApp: "/Applications/Notted.app", signing: true, state: "idle", message: "", lines: [] as string[], seq: 0 };
+  if (screen === "update-no-source") return { ...base, sourcePath: "", signing: false };
+  if (screen === "update-running") return { ...base, state: "building", lines: updateLines.slice(0, 11), seq: 11 };
+  if (screen === "update-failed")
+    return { ...base, state: "failed", message: "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again.", lines: failedLines, seq: failedLines.length };
+  if (screen === "update-installing") return { ...base, state: "installing", message: "Notted quits now and reopens when the new version is in place.", lines: updateLines, seq: updateLines.length };
+  return base;
+}
+export async function SetUpdateSource(_path: string) {}
+export async function StartUpdate() {}
 
 const instructionFiles = [
   { path: "prompts/base.md", kind: "base", readOnly: true },
