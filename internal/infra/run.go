@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/bhlabz/notted/internal/application/service"
+	"github.com/bhlabz/notted/internal/domain"
 	"github.com/bhlabz/notted/internal/infra/paths"
 	"github.com/bhlabz/notted/internal/infra/store"
 	"github.com/bhlabz/notted/internal/infra/wails"
@@ -42,7 +43,14 @@ func Run(assets embed.FS) error {
 	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
 	detector := speech.NewDetector(paths.ModelsDir())
 	models := speech.NewModelManager(paths.ModelsDir(), engine, detector)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Meetings: st, Models: models})
+	trans := service.NewTranscriptionService(st, engine, detector, emitter, func(p string) ([]float32, int, error) {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return nil, 0, err
+		}
+		return wavinfo.DecodeWAV(b)
+	})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",
@@ -58,9 +66,16 @@ func Run(assets embed.FS) error {
 			if err := recording.RecoverOnStartup(ctx); err != nil {
 				log.Printf("recover recordings: %v", err)
 			}
+			recording.SetChunkListener(trans.Enqueue)
+			recording.SetStoppedListener(trans.MeetingStopped)
+			models.SetOnReady(func(domain.Language) { trans.ResumeWaiting() })
+			if err := trans.Start(ctx); err != nil {
+				log.Printf("start transcription: %v", err)
+			}
 		},
 		OnShutdown: func(ctx context.Context) {
 			recording.StopAll()
+			trans.Close()
 			engine.Unload()
 			if err := st.Close(); err != nil {
 				log.Printf("close store: %v", err)

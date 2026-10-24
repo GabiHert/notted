@@ -52,6 +52,26 @@ export namespace wails {
 	        this.downloading = source["downloading"];
 	    }
 	}
+	export class SegmentDTO {
+	    id: number;
+	    track: string;
+	    startMs: number;
+	    endMs: number;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SegmentDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.track = source["track"];
+	        this.startMs = source["startMs"];
+	        this.endMs = source["endMs"];
+	        this.text = source["text"];
+	    }
+	}
 
 }
 

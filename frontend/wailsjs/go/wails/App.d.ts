@@ -10,6 +10,8 @@ export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
 
 export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
+export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
+
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
 
 export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;

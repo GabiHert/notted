@@ -530,3 +530,32 @@ func TestStopAllDuringSlowStartIsRaceFree(t *testing.T) {
 		f.svc.StopAll()
 	}
 }
+
+func TestStoppedListenerCalledOnStopExitAndRecovery(t *testing.T) {
+	f := newFixture(t)
+	var mu sync.Mutex
+	var got []string
+	f.svc.SetStoppedListener(func(id string) { mu.Lock(); got = append(got, id); mu.Unlock() })
+	ids := func() []string { mu.Lock(); defer mu.Unlock(); return append([]string(nil), got...) }
+
+	m1, _ := f.svc.Start(context.Background(), "a", domain.LangEN)
+	if err := f.svc.Stop(context.Background(), m1.ID); err != nil {
+		t.Fatal(err)
+	}
+	if g := ids(); len(g) != 1 || g[0] != m1.ID {
+		t.Fatalf("after stop = %v", g)
+	}
+	m2, _ := f.svc.Start(context.Background(), "b", domain.LangEN)
+	f.rec.rec.exited <- port.RecorderExit{Code: -1, Message: "gone"}
+	eventually(t, func() bool { return len(ids()) == 2 })
+	if g := ids(); g[1] != m2.ID {
+		t.Fatalf("after exit = %v", g)
+	}
+	f.store.meetings["old"] = domain.Meeting{ID: "old", State: domain.StateRecording}
+	if err := f.svc.RecoverOnStartup(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if g := ids(); len(g) != 3 || g[2] != "old" {
+		t.Fatalf("after recovery = %v", g)
+	}
+}

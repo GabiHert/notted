@@ -18,6 +18,10 @@ export function GetModelStatus(arg1) {
   return window['go']['wails']['App']['GetModelStatus'](arg1);
 }
 
+export function GetTranscript(arg1) {
+  return window['go']['wails']['App']['GetTranscript'](arg1);
+}
+
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
 }

@@ -52,6 +52,7 @@ type RecordingService struct {
 	audioDir func(meetingID string) string
 	inspect  port.AudioInspector
 	onChunk  func(domain.Chunk)
+	onStop   func(meetingID string)
 	mu       sync.Mutex
 	active   *activeRecording
 }
@@ -67,6 +68,13 @@ func (s *RecordingService) SetChunkListener(fn func(domain.Chunk)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onChunk = fn
+}
+
+// SetStoppedListener attaches a function called after every move of a meeting to `transcribing`.
+func (s *RecordingService) SetStoppedListener(fn func(meetingID string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onStop = fn
 }
 
 // Start begins a recording and returns the new meeting once the helper reported `started`.
@@ -201,6 +209,12 @@ func (s *RecordingService) markTranscribing(ctx context.Context, id, errMsg stri
 		payload["error"] = errMsg
 	}
 	s.emit.Emit("recording:state", payload)
+	s.mu.Lock()
+	fn := s.onStop
+	s.mu.Unlock()
+	if fn != nil {
+		fn(id)
+	}
 	return nil
 }
 

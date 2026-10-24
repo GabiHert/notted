@@ -96,7 +96,15 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("portuguese sample", func(t *testing.T) {
 		if ok, _ := e.ReadyFor(domain.LangPTBR); !ok {
-			t.Skip("multilingual model not in the cache; not downloading 640 MB here")
+			if os.Getenv("NOTTED_TEST_DOWNLOAD_PT") != "1" {
+				t.Skip("multilingual model not in the cache; set NOTTED_TEST_DOWNLOAD_PT=1 to download it")
+			}
+			begin := time.Now()
+			t.Logf("downloading pt-BR models: %d bytes", mgr.Status(domain.LangPTBR).DownloadBytes)
+			if err := mgr.Download(t.Context(), domain.LangPTBR, func(port.ModelProgress) {}); err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("pt-BR download took %s", time.Since(begin))
 		}
 		text := transcribeFixture(t, e, d, "pt-sample.wav", domain.LangPTBR)
 		t.Logf("transcript: %q", text)
