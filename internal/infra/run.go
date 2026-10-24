@@ -54,12 +54,13 @@ func Run(assets embed.FS) error {
 		}
 		return wavinfo.DecodeWAV(b)
 	})
-	archive := service.NewArchiveService(st, st, git.New(claude.LoginShellEnv), emitter)
+	archive := service.NewArchiveService(st, st, git.New(gitEnv(claude.LoginShellEnv)), emitter)
 	summary := service.NewSummaryService(st, st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, claude.Runner{EnvFn: claude.LoginShellEnv}, archive, emitter)
 	instructions := service.NewInstructionsService(st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, archive.ListProjects)
 	term := process.NewManager(emitter)
+	setup := service.NewSetupService(st, git.New(gitEnv(claude.LoginShellEnv)))
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:            "Notted",
@@ -96,4 +97,9 @@ func Run(assets embed.FS) error {
 		Bind: []interface{}{app},
 	})
 	return runErr
+}
+
+// gitEnv wraps an environment source for git so API credentials never reach git or its hooks.
+func gitEnv(src func() []string) func() []string {
+	return func() []string { return claude.CleanEnv(src()) }
 }

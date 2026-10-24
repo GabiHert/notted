@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -321,4 +322,69 @@ func listInstructions(checkout string) ([]InstructionFile, error) {
 		return out[i].Path < out[j].Path
 	})
 	return out, nil
+}
+
+// createInstruction creates rel with text; it never overwrites (fs.ErrExist when rel exists).
+func createInstruction(checkout, rel, text string) error {
+	rel, err := cleanInstructionPath(rel)
+	if err != nil {
+		return err
+	}
+	kind, readOnly := classifyInstruction(rel)
+	if kind == "" {
+		return errPatterns
+	}
+	if err := readOnlyError(rel, readOnly); err != nil {
+		return err
+	}
+	realRoot, err := confine(checkout, rel)
+	if err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
+	native := filepath.FromSlash(rel)
+	if err := root.MkdirAll(filepath.Dir(native), 0o755); err != nil {
+		return mapRootErr(err)
+	}
+	f, err := root.OpenFile(native, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return fs.ErrExist
+		}
+		return mapRootErr(err)
+	}
+	_, werr := f.WriteString(text)
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		_ = root.Remove(native)
+		return mapRootErr(werr)
+	}
+	return nil
+}
+
+// instructionExists reports whether rel exists, without following links.
+func instructionExists(checkout, rel string) (bool, error) {
+	realRoot, err := confine(checkout, rel)
+	if err != nil {
+		return false, err
+	}
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return false, err
+	}
+	defer root.Close()
+	if _, err := root.Lstat(filepath.FromSlash(rel)); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		return false, mapRootErr(err)
+	}
+	return true, nil
 }

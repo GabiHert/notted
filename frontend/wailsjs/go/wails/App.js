@@ -6,8 +6,24 @@ export function AppName() {
   return window['go']['wails']['App']['AppName']();
 }
 
+export function ChooseFolder(arg1, arg2) {
+  return window['go']['wails']['App']['ChooseFolder'](arg1, arg2);
+}
+
+export function CloneArchive(arg1, arg2) {
+  return window['go']['wails']['App']['CloneArchive'](arg1, arg2);
+}
+
 export function CommitAndPushMeeting(arg1) {
   return window['go']['wails']['App']['CommitAndPushMeeting'](arg1);
+}
+
+export function CreateProfile(arg1) {
+  return window['go']['wails']['App']['CreateProfile'](arg1);
+}
+
+export function CreateProject(arg1) {
+  return window['go']['wails']['App']['CreateProject'](arg1);
 }
 
 export function DownloadModels(arg1) {
@@ -44,6 +60,10 @@ export function ListInstructionFiles() {
 
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function ListProfiles() {
+  return window['go']['wails']['App']['ListProfiles']();
 }
 
 export function ListProjects() {

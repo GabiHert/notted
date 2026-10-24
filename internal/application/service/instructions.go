@@ -88,14 +88,11 @@ func isDir(p string) bool {
 // SetSettings validates and saves the settings; empty values clear a setting.
 func (s *InstructionsService) SetSettings(ctx context.Context, st domain.Settings) error {
 	if st.Profile != "" && !keyRe.MatchString(st.Profile) {
-		return errors.New(`Profile must use lowercase letters, digits and dashes, like "ana" or "ana-lima".`)
+		return errProfileFormat
 	}
 	if st.CheckoutPath != "" {
-		if !isDir(st.CheckoutPath) {
-			return fmt.Errorf("That folder does not exist: %s", st.CheckoutPath)
-		}
-		if fi, err := os.Stat(filepath.Join(st.CheckoutPath, "bin", "meeting")); err != nil || fi.IsDir() {
-			return errors.New("That folder is not a meetings archive checkout: bin/meeting is missing.")
+		if err := checkArchive(st.CheckoutPath); err != nil {
+			return err
 		}
 	}
 	roots := map[string]string{}
@@ -122,7 +119,7 @@ func (s *InstructionsService) PreviewPrompt(ctx context.Context, projectKey stri
 		return "", errNoArchive
 	}
 	if st.Profile == "" {
-		return "", errors.New("Set your profile in Settings > Instructions first.")
+		return "", errProfileUnset
 	}
 	keys, err := s.projects(ctx)
 	if err != nil {

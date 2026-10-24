@@ -4,7 +4,15 @@ import {wails} from '../models';
 
 export function AppName():Promise<string>;
 
+export function ChooseFolder(arg1:string,arg2:string):Promise<string>;
+
+export function CloneArchive(arg1:string,arg2:string):Promise<string>;
+
 export function CommitAndPushMeeting(arg1:string):Promise<wails.CommitDTO>;
+
+export function CreateProfile(arg1:string):Promise<string>;
+
+export function CreateProject(arg1:string):Promise<Array<string>>;
 
 export function DownloadModels(arg1:string):Promise<void>;
 
@@ -23,6 +31,8 @@ export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 export function ListInstructionFiles():Promise<Array<wails.InstructionFileDTO>>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function ListProfiles():Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<string>>;
 
