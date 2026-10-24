@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ListMeetings } from "./api/bindings";
+import { GetSettings, ListMeetings } from "./api/bindings";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { MeetingPage } from "./components/MeetingPage";
 import { NewRecording } from "./components/NewRecording";
@@ -16,9 +16,12 @@ export function App({ initialView }: { initialView?: View }) {
   useEffect(() => {
     if (initialView) return;
     let live = true;
-    ListMeetings()
-      .then((list) => live && setView(list && list.length > 0 ? { kind: "meeting", id: list[0].id } : { kind: "new" }))
-      .catch(() => live && setView({ kind: "new" }));
+    // First run: with no archive folder saved, Settings opens first, even when meetings exist.
+    Promise.all([GetSettings().catch(() => null), ListMeetings().catch(() => null)]).then(([settings, list]) => {
+      if (!live) return;
+      if (settings && !settings.checkoutPath) setView({ kind: "settings" });
+      else setView(list && list.length > 0 ? { kind: "meeting", id: list[0].id } : { kind: "new" });
+    });
     return () => {
       live = false;
     };

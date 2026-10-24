@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { SettingsView } from "./SettingsView";
-import { GetSettings, ListProjects, ListInstructionFiles, resetBindings } from "../test/bindingsMock";
+import { GetSettings, ListProfiles, ListProjects, ListInstructionFiles, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("../test/codemirrorMock"));
@@ -10,7 +10,7 @@ beforeEach(() => {
   ListInstructionFiles.mockResolvedValue([{ path: "instructions/projects/acme.md", kind: "project", readOnly: false }]);
 });
 
-test("shows the Settings heading, one selected Instructions tab and the three cards in order", async () => {
+test("shows the Settings heading, one selected Instructions tab and the cards in order", async () => {
   render(<SettingsView />);
   expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
   const tabs = screen.getAllByRole("tab");
@@ -19,7 +19,7 @@ test("shows the Settings heading, one selected Instructions tab and the three ca
   expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   await screen.findByLabelText("Profile");
   const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Your setup", "Instruction files", "Prompt preview"]);
+  expect(headers).toEqual(["Set up Notted", "Your setup", "Instruction files", "Prompt preview"]);
 });
 
 test("the project list feeds the project-root rows and the preview select; a failure shows the message in both", async () => {
@@ -46,4 +46,33 @@ test("there is no model, provider or API key control or text", async () => {
     expect(name).not.toMatch(/model|provider|api key/i);
   }
   expect(document.body.textContent).not.toMatch(/model|provider|api key/i);
+});
+
+test("the welcome card shows while the profile is unset and hides when archive and profile are set", async () => {
+  GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
+  const { unmount } = render(<SettingsView />);
+  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+  unmount();
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
+  render(<SettingsView />);
+  await screen.findByLabelText("Profile");
+  expect(screen.queryByText("Set up Notted")).not.toBeInTheDocument();
+});
+
+test("the welcome card shows while the archive is unset, and no list is requested", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "", projectRoots: {} });
+  render(<SettingsView />);
+  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+  await screen.findByLabelText("Profile");
+  expect(ListProjects).not.toHaveBeenCalled();
+  expect(ListProfiles).not.toHaveBeenCalled();
+  expect(screen.getAllByText("Choose the archive folder first.")).not.toHaveLength(0);
+});
+
+test("a set archive loads the projects and the profiles", async () => {
+  render(<SettingsView />);
+  await screen.findByLabelText("acme");
+  expect(ListProjects).toHaveBeenCalled();
+  expect(ListProfiles).toHaveBeenCalled();
+  expect(screen.getByRole("option", { name: "bruno" })).toBeInTheDocument();
 });

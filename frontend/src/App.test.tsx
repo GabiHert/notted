@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
-import { GetMeeting, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
+import { GetMeeting, GetSettings, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
 
 vi.mock("./api/bindings", () => import("./test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("./test/codemirrorMock"));
@@ -17,6 +17,22 @@ test("shows the title bar, the sidebar and the new-recording view when there are
 test("opens the newest meeting on launch", async () => {
   ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" }), meeting({ id: "m1", title: "Older" })]);
   GetMeeting.mockImplementation(async (id: string) => meeting({ id, title: id === "m2" ? "Newest" : "Older" }));
+  render(<App />);
+  expect(await screen.findByRole("heading", { level: 1, name: "Newest" })).toBeInTheDocument();
+});
+
+test("an empty saved archive opens Settings with the Set up Notted card, even when meetings exist", async () => {
+  ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" })]);
+  GetSettings.mockResolvedValue({ profile: "", checkoutPath: "", projectRoots: {} });
+  render(<App />);
+  expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+});
+
+test("a GetSettings rejection falls back to the newest meeting", async () => {
+  ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" })]);
+  GetMeeting.mockResolvedValue(meeting({ id: "m2", title: "Newest" }));
+  GetSettings.mockRejectedValue(new Error("no settings"));
   render(<App />);
   expect(await screen.findByRole("heading", { level: 1, name: "Newest" })).toBeInTheDocument();
 });

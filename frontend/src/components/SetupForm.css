@@ -1,17 +1,28 @@
-.nt-setup__field {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 14px;
-  max-width: 520px;
+.nt-setup__section {
+  margin-bottom: 18px;
 }
-.nt-setup__field label {
+.nt-setup__section label {
+  display: block;
   font-weight: 500;
+  margin-bottom: 4px;
+}
+.nt-setup__path {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  max-width: 620px;
+}
+.nt-setup__select {
+  display: block;
+  max-width: 620px;
+  width: 100%;
 }
 .nt-setup__help {
   font-size: 12px;
   color: var(--fg3-text);
 }
 .nt-setup__help--block {
+  display: block;
   margin: 6px 0 0;
 }
 .nt-setup__sub {
@@ -22,11 +33,55 @@
 }
 .nt-setup__root {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
+  grid-template-columns: 140px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
   max-width: 620px;
+}
+.nt-setup__root label {
+  margin-bottom: 0;
+}
+.nt-setup__new {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.nt-setup__inline {
+  background: var(--side);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.nt-setup__inline > label:not(:first-child),
+.nt-setup__inline > .nt-setup__help + label {
+  margin-top: 10px;
+}
+.nt-setup__inline > input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
+.nt-setup__inline .nt-setup__help {
+  display: block;
+}
+.nt-btn--link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+}
+.nt-btn--link:hover,
+.nt-btn--link:focus-visible {
+  text-decoration: underline;
 }
 .nt-setup__error {
   margin: 12px 0 0;

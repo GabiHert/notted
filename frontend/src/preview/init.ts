@@ -20,6 +20,12 @@ export function initPreview(): View {
     case "instructions-save-failed":
     case "prompt-preview":
     case "prompt-preview-failed":
+    case "first-run":
+    case "setup-clone-failed":
+    case "setup-profile":
+    case "setup-new-profile":
+    case "setup-new-project":
+    case "setup-project-created":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -77,13 +83,22 @@ function autoDriveSettings(screen: string) {
     document.execCommand("insertText", false, " Always confirm the owner of each task.");
     return true;
   };
-  const choose = () => {
-    const sel = document.querySelector<HTMLSelectElement>("#nt-preview-project");
-    if (!sel || sel.options.length < 2) return false;
-    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(sel, "acme");
+  const choose = () => pick("#nt-preview-project", "acme")();
+  const pick = (selector: string, value: string) => () => {
+    const sel = document.querySelector<HTMLSelectElement>(selector);
+    if (!sel || sel.options.length < 2 || sel.disabled) return false;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(sel, value);
     sel.dispatchEvent(new Event("change", { bubbles: true }));
     return true;
   };
+  const typeInto = (selector: string, value: string) => () => {
+    const input = document.querySelector<HTMLInputElement>(selector);
+    if (!input) return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  };
+  const newProject = [open("New project…"), typeInto("#nt-new-project", "initech-web")];
   const steps: Record<string, Array<() => boolean>> = {
     "instructions-editing": [open("acme.md")],
     "instructions-dirty": [open("acme.md"), edit],
@@ -91,6 +106,15 @@ function autoDriveSettings(screen: string) {
     "instructions-discard": [open("acme.md"), edit, open("ana.md")],
     "instructions-save-failed": [open("acme.md"), edit, open("Save")],
     "settings-save-failed": [open("Save settings")],
+    "setup-clone-failed": [
+      open("Clone the archive from GitHub instead"),
+      typeInto("#nt-clone-address", "git@example.invalid:acme/meetings-archive.git"),
+      typeInto("#nt-clone-parent", "/Users/ana/code"),
+      open("Clone archive"),
+    ],
+    "setup-new-profile": [pick("#nt-profile", "__new__"), typeInto("#nt-new-profile", "carla")],
+    "setup-new-project": newProject,
+    "setup-project-created": [...newProject, open("Create project")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

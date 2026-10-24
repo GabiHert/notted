@@ -37,6 +37,11 @@ export const ListInstructionFiles = vi.fn();
 export const ReadInstructionFile = vi.fn();
 export const WriteInstructionFile = vi.fn();
 export const PreviewPrompt = vi.fn();
+export const ChooseFolder = vi.fn();
+export const CloneArchive = vi.fn();
+export const ListProfiles = vi.fn();
+export const CreateProfile = vi.fn();
+export const CreateProject = vi.fn();
 export const StartSession = vi.fn();
 export const WriteSession = vi.fn();
 export const ResizeSession = vi.fn();
@@ -44,7 +49,7 @@ export const StopSession = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, ListProfiles, CreateProfile, CreateProject, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -69,6 +74,11 @@ export function resetBindings() {
   ReadInstructionFile.mockResolvedValue("");
   WriteInstructionFile.mockResolvedValue(undefined);
   PreviewPrompt.mockResolvedValue("");
+  ChooseFolder.mockResolvedValue("");
+  CloneArchive.mockResolvedValue("/x/meetings-archive");
+  ListProfiles.mockResolvedValue(["ana", "bruno"]);
+  CreateProfile.mockResolvedValue("instructions/people/carla.md");
+  CreateProject.mockResolvedValue(["instructions/projects/initech-web.md", "instructions/people/ana/initech-web.md"]);
   StartSession.mockResolvedValue(undefined);
   WriteSession.mockResolvedValue(undefined);
   ResizeSession.mockResolvedValue(undefined);

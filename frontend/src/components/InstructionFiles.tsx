@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ListInstructionFiles } from "../api/bindings";
 import { errorMessage } from "../format";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -21,22 +21,44 @@ function itemName(f: File): string {
   return f.kind === "person-project" ? parts.slice(-2).join("/") : (parts.pop() ?? f.path);
 }
 
-export function InstructionFiles({ onDirtyPath }: { onDirtyPath?: (path: string | null) => void } = {}) {
+type OpenRequest = { path: string; seq: number };
+type Props = { onDirtyPath?: (path: string | null) => void; archivePath?: string; openRequest?: OpenRequest | null };
+
+export function InstructionFiles({ onDirtyPath, archivePath = "", openRequest = null }: Props = {}) {
   const [files, setFiles] = useState<File[] | null>(null);
   const [listError, setListError] = useState("");
   const [selected, setSelected] = useState<File | null>(null);
   const [dirty, setDirty] = useState(false);
   const [pending, setPending] = useState<File | null>(null);
+  const card = useRef<HTMLElement>(null);
+  const request = useRef(0);
+  const live = useRef(true);
 
   useEffect(() => {
-    let live = true;
-    ListInstructionFiles()
-      .then((list) => live && setFiles(list ?? []))
-      .catch((e) => live && setListError(errorMessage(e)));
+    live.current = true;
     return () => {
-      live = false;
+      live.current = false;
     };
   }, []);
+
+  // Only the newest list request may apply its result; `then` runs after the list is stored.
+  const load = useCallback((then?: (list: File[]) => void) => {
+    const id = ++request.current;
+    ListInstructionFiles()
+      .then((list) => {
+        if (!live.current || request.current !== id) return;
+        setFiles(list ?? []);
+        setListError("");
+        then?.(list ?? []);
+      })
+      .catch((e) => {
+        if (live.current && request.current === id) setListError(errorMessage(e));
+      });
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [archivePath, load]);
 
   const dirtyPath = dirty && selected ? selected.path : null;
   useEffect(() => {
@@ -49,6 +71,17 @@ export function InstructionFiles({ onDirtyPath }: { onDirtyPath?: (path: string 
     if (dirty) setPending(f);
     else setSelected(f);
   };
+  const chooseNow = useRef(choose);
+  chooseNow.current = choose;
+  const seq = openRequest?.seq;
+  const path = openRequest?.path;
+  useEffect(() => {
+    if (seq === undefined || path === undefined) return;
+    load((list) => {
+      chooseNow.current(list.find((f) => f.path === path) ?? { path, kind: "", readOnly: false });
+      card.current?.scrollIntoView?.({ block: "start" });
+    });
+  }, [seq]); // eslint-disable-line react-hooks/exhaustive-deps
   const discard = () => {
     setDirty(false);
     setSelected(pending);
@@ -56,7 +89,7 @@ export function InstructionFiles({ onDirtyPath }: { onDirtyPath?: (path: string 
   };
 
   return (
-    <section className="nt-card">
+    <section className="nt-card" ref={card}>
       <div className="nt-card__header">Instruction files</div>
       {listError && (
         <div className="nt-card nt-card--error" role="alert">

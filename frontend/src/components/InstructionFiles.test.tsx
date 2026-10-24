@@ -209,3 +209,54 @@ test("typing while a save is in flight keeps the newer text dirty", async () => 
   expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
   expect(screen.queryByText("Saved.")).not.toBeInTheDocument();
 });
+
+describe("open requests and archive changes", () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  test("a new openRequest reloads the list, opens the path and scrolls the card into view", async () => {
+    const { rerender } = render(<InstructionFiles archivePath="/a" openRequest={null} />);
+    await screen.findByText("Base prompt");
+    ListInstructionFiles.mockClear();
+    ListInstructionFiles.mockResolvedValue([...FILES, { path: "instructions/people/carla.md", kind: "person", readOnly: false }]);
+    ReadInstructionFile.mockImplementation(async (p: string) => (p === "instructions/people/carla.md" ? "# Carla" : (TEXT[p] ?? "")));
+    rerender(<InstructionFiles archivePath="/a" openRequest={{ path: "instructions/people/carla.md", seq: 1 }} />);
+    expect(await screen.findByLabelText("File contents")).toHaveValue("# Carla");
+    expect(ListInstructionFiles).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /^carla\.md/ })).toHaveAttribute("aria-current", "true");
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  });
+
+  test("with an unsaved file, an openRequest asks before discarding", async () => {
+    const { rerender } = render(<InstructionFiles archivePath="/a" openRequest={null} />);
+    await open("^acme\\.md");
+    fireEvent.change(await screen.findByLabelText("File contents"), { target: { value: "edited" } });
+    rerender(<InstructionFiles archivePath="/a" openRequest={{ path: "instructions/people/ana.md", seq: 1 }} />);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: "Discard unsaved changes?" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Discard" }));
+    expect(await screen.findByLabelText("File contents")).toHaveValue("# Ana");
+  });
+
+  test("an openRequest result that arrives after unmount does nothing", async () => {
+    let resolve!: (v: unknown) => void;
+    const { rerender, unmount } = render(<InstructionFiles archivePath="/a" openRequest={null} />);
+    await screen.findByText("Base prompt");
+    ListInstructionFiles.mockReturnValue(new Promise((r) => (resolve = r)));
+    rerender(<InstructionFiles archivePath="/a" openRequest={{ path: "instructions/people/ana.md", seq: 1 }} />);
+    unmount();
+    ReadInstructionFile.mockClear();
+    await act(async () => resolve(FILES));
+    expect(ReadInstructionFile).not.toHaveBeenCalled();
+  });
+
+  test("a changed archivePath reloads the list", async () => {
+    const { rerender } = render(<InstructionFiles archivePath="/a" openRequest={null} />);
+    await screen.findByText("Base prompt");
+    ListInstructionFiles.mockClear();
+    rerender(<InstructionFiles archivePath="/b" openRequest={null} />);
+    await act(async () => {});
+    expect(ListInstructionFiles).toHaveBeenCalledTimes(1);
+  });
+});

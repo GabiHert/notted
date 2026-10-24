@@ -91,7 +91,13 @@ if (screen === "save-dialog" || screen === "save-failed") {
 const PROMPT =
   "\x1b[1m> /suggest\x1b[0m\r\n\r\nI can write the suggestions to the meeting folder.\r\n\r\n" +
   "Do you want to create suggestions.md?\r\n \x1b[36m1.\x1b[0m Yes\r\n  2. Yes, and allow all edits this session\r\n  3. No\r\n\r\n";
+const ARCHIVE = "/Users/ana/meetings-archive";
+const setupScreens = ["first-run", "setup-clone-failed", "setup-profile", "setup-new-profile", "setup-new-project", "setup-project-created"];
+let projectCreated = false;
 export async function GetSettings() {
+  if (screen === "first-run" || screen === "setup-clone-failed") return { profile: "", checkoutPath: "", projectRoots: {} };
+  if (screen === "setup-profile" || screen === "setup-new-profile") return { profile: "", checkoutPath: ARCHIVE, projectRoots: {} };
+  if (screen === "setup-new-project" || screen === "setup-project-created") return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
   if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
@@ -118,9 +124,34 @@ const instructionText: Record<string, string> = {
   "instructions/people/ana.md": "# Ana\n\nWrite in short sentences.\n",
   "instructions/people/ana/acme.md": "# Ana for Acme\n\nList the follow-ups last.\n",
   "instructions/local/notes.md": "# Local notes\n",
+  "instructions/projects/initech-web.md": "# Project: initech-web\n\n## Key\ninitech-web\n\n## Name\n\n## Aliases\n\n## About\n\n## Existing work\n",
+  "instructions/people/ana/initech-web.md": "# ana — initech-web\n\n## Project root\n\n## Tools\n",
 };
+const createdFiles = [
+  { path: "instructions/projects/initech-web.md", kind: "project", readOnly: false },
+  { path: "instructions/people/ana/initech-web.md", kind: "person-project", readOnly: false },
+];
 export async function ListInstructionFiles() {
+  if (screen === "first-run" || screen === "setup-clone-failed") return [];
+  if (screen === "setup-project-created" && projectCreated) return [...instructionFiles, ...createdFiles];
   return instructionFiles;
+}
+export async function ListProfiles() {
+  return ["ana", "bruno"];
+}
+export async function ChooseFolder(_title: string, _startDir: string) {
+  return ARCHIVE;
+}
+export async function CloneArchive(_address: string, _parentDir: string) {
+  if (screen === "setup-clone-failed") throw new Error("git clone failed:\nERROR: Repository not found.\nfatal: Could not read from remote repository.");
+  return "/Users/ana/code/meetings-archive";
+}
+export async function CreateProfile(_name: string) {
+  return "instructions/people/carla.md";
+}
+export async function CreateProject(_key: string) {
+  projectCreated = true;
+  return createdFiles.map((f) => f.path);
 }
 export async function ReadInstructionFile(path: string) {
   return instructionText[path] ?? "";
@@ -143,6 +174,7 @@ export async function StopSession(_id: string) {}
 
 export async function ListProjects() {
   if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its projects.");
+  if (setupScreens.includes(screen)) return screen === "setup-project-created" && projectCreated ? ["acme", "initech-web"] : ["acme"];
   return projectsEmpty ? [] : projectFixtures;
 }
 export async function SetMeetingProject(_id: string, _key: string) {}

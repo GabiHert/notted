@@ -24,7 +24,19 @@ Notted asks for the microphone and for Screen & System Audio Recording when you 
 
 ## Set up
 
-In Settings > Instructions, set your profile (your file in `instructions/people/`), the archive folder, and a project root per project.
+The first time you open Notted, it shows **Settings > Instructions** with a short checklist.
+
+1. **Archive folder:** click **Choose…** and pick your local clone of the meetings archive, or
+   click **Clone the archive from GitHub instead**, paste its address and choose where to put it.
+   Notted runs your own git, with your own login.
+2. **Profile:** choose yourself from the people in the archive, or choose **New profile…** to
+   create your file from a short template.
+3. **Projects:** every project in the archive gets a row. Click **Choose…** to give it a root
+   folder that Claude Code may read during its meetings. **New project…** creates the project's
+   file and your own file for it.
+
+Every new file opens in the editor below, ready to fill in. You can also paste a full path into
+any field and click **Save settings**.
 
 ## What Notted downloads
 
