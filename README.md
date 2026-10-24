@@ -63,6 +63,7 @@ Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_A
 - `NOTTED_HOME` moves the data folder.
 - `NOTTED_AUDIOCAP` points at a helper build during `wails dev`.
 - `NOTTED_MODEL_MANIFEST` replaces the model manifest.
+- The app icon's source is `build/appicon.svg`; `build/appicon.png` is its 1024 px render, which Wails turns into the app's icon file.
 
 ## Notices
 
