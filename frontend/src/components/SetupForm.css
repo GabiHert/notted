@@ -1,0 +1,45 @@
+.nt-setup__field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  max-width: 520px;
+}
+.nt-setup__field label {
+  font-weight: 500;
+}
+.nt-setup__help {
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-setup__help--block {
+  margin: 6px 0 0;
+}
+.nt-setup__sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg2);
+  margin: 4px 0 2px;
+}
+.nt-setup__root {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.nt-setup__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+.nt-setup__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.nt-setup__notice {
+  color: var(--fg3-text);
+  font-size: 12px;
+}

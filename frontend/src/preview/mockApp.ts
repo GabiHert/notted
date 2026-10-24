@@ -92,7 +92,45 @@ const PROMPT =
   "\x1b[1m> /suggest\x1b[0m\r\n\r\nI can write the suggestions to the meeting folder.\r\n\r\n" +
   "Do you want to create suggestions.md?\r\n \x1b[36m1.\x1b[0m Yes\r\n  2. Yes, and allow all edits this session\r\n  3. No\r\n\r\n";
 export async function GetSettings() {
+  if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
+  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt"))
+    return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
+}
+export async function SetSettings(_s: unknown) {
+  if (screen === "settings-save-failed") throw new Error("The archive folder does not exist: /archive");
+}
+
+const instructionFiles = [
+  { path: "prompts/base.md", kind: "base", readOnly: true },
+  { path: "instructions/README.md", kind: "readme", readOnly: false },
+  { path: "instructions/clients/acme.md", kind: "client", readOnly: false },
+  { path: "instructions/clients/globex.md", kind: "client", readOnly: false },
+  { path: "instructions/people/ana.md", kind: "person", readOnly: false },
+  { path: "instructions/people/ana/acme.md", kind: "person-client", readOnly: false },
+  { path: "instructions/local/notes.md", kind: "local", readOnly: false },
+];
+const instructionText: Record<string, string> = {
+  "prompts/base.md": "# Base prompt\n\nSummarize the meeting in short sections.\n\n- Decisions first\n- Then open questions\n",
+  "instructions/README.md": "# Guide\n\nOne file per client, one per person.\n",
+  "instructions/clients/acme.md": "# Acme\n\nUse the acme glossary. Keep the summary under one page.\n",
+  "instructions/clients/globex.md": "# Globex\n\nName the sponsor of each decision.\n",
+  "instructions/people/ana.md": "# Ana\n\nWrite in short sentences.\n",
+  "instructions/people/ana/acme.md": "# Ana for Acme\n\nList the follow-ups last.\n",
+  "instructions/local/notes.md": "# Local notes\n",
+};
+export async function ListInstructionFiles() {
+  return instructionFiles;
+}
+export async function ReadInstructionFile(path: string) {
+  return instructionText[path] ?? "";
+}
+export async function WriteInstructionFile(_path: string, _text: string) {
+  if (screen === "instructions-save-failed") throw new Error("Could not write instructions/clients/acme.md: permission denied");
+}
+export async function PreviewPrompt(key: string) {
+  if (screen === "prompt-preview-failed") throw new Error(`There is no instructions/clients/${key}.md in the archive folder.`);
+  return `${instructionText["prompts/base.md"]}\n---\n${instructionText[`instructions/clients/${key}.md`] ?? ""}\n---\n${instructionText["instructions/people/ana.md"]}`;
 }
 export async function StartSession(id: string) {
   if (screen === "session-error") throw new Error("Claude Code is not installed. Install it and try again.");
@@ -104,6 +142,7 @@ export async function ResizeSession(_id: string, _cols: number, _rows: number) {
 export async function StopSession(_id: string) {}
 
 export async function ListClients() {
+  if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its clients.");
   return clientsEmpty ? [] : clientFixtures;
 }
 export async function SetMeetingClient(_id: string, _key: string) {}

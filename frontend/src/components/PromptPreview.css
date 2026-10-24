@@ -1,0 +1,28 @@
+.nt-preview__note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-preview__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nt-preview__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+.nt-preview__out {
+  margin: 12px 0 0;
+  padding: 12px;
+  max-height: 480px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--side);
+  border-radius: var(--r-sm);
+}

@@ -32,6 +32,11 @@ export const SetMeetingClient = vi.fn();
 export const GenerateSummary = vi.fn();
 export const CommitAndPushMeeting = vi.fn();
 export const GetSettings = vi.fn();
+export const SetSettings = vi.fn();
+export const ListInstructionFiles = vi.fn();
+export const ReadInstructionFile = vi.fn();
+export const WriteInstructionFile = vi.fn();
+export const PreviewPrompt = vi.fn();
 export const StartSession = vi.fn();
 export const WriteSession = vi.fn();
 export const ResizeSession = vi.fn();
@@ -39,7 +44,7 @@ export const StopSession = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListClients, SetMeetingClient, GenerateSummary, CommitAndPushMeeting, GetSettings, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListClients, SetMeetingClient, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -59,6 +64,11 @@ export function resetBindings() {
   GenerateSummary.mockResolvedValue(undefined);
   CommitAndPushMeeting.mockResolvedValue({ commit: "abc1234" });
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
+  SetSettings.mockResolvedValue(undefined);
+  ListInstructionFiles.mockResolvedValue([]);
+  ReadInstructionFile.mockResolvedValue("");
+  WriteInstructionFile.mockResolvedValue(undefined);
+  PreviewPrompt.mockResolvedValue("");
   StartSession.mockResolvedValue(undefined);
   WriteSession.mockResolvedValue(undefined);
   ResizeSession.mockResolvedValue(undefined);

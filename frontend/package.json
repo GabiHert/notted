@@ -11,6 +11,10 @@
     "preview:fixtures": "vite build --mode preview --outDir dist-preview --emptyOutDir && vite preview --mode preview --outDir dist-preview --port 4173 --strictPort"
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@uiw/react-codemirror": "^4.25.12",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
     "react": "^18.3.1",

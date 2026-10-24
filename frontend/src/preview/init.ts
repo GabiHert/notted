@@ -10,6 +10,17 @@ export function initPreview(): View {
     case "new-downloading":
       return { kind: "new" };
     case "settings":
+    case "settings-empty":
+    case "settings-no-archive":
+    case "settings-save-failed":
+    case "instructions-editing":
+    case "instructions-dirty":
+    case "instructions-readonly":
+    case "instructions-discard":
+    case "instructions-save-failed":
+    case "prompt-preview":
+    case "prompt-preview-failed":
+      autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
       return { kind: "meeting", id: "fx-transcribing" };
@@ -49,4 +60,46 @@ function autoOpenSession() {
       btn.click();
     } else if (++tries > 40) window.clearInterval(timer);
   }, 100);
+}
+
+// Preview only: drive the Settings view into the state a screenshot URL names.
+function autoDriveSettings(screen: string) {
+  const click = (match: (b: HTMLButtonElement) => boolean) => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) => match(b) && !b.disabled);
+    btn?.click();
+    return Boolean(btn);
+  };
+  const open = (name: string) => () => click((b) => b.textContent === name);
+  const edit = () => {
+    const cm = document.querySelector<HTMLElement>(".cm-content");
+    if (!cm) return false;
+    cm.focus();
+    document.execCommand("insertText", false, " Always confirm the owner of each task.");
+    return true;
+  };
+  const choose = () => {
+    const sel = document.querySelector<HTMLSelectElement>("#nt-preview-client");
+    if (!sel || sel.options.length < 2) return false;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(sel, "acme");
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  };
+  const steps: Record<string, Array<() => boolean>> = {
+    "instructions-editing": [open("acme.md")],
+    "instructions-dirty": [open("acme.md"), edit],
+    "instructions-readonly": [() => click((b) => b.textContent?.startsWith("base.md") ?? false)],
+    "instructions-discard": [open("acme.md"), edit, open("ana.md")],
+    "instructions-save-failed": [open("acme.md"), edit, open("Save")],
+    "settings-save-failed": [open("Save settings")],
+    "prompt-preview": [choose, open("Preview prompt")],
+    "prompt-preview-failed": [choose, open("Preview prompt")],
+  };
+  const list = steps[screen];
+  if (!list) return;
+  let i = 0;
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    if (list[i]()) i++;
+    if (i >= list.length || ++tries > 60) window.clearInterval(timer);
+  }, 200);
 }
