@@ -6,8 +6,16 @@ export function AppName() {
   return window['go']['wails']['App']['AppName']();
 }
 
+export function CommitAndPushMeeting(arg1) {
+  return window['go']['wails']['App']['CommitAndPushMeeting'](arg1);
+}
+
 export function DownloadModels(arg1) {
   return window['go']['wails']['App']['DownloadModels'](arg1);
+}
+
+export function ExportMeeting(arg1) {
+  return window['go']['wails']['App']['ExportMeeting'](arg1);
 }
 
 export function GetMeeting(arg1) {
@@ -22,8 +30,16 @@ export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }
 
+export function ListClients() {
+  return window['go']['wails']['App']['ListClients']();
+}
+
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function SetMeetingClient(arg1, arg2) {
+  return window['go']['wails']['App']['SetMeetingClient'](arg1, arg2);
 }
 
 export function StartRecording(arg1, arg2) {

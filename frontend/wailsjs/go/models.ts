@@ -1,5 +1,31 @@
 export namespace wails {
 	
+	export class CommitDTO {
+	    commit: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CommitDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.commit = source["commit"];
+	    }
+	}
+	export class ExportDTO {
+	    folder: string;
+	    files: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.folder = source["folder"];
+	        this.files = source["files"];
+	    }
+	}
 	export class MeetingDTO {
 	    id: string;
 	    title: string;

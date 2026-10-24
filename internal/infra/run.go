@@ -14,6 +14,8 @@ import (
 	"github.com/bhlabz/notted/internal/infra/wails"
 	"github.com/bhlabz/notted/internal/integration/audio"
 	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
+	"github.com/bhlabz/notted/internal/integration/claude"
+	"github.com/bhlabz/notted/internal/integration/git"
 	"github.com/bhlabz/notted/internal/integration/speech"
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -50,7 +52,8 @@ func Run(assets embed.FS) error {
 		}
 		return wavinfo.DecodeWAV(b)
 	})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Meetings: st, Models: models})
+	archive := service.NewArchiveService(st, st, git.New(claude.LoginShellEnv), emitter)
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",

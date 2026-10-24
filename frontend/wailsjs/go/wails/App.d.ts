@@ -4,7 +4,11 @@ import {wails} from '../models';
 
 export function AppName():Promise<string>;
 
+export function CommitAndPushMeeting(arg1:string):Promise<wails.CommitDTO>;
+
 export function DownloadModels(arg1:string):Promise<void>;
+
+export function ExportMeeting(arg1:string):Promise<wails.ExportDTO>;
 
 export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
 
@@ -12,7 +16,11 @@ export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
+export function ListClients():Promise<Array<string>>;
+
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function SetMeetingClient(arg1:string,arg2:string):Promise<void>;
 
 export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;
 
