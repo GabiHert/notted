@@ -40,3 +40,6 @@ func ModelsDir() string { return filepath.Join(Home(), "models") }
 
 // UpdateLog returns the installer's log file under Home.
 func UpdateLog() string { return filepath.Join(Home(), "update.log") }
+
+// InstallSource returns the file make install writes with the path of the clone it ran in.
+func InstallSource() string { return filepath.Join(Home(), "install-source") }

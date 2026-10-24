@@ -2,19 +2,31 @@
 
 Notted records a meeting on your Mac (your microphone and the system audio), transcribes it locally, asks your own Claude Code for a summary and task suggestions, and saves the meeting to your meetings archive in git when you say yes.
 
-## What you need
+## Install
+
+```
+git clone <your Notted repository address>
+cd notted
+make install
+```
+
+`make install` checks your Mac and the tools below, and tells you how to fix anything missing before it changes anything. If your keychain has no "Notted Local Signing" certificate, it creates one, and macOS asks for your login password once so it can trust the certificate for signing Notted. It then builds Notted, puts it in `/Applications`, and opens it. **Update Notted** then uses this clone as its source folder, until you choose another one in **Settings**.
+
+### What you need
+
+`make install` checks this list and stops with a fix for each missing item. A missing Claude Code only gives a warning, and the archive clone is not checked.
 
 - macOS 14 or later on Apple silicon.
-- Go 1.26 (the team uses gvm).
+- Go 1.26 or later.
 - The Wails CLI v2.12.0: `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0`.
-- Node 24 (nvm).
+- Node 20.19 or later (Node 24 recommended).
 - Xcode Command Line Tools (`xcode-select --install`), which provide `swiftc` 6 and the macOS SDK.
 - Claude Code installed and logged in, with `claude` on your login shell's `PATH` (aliases are not followed).
 - A local clone of the meetings archive repository.
 
 ## Build
 
-Run `make build`. The app is `build/bin/Notted.app`. `make test` runs every check.
+`make build` is for development: it builds `build/bin/Notted.app` and installs nothing. `make test` runs every check.
 
 ## First run
 
@@ -60,7 +72,7 @@ like any edit.
 
 ## Update Notted
 
-Notted can update itself from your own clone of its source. In **Settings**, under **Update
+Notted can update itself from your own clone of its source. If you installed with `make install`, that clone is already in use. Otherwise, in **Settings**, under **Update
 Notted**, click **Choose…** and pick the folder of your Notted clone. **Update Notted** then:
 
 1. checks that the clone is on `main` with no uncommitted changes, and stops if it is not;

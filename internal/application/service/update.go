@@ -38,7 +38,9 @@ type UpdateDeps struct {
 	Pid        func() int
 	Quit       func()
 	LogPath    func() string
-	Emit       port.EventEmitter
+	// InstallSource returns the path of the file make install writes; nil when there is none.
+	InstallSource func() string
+	Emit          port.EventEmitter
 }
 
 // UpdateService pulls the person's Notted clone, builds it and hands the new app to the installer.
@@ -86,7 +88,7 @@ func NewUpdateService(d UpdateDeps) *UpdateService {
 
 // GetStatus returns the source folder, the installed app, the signing check and the current run.
 func (s *UpdateService) GetStatus(ctx context.Context) (UpdateStatus, error) {
-	src, err := s.d.Source.GetSourcePath(ctx)
+	src, err := s.source(ctx)
 	if err != nil {
 		return UpdateStatus{}, err
 	}
@@ -112,6 +114,24 @@ func (s *UpdateService) SetSource(ctx context.Context, path string) error {
 		return err
 	}
 	return s.d.Source.SetSourcePath(ctx, filepath.Clean(p))
+}
+
+// source returns the saved source folder. When none is saved, it returns the clone that
+// make install recorded, if that folder still passes checkSource. It never saves the fallback.
+func (s *UpdateService) source(ctx context.Context) (string, error) {
+	src, err := s.d.Source.GetSourcePath(ctx)
+	if err != nil || src != "" || s.d.InstallSource == nil {
+		return src, err
+	}
+	b, err := os.ReadFile(s.d.InstallSource())
+	if err != nil {
+		return "", nil
+	}
+	p := strings.TrimSpace(string(b))
+	if checkSource(p) != nil {
+		return "", nil
+	}
+	return p, nil
 }
 
 func checkSource(p string) error {
@@ -182,7 +202,7 @@ func (s *UpdateService) Start(ctx context.Context) error {
 }
 
 func (s *UpdateService) preflight(ctx context.Context) (updateJob, error) {
-	src, err := s.d.Source.GetSourcePath(ctx)
+	src, err := s.source(ctx)
 	if err != nil {
 		return updateJob{}, err
 	}

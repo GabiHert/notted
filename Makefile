@@ -1,7 +1,7 @@
 # Copied from github.com/brienze1/quant (Makefile), MIT License,
 # Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
 export PATH := $(HOME)/.gvm/pkgsets/go1.26.3/global/bin:$(HOME)/.nvm/versions/node/v24.16.0/bin:$(PATH)
-.PHONY: dev helper build test test-go test-fe check
+.PHONY: dev helper build install test test-go test-fe check
 APP := build/bin/Notted.app
 dev:
 	wails dev
@@ -14,6 +14,8 @@ build: helper
 	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Notted
 	bash scripts/sign-bundle.sh $(APP)
 	bash scripts/check-bundle.sh
+install:
+	bash scripts/install.sh
 test-go:
 	go vet ./...
 	go test ./...
@@ -24,4 +26,5 @@ check:
 	bash scripts/check-invariants.sh
 	bash scripts/test-checks.sh
 	bash scripts/test-signing.sh
+	bash scripts/test-install.sh
 test: test-go check test-fe

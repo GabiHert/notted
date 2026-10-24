@@ -39,3 +39,11 @@ func TestHelpersJoinUnderHome(t *testing.T) {
 		t.Fatalf("ModelsDir() = %q, want %q", got, want)
 	}
 }
+
+func TestInstallSourceUnderHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("NOTTED_HOME", dir)
+	if got, want := InstallSource(), filepath.Join(dir, "install-source"); got != want {
+		t.Fatalf("InstallSource() = %q, want %q", got, want)
+	}
+}

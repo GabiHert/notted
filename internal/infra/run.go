@@ -61,17 +61,18 @@ func Run(assets embed.FS) error {
 	term := process.NewManager(emitter)
 	setup := service.NewSetupService(st, git.New(gitEnv(claude.LoginShellEnv)))
 	update := service.NewUpdateService(service.UpdateDeps{
-		Source:     st,
-		Git:        git.New(gitEnv(claude.LoginShellEnv)),
-		Stream:     &process.Streamer{EnvFn: gitEnv(claude.LoginShellEnv)},
-		Install:    &install.Installer{},
-		Signing:    install.Signing{}.Present,
-		Recording:  recording.Recording,
-		Executable: os.Executable,
-		Pid:        os.Getpid,
-		Quit:       emitter.Quit,
-		LogPath:    paths.UpdateLog,
-		Emit:       emitter,
+		Source:        st,
+		Git:           git.New(gitEnv(claude.LoginShellEnv)),
+		Stream:        &process.Streamer{EnvFn: gitEnv(claude.LoginShellEnv)},
+		Install:       &install.Installer{},
+		Signing:       install.Signing{}.Present,
+		Recording:     recording.Recording,
+		Executable:    os.Executable,
+		Pid:           os.Getpid,
+		Quit:          emitter.Quit,
+		LogPath:       paths.UpdateLog,
+		InstallSource: paths.InstallSource,
+		Emit:          emitter,
 	})
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
 	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Meetings: st, Models: models})

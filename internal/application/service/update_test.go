@@ -191,19 +191,20 @@ func appExe(t *testing.T) string {
 }
 
 type uh struct {
-	t         *testing.T
-	svc       *UpdateService
-	src       string
-	exe       string
-	source    *memSource
-	git       *scriptGit
-	stream    *fakeStream
-	inst      *fakeInstaller
-	emit      *recEmitter
-	recording atomic.Bool
-	signing   atomic.Bool
-	quits     atomic.Int32
-	log       string
+	t           *testing.T
+	svc         *UpdateService
+	src         string
+	exe         string
+	source      *memSource
+	git         *scriptGit
+	stream      *fakeStream
+	inst        *fakeInstaller
+	emit        *recEmitter
+	recording   atomic.Bool
+	signing     atomic.Bool
+	quits       atomic.Int32
+	log         string
+	installFile string
 }
 
 func newUH(t *testing.T) *uh {
@@ -216,17 +217,18 @@ func newUH(t *testing.T) *uh {
 		stream: &fakeStream{steps: map[string]streamStep{}}, log: "/tmp/notted-test/update.log"}
 	h.source = &memSource{path: h.src}
 	h.svc = NewUpdateService(UpdateDeps{
-		Source:     h.source,
-		Git:        h.git,
-		Stream:     h.stream,
-		Install:    h.inst,
-		Signing:    func(ctx context.Context) bool { return h.signing.Load() },
-		Recording:  h.recording.Load,
-		Executable: func() (string, error) { return h.exe, nil },
-		Pid:        func() int { return 4242 },
-		Quit:       func() { h.quits.Add(1) },
-		LogPath:    func() string { return h.log },
-		Emit:       h.emit,
+		Source:        h.source,
+		Git:           h.git,
+		Stream:        h.stream,
+		Install:       h.inst,
+		Signing:       func(ctx context.Context) bool { return h.signing.Load() },
+		Recording:     h.recording.Load,
+		Executable:    func() (string, error) { return h.exe, nil },
+		Pid:           func() int { return 4242 },
+		Quit:          func() { h.quits.Add(1) },
+		LogPath:       func() string { return h.log },
+		InstallSource: func() string { return h.installFile },
+		Emit:          h.emit,
 	})
 	return h
 }
@@ -641,4 +643,79 @@ func TestSetSourceRacingStart(t *testing.T) {
 		}
 		waitUntil(t, "quit", func() bool { return h.quits.Load() >= 1 })
 	}
+}
+
+func TestInstallSourceFallback(t *testing.T) {
+	ctx := context.Background()
+	write := func(h *uh, content string) {
+		h.installFile = filepath.Join(t.TempDir(), "install-source")
+		if err := os.WriteFile(h.installFile, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Run("file absent gives an empty source", func(t *testing.T) {
+		h := newUH(t)
+		h.source.path = ""
+		h.installFile = filepath.Join(t.TempDir(), "missing")
+		st, err := h.svc.GetStatus(ctx)
+		if err != nil || st.SourcePath != "" {
+			t.Fatalf("status = %+v, err = %v", st, err)
+		}
+		if err := h.svc.Start(ctx); err == nil || err != errNoSource {
+			t.Fatalf("Start err = %v", err)
+		}
+	})
+	t.Run("no install source dependency gives an empty source", func(t *testing.T) {
+		h := newUH(t)
+		h.source.path = ""
+		h.installFile = ""
+		st, _ := h.svc.GetStatus(ctx)
+		if st.SourcePath != "" {
+			t.Fatalf("source = %q", st.SourcePath)
+		}
+	})
+	t.Run("a valid clone in the file is used", func(t *testing.T) {
+		h := newUH(t)
+		h.source.path = ""
+		write(h, h.src+"\n")
+		st, err := h.svc.GetStatus(ctx)
+		if err != nil || st.SourcePath != h.src {
+			t.Fatalf("status = %+v, err = %v", st, err)
+		}
+		if h.source.sets != 0 {
+			t.Fatalf("source was copied into settings: %d sets", h.source.sets)
+		}
+		if err := h.svc.Start(ctx); err != nil {
+			t.Fatalf("Start err = %v", err)
+		}
+		waitState(t, h.svc, "installing", "failed")
+		if got := h.stream.callList(); len(got) == 0 || got[0].dir != h.src {
+			t.Fatalf("pull did not run in the clone: %+v", got)
+		}
+		if h.source.sets != 0 {
+			t.Fatalf("source was copied into settings: %d sets", h.source.sets)
+		}
+	})
+	t.Run("an invalid path in the file is ignored", func(t *testing.T) {
+		h := newUH(t)
+		h.source.path = ""
+		write(h, filepath.Join(t.TempDir(), "gone")+"\n")
+		st, _ := h.svc.GetStatus(ctx)
+		if st.SourcePath != "" {
+			t.Fatalf("source = %q", st.SourcePath)
+		}
+		if err := h.svc.Start(ctx); err != errNoSource {
+			t.Fatalf("Start err = %v", err)
+		}
+	})
+	t.Run("the saved path wins", func(t *testing.T) {
+		h := newUH(t)
+		other := srcDir(t)
+		h.source.path = other
+		write(h, h.src+"\n")
+		st, _ := h.svc.GetStatus(ctx)
+		if st.SourcePath != other {
+			t.Fatalf("source = %q, want %q", st.SourcePath, other)
+		}
+	})
 }
