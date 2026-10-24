@@ -38,6 +38,13 @@ The first time you open Notted, it shows **Settings > Instructions** with a shor
 Every new file opens in the editor below, ready to fill in. You can also paste a full path into
 any field and click **Save settings**.
 
+To remove a teammate's profile, click **Delete a profile…** under **Profile**. Notted lists every
+file it will delete and asks first. You cannot delete the profile you are using. A project row
+shows **Create my file** when your own file for that project is missing.
+
+Notted never commits these changes: deleting and creating files only changes the archive folder,
+like any edit.
+
 ## What Notted downloads
 
 On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 640 MB for Portuguese `small`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only network call Notted makes; the `claude` program talks to Anthropic on its own.

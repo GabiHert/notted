@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { SettingsView } from "./SettingsView";
-import { GetSettings, ListProfiles, ListProjects, ListInstructionFiles, resetBindings } from "../test/bindingsMock";
+import { GetSettings, ListMyProjectKeys, ListProfiles, ListProjects, ListInstructionFiles, DeleteProfile, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("../test/codemirrorMock"));
@@ -75,4 +75,44 @@ test("a set archive loads the projects and the profiles", async () => {
   expect(ListProjects).toHaveBeenCalled();
   expect(ListProfiles).toHaveBeenCalled();
   expect(screen.getByRole("option", { name: "bruno" })).toBeInTheDocument();
+});
+
+test("ListMyProjectKeys is not called without an archive or without a profile", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "", projectRoots: {} });
+  const { unmount } = render(<SettingsView />);
+  await screen.findByLabelText("Profile");
+  unmount();
+  GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
+  render(<SettingsView />);
+  await screen.findByLabelText("acme");
+  expect(ListMyProjectKeys).not.toHaveBeenCalled();
+});
+
+test("my project keys reach the form: a key it lacks gets Create your file", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
+  ListMyProjectKeys.mockResolvedValue(["acme"]);
+  render(<SettingsView />);
+  expect(await screen.findByRole("button", { name: "Create your file for globex" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Create your file for acme" })).not.toBeInTheDocument();
+});
+
+test("a refused key list shows its message", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
+  ListMyProjectKeys.mockRejectedValue(new Error("Could not list your project files."));
+  render(<SettingsView />);
+  expect(await screen.findByText("Could not list your project files.")).toBeInTheDocument();
+});
+
+test("after a delete, settings, profiles, projects, my keys and the file list reload", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
+  render(<SettingsView />);
+  fireEvent.click(await screen.findByRole("button", { name: "Delete a profile…" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete profile bruno" }));
+  await screen.findByRole("dialog");
+  const calls = [GetSettings, ListProfiles, ListProjects, ListMyProjectKeys, ListInstructionFiles].map((f) => f.mock.calls.length);
+  fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
+  await screen.findByText("Deleted profile bruno from the archive folder.");
+  expect(DeleteProfile).toHaveBeenCalled();
+  const after = [GetSettings, ListProfiles, ListProjects, ListMyProjectKeys, ListInstructionFiles].map((f) => f.mock.calls.length);
+  after.forEach((n, i) => expect(n).toBeGreaterThan(calls[i]));
 });

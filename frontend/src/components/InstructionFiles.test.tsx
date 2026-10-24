@@ -260,3 +260,35 @@ describe("open requests and archive changes", () => {
     expect(ListInstructionFiles).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("refresh", () => {
+  test("a changed refresh reloads the list", async () => {
+    const { rerender } = render(<InstructionFiles refresh={0} />);
+    await screen.findByText("Base prompt");
+    const before = ListInstructionFiles.mock.calls.length;
+    rerender(<InstructionFiles refresh={1} />);
+    await act(async () => {});
+    expect(ListInstructionFiles.mock.calls.length).toBe(before + 1);
+  });
+
+  test("an open dirty file missing from the new list closes the editor and clears the dirty path", async () => {
+    const onDirtyPath = vi.fn();
+    const { rerender } = render(<InstructionFiles refresh={0} onDirtyPath={onDirtyPath} />);
+    await open("^acme\\.md");
+    fireEvent.change(await screen.findByLabelText("File contents"), { target: { value: "edited" } });
+    expect(onDirtyPath).toHaveBeenLastCalledWith("instructions/projects/acme.md");
+    ListInstructionFiles.mockResolvedValue(FILES.filter((f) => f.path !== "instructions/projects/acme.md"));
+    rerender(<InstructionFiles refresh={1} onDirtyPath={onDirtyPath} />);
+    expect(await screen.findByText("Choose a file to read or edit it.")).toBeInTheDocument();
+    expect(onDirtyPath).toHaveBeenLastCalledWith(null);
+  });
+
+  test("a file still listed stays open, even when dirty", async () => {
+    const { rerender } = render(<InstructionFiles refresh={0} />);
+    await open("^acme\\.md");
+    fireEvent.change(await screen.findByLabelText("File contents"), { target: { value: "edited" } });
+    rerender(<InstructionFiles refresh={1} />);
+    await act(async () => {});
+    expect(screen.getByLabelText("File contents")).toHaveValue("edited");
+  });
+});

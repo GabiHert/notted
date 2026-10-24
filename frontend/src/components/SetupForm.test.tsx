@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { SetupForm } from "./SetupForm";
-import { ChooseFolder, CloneArchive, CreateProfile, CreateProject, SetSettings, resetBindings } from "../test/bindingsMock";
+import { ChooseFolder, CloneArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -19,6 +19,7 @@ function setup(over: Record<string, unknown> = {}) {
     profilesError: "",
     onSaved: vi.fn(),
     onOpen: vi.fn(),
+    onDeleted: vi.fn(),
     ...over,
   };
   const view = render(<SetupForm {...(props as any)} />);
@@ -597,5 +598,122 @@ describe("failed saves keep what the person picked", () => {
     await screen.findByText("Settings saved.");
     expect(SetSettings).toHaveBeenLastCalledWith({ profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } });
     expect(screen.getByLabelText("Profile")).toHaveValue("ana");
+  });
+});
+
+const BRUNO_FILES = ["instructions/people/bruno.md", "instructions/people/bruno/", "instructions/people/bruno/acme.md"];
+
+describe("delete a profile", () => {
+  const openPanel = () => click("Delete a profile…");
+
+  test("the link is absent without an archive and with no profiles", () => {
+    const a = setup({ saved: { ...SAVED, checkoutPath: "" } });
+    expect(screen.queryByRole("button", { name: "Delete a profile…" })).not.toBeInTheDocument();
+    a.unmount();
+    setup({ profiles: [] });
+    expect(screen.queryByRole("button", { name: "Delete a profile…" })).not.toBeInTheDocument();
+  });
+
+  test("opens the panel with the sub-heading, help and one row per profile", () => {
+    setup();
+    openPanel();
+    expect(screen.queryByRole("button", { name: "Delete a profile…" })).not.toBeInTheDocument();
+    expect(screen.getByText("Delete a profile")).toBeInTheDocument();
+    expect(screen.getByText("Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete profile ana" })).toBeDisabled();
+    expect(screen.getByText("In use. Choose another profile above first.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete profile bruno" })).toBeEnabled();
+    expect(document.querySelectorAll(".nt-setup__person")).toHaveLength(2);
+  });
+
+  test("Delete… lists the files in the confirm; Keep profile closes it and deletes nothing", async () => {
+    setup();
+    openPanel();
+    click("Delete profile bruno");
+    const dialog = await screen.findByRole("dialog", { name: "Delete profile bruno?" });
+    expect(ListProfileFiles).toHaveBeenCalledWith("bruno");
+    expect(within(dialog).getByText("Notted deletes these files and folders from your archive folder:")).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("listitem").map((li) => li.textContent)).toEqual(BRUNO_FILES);
+    expect(within(dialog).getByText("Nothing is committed. The deletion shows in the archive's working tree, like an edit.")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep profile" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(DeleteProfile).not.toHaveBeenCalled();
+  });
+
+  test("Delete profile sends the same list, closes the panel, shows the notice and calls onDeleted", async () => {
+    const { onDeleted } = setup();
+    openPanel();
+    click("Delete profile bruno");
+    await screen.findByRole("dialog");
+    click("Delete profile");
+    expect(await screen.findByText("Deleted profile bruno from the archive folder.")).toBeInTheDocument();
+    expect(DeleteProfile).toHaveBeenCalledWith("bruno", BRUNO_FILES);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.")).not.toBeInTheDocument();
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(SetSettings).not.toHaveBeenCalled();
+  });
+
+  test("a ListProfileFiles rejection shows verbatim in the panel and opens no dialog", async () => {
+    ListProfileFiles.mockRejectedValue(new Error("bruno is the profile in use."));
+    setup();
+    openPanel();
+    click("Delete profile bruno");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("bruno is the profile in use.");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("a DeleteProfile rejection shows verbatim, keeps the panel open and still calls onDeleted; Close closes it", async () => {
+    DeleteProfile.mockRejectedValue(new Error("Deleted 1 of 3 files, then failed: permission denied"));
+    const { onDeleted } = setup();
+    openPanel();
+    click("Delete profile bruno");
+    await screen.findByRole("dialog");
+    click("Delete profile");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Deleted 1 of 3 files, then failed: permission denied");
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Delete profile bruno" })).toBeInTheDocument();
+    click("Close");
+    expect(screen.queryByRole("button", { name: "Delete profile bruno" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete a profile…" })).toHaveFocus();
+  });
+});
+
+describe("create my file", () => {
+  test("shows the button only for a project whose key my files lack", () => {
+    setup({ myProjects: ["acme"] });
+    expect(screen.getByRole("button", { name: "Create your file for globex" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create your file for acme" })).not.toBeInTheDocument();
+  });
+
+  test("shows no button with myProjects null or with no saved profile", () => {
+    const a = setup({ myProjects: null });
+    expect(screen.queryByRole("button", { name: /Create your file for/ })).not.toBeInTheDocument();
+    a.unmount();
+    setup({ myProjects: [], saved: { ...SAVED, profile: "" } });
+    expect(screen.queryByRole("button", { name: /Create your file for/ })).not.toBeInTheDocument();
+  });
+
+  test("a click creates the file, shows the notice, saves and opens it", async () => {
+    const { onSaved, onOpen } = setup({ myProjects: ["acme"] });
+    click("Create your file for globex");
+    expect(await screen.findByText("Created instructions/people/ana/globex.md. Fill it in below.")).toBeInTheDocument();
+    expect(CreateMyProjectFile).toHaveBeenCalledWith("globex");
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith("instructions/people/ana/globex.md");
+  });
+
+  test("a rejection shows verbatim in the card's alert", async () => {
+    CreateMyProjectFile.mockRejectedValue(new Error("Your file for globex already exists."));
+    setup({ myProjects: ["acme"] });
+    click("Create your file for globex");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your file for globex already exists.");
+  });
+
+  test("myProjectsError shows verbatim and no button exists", () => {
+    setup({ myProjects: null, myProjectsError: "Could not list your project files." });
+    expect(screen.getByText("Could not list your project files.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Create your file for/ })).not.toBeInTheDocument();
   });
 });

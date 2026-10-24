@@ -22,9 +22,9 @@ function itemName(f: File): string {
 }
 
 type OpenRequest = { path: string; seq: number };
-type Props = { onDirtyPath?: (path: string | null) => void; archivePath?: string; openRequest?: OpenRequest | null };
+type Props = { onDirtyPath?: (path: string | null) => void; archivePath?: string; openRequest?: OpenRequest | null; refresh?: number };
 
-export function InstructionFiles({ onDirtyPath, archivePath = "", openRequest = null }: Props = {}) {
+export function InstructionFiles({ onDirtyPath, archivePath = "", openRequest = null, refresh = 0 }: Props = {}) {
   const [files, setFiles] = useState<File[] | null>(null);
   const [listError, setListError] = useState("");
   const [selected, setSelected] = useState<File | null>(null);
@@ -82,6 +82,22 @@ export function InstructionFiles({ onDirtyPath, archivePath = "", openRequest = 
       card.current?.scrollIntoView?.({ block: "start" });
     });
   }, [seq]); // eslint-disable-line react-hooks/exhaustive-deps
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  // A reload after files were deleted closes an open file that no longer exists; a listed file stays open.
+  useEffect(() => {
+    if (refresh === 0) return;
+    load((list) => {
+      const has = (f: File | null) => f !== null && list.some((x) => x.path === f.path);
+      if (selectedRef.current && !has(selectedRef.current)) {
+        setSelected(null);
+        setDirty(false);
+      }
+      if (pendingRef.current && !has(pendingRef.current)) setPending(null);
+    });
+  }, [refresh]); // eslint-disable-line react-hooks/exhaustive-deps
   const discard = () => {
     setDirty(false);
     setSelected(pending);

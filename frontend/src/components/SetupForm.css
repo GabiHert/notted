@@ -33,7 +33,7 @@
 }
 .nt-setup__root {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr) auto;
+  grid-template-columns: 140px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
@@ -97,4 +97,16 @@
 .nt-setup__notice {
   color: var(--fg3-text);
   font-size: 12px;
+}
+.nt-setup__person {
+  display: grid;
+  grid-template-columns: 140px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.nt-setup__person-name {
+  font-size: 13px;
+  color: var(--fg);
+  overflow-wrap: anywhere;
 }

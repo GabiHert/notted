@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GetSettings, ListProfiles, ListProjects, type wails } from "../api/bindings";
+import { GetSettings, ListMyProjectKeys, ListProfiles, ListProjects, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
 import { InstructionFiles } from "./InstructionFiles";
 import { PromptPreview } from "./PromptPreview";
@@ -16,6 +16,9 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
   const [projectsError, setProjectsError] = useState("");
   const [profiles, setProfiles] = useState<string[]>([]);
   const [profilesError, setProfilesError] = useState("");
+  const [myProjects, setMyProjects] = useState<string[] | null>(null);
+  const [myProjectsError, setMyProjectsError] = useState("");
+  const [filesRefresh, setFilesRefresh] = useState(0);
   const [openRequest, setOpenRequest] = useState<OpenRequest | null>(null);
   const request = useRef(0);
   const seq = useRef(0);
@@ -34,7 +37,25 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
           setProjectsError("");
           setProfiles([]);
           setProfilesError("");
+          setMyProjects(null);
+          setMyProjectsError("");
           return;
+        }
+        if (!s.profile) {
+          setMyProjects(null);
+          setMyProjectsError("");
+        } else {
+          ListMyProjectKeys()
+            .then((list) => {
+              if (!current()) return;
+              setMyProjects(list ?? []);
+              setMyProjectsError("");
+            })
+            .catch((e) => {
+              if (!current()) return;
+              setMyProjects(null);
+              setMyProjectsError(errorMessage(e));
+            });
         }
         ListProjects()
           .then((list) => {
@@ -67,6 +88,8 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         setProjectsError("");
         setProfiles([]);
         setProfilesError("");
+        setMyProjects(null);
+        setMyProjectsError("");
       });
   }, []);
 
@@ -79,6 +102,11 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
 
   const open = useCallback((path: string) => setOpenRequest({ path, seq: ++seq.current }), []);
 
+  const onDeleted = useCallback(() => {
+    reload();
+    setFilesRefresh((n) => n + 1);
+  }, [reload]);
+
   return (
     <div className="nt-settings">
       <h1>Settings</h1>
@@ -89,8 +117,8 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
       </div>
       <div role="tabpanel" id="nt-panel-instructions" aria-labelledby="nt-tab-instructions">
         {saved && (saved.checkoutPath === "" || saved.profile === "") && <WelcomeCard saved={saved} />}
-        <SetupForm saved={saved} settingsError={settingsError} projects={projects} projectsError={projectsError} profiles={profiles} profilesError={profilesError} onSaved={reload} onOpen={open} />
-        <InstructionFiles onDirtyPath={onDirtyPath} archivePath={saved?.checkoutPath ?? ""} openRequest={openRequest} />
+        <SetupForm saved={saved} settingsError={settingsError} projects={projects} projectsError={projectsError} profiles={profiles} profilesError={profilesError} myProjects={myProjects} myProjectsError={myProjectsError} onDeleted={onDeleted} onSaved={reload} onOpen={open} />
+        <InstructionFiles onDirtyPath={onDirtyPath} archivePath={saved?.checkoutPath ?? ""} openRequest={openRequest} refresh={filesRefresh} />
         <PromptPreview projects={projects} projectsError={projectsError} />
       </div>
     </div>

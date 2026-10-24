@@ -26,6 +26,10 @@ export function initPreview(): View {
     case "setup-new-profile":
     case "setup-new-project":
     case "setup-project-created":
+    case "setup-delete-profile":
+    case "setup-delete-confirm":
+    case "setup-my-file":
+    case "setup-my-file-created":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -76,6 +80,7 @@ function autoDriveSettings(screen: string) {
     return Boolean(btn);
   };
   const open = (name: string) => () => click((b) => b.textContent === name);
+  const byLabel = (label: string) => () => click((b) => b.getAttribute("aria-label") === label);
   const edit = () => {
     const cm = document.querySelector<HTMLElement>(".cm-content");
     if (!cm) return false;
@@ -115,6 +120,9 @@ function autoDriveSettings(screen: string) {
     "setup-new-profile": [pick("#nt-profile", "__new__"), typeInto("#nt-new-profile", "carla")],
     "setup-new-project": newProject,
     "setup-project-created": [...newProject, open("Create project")],
+    "setup-delete-profile": [open("Delete a profile…")],
+    "setup-delete-confirm": [open("Delete a profile…"), byLabel("Delete profile bruno")],
+    "setup-my-file-created": [byLabel("Create your file for globex")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

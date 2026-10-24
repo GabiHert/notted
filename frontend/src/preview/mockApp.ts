@@ -92,13 +92,15 @@ const PROMPT =
   "\x1b[1m> /suggest\x1b[0m\r\n\r\nI can write the suggestions to the meeting folder.\r\n\r\n" +
   "Do you want to create suggestions.md?\r\n \x1b[36m1.\x1b[0m Yes\r\n  2. Yes, and allow all edits this session\r\n  3. No\r\n\r\n";
 const ARCHIVE = "/Users/ana/meetings-archive";
-const setupScreens = ["first-run", "setup-clone-failed", "setup-profile", "setup-new-profile", "setup-new-project", "setup-project-created"];
+const setupScreens = ["first-run", "setup-clone-failed", "setup-profile", "setup-new-profile", "setup-new-project", "setup-project-created", "setup-delete-profile", "setup-delete-confirm", "setup-my-file", "setup-my-file-created"];
 let projectCreated = false;
+let myFileCreated = false;
 export async function GetSettings() {
   if (screen === "first-run" || screen === "setup-clone-failed") return { profile: "", checkoutPath: "", projectRoots: {} };
   if (screen === "setup-profile" || screen === "setup-new-profile") return { profile: "", checkoutPath: ARCHIVE, projectRoots: {} };
   if (screen === "setup-new-project" || screen === "setup-project-created") return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
+  if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
@@ -126,18 +128,34 @@ const instructionText: Record<string, string> = {
   "instructions/local/notes.md": "# Local notes\n",
   "instructions/projects/initech-web.md": "# Project: initech-web\n\n## Key\ninitech-web\n\n## Name\n\n## Aliases\n\n## About\n\n## Existing work\n",
   "instructions/people/ana/initech-web.md": "# ana — initech-web\n\n## Project root\n\n## Tools\n",
+  "instructions/people/ana/globex.md": "# ana — globex\n\n## Project root\n\n## Tools\n",
 };
 const createdFiles = [
   { path: "instructions/projects/initech-web.md", kind: "project", readOnly: false },
   { path: "instructions/people/ana/initech-web.md", kind: "person-project", readOnly: false },
 ];
+const myFileCreatedEntry = { path: "instructions/people/ana/globex.md", kind: "person-project", readOnly: false };
 export async function ListInstructionFiles() {
   if (screen === "first-run" || screen === "setup-clone-failed") return [];
   if (screen === "setup-project-created" && projectCreated) return [...instructionFiles, ...createdFiles];
+  if (screen === "setup-my-file-created" && myFileCreated) return [...instructionFiles, myFileCreatedEntry];
   return instructionFiles;
 }
 export async function ListProfiles() {
   return ["ana", "bruno"];
+}
+export async function ListProfileFiles(name: string) {
+  return [`instructions/people/${name}.local.md`, `instructions/people/${name}.md`, `instructions/people/${name}/`, `instructions/people/${name}/acme.md`, `instructions/people/${name}/globex.md`];
+}
+export async function DeleteProfile(_name: string, _files: string[]) {}
+export async function ListMyProjectKeys() {
+  if (screen === "setup-project-created" && projectCreated) return ["acme", "initech-web"];
+  if (screen === "setup-my-file-created" && myFileCreated) return ["acme", "globex"];
+  return ["acme"];
+}
+export async function CreateMyProjectFile(key: string) {
+  myFileCreated = true;
+  return `instructions/people/ana/${key}.md`;
 }
 export async function ChooseFolder(_title: string, _startDir: string) {
   return ARCHIVE;
@@ -174,6 +192,7 @@ export async function StopSession(_id: string) {}
 
 export async function ListProjects() {
   if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its projects.");
+  if (screen === "setup-my-file" || screen === "setup-my-file-created") return ["acme", "globex"];
   if (setupScreens.includes(screen)) return screen === "setup-project-created" && projectCreated ? ["acme", "initech-web"] : ["acme"];
   return projectsEmpty ? [] : projectFixtures;
 }

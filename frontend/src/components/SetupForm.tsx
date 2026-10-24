@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ChooseFolder, CloneArchive, CreateProfile, CreateProject, SetSettings, type wails } from "../api/bindings";
+import { ChooseFolder, CloneArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
+import { ConfirmDialog } from "./ConfirmDialog";
 import "./SetupForm.css";
 
 type Props = {
@@ -10,6 +11,9 @@ type Props = {
   projectsError: string;
   profiles: string[];
   profilesError: string;
+  myProjects?: string[] | null;
+  myProjectsError?: string;
+  onDeleted?: () => void;
   onSaved: () => void;
   onOpen: (path: string) => void;
 };
@@ -36,7 +40,7 @@ function ErrorCard({ text }: { text: string }) {
 
 // One busy flag covers every call in the card, so nothing can run twice or overlap.
 // A result that arrives after unmount, or after its inline form was closed, is dropped.
-export function SetupForm({ saved, settingsError, projects, projectsError, profiles, profilesError, onSaved, onOpen }: Props) {
+export function SetupForm({ saved, settingsError, projects, projectsError, profiles, profilesError, myProjects = null, myProjectsError = "", onDeleted = () => {}, onSaved, onOpen }: Props) {
   const [checkoutPath, setCheckoutPath] = useState(saved?.checkoutPath ?? "");
   const [roots, setRoots] = useState<Record<string, string>>({ ...(saved?.projectRoots ?? {}) });
   const [profile, setProfile] = useState(saved?.profile ?? "");
@@ -57,6 +61,10 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const [newProject, setNewProject] = useState("");
   const [projectError, setProjectError] = useState("");
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [confirm, setConfirm] = useState<{ name: string; files: string[] } | null>(null);
+
   const live = useRef(true);
   const prevSaved = useRef(saved);
   const busyRef = useRef(false);
@@ -67,6 +75,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const cloneLink = useRef<HTMLButtonElement>(null);
   const profileSelect = useRef<HTMLSelectElement>(null);
   const projectButton = useRef<HTMLButtonElement>(null);
+  const deleteLink = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     live.current = true;
@@ -117,6 +126,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     setCloneError("");
     setProfileError("");
     setProjectError("");
+    setDeleteError("");
     return true;
   };
   const end = () => {
@@ -289,6 +299,58 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     }
   };
 
+  const closeDelete = () => {
+    epoch.current++;
+    setDeleteOpen(false);
+    setDeleteError("");
+    refocus.current = () => deleteLink.current?.focus();
+  };
+  const askDelete = async (name: string) => {
+    if (!begin("other")) return;
+    const mine = epoch.current;
+    try {
+      const files = await ListProfileFiles(name);
+      if (!live.current || epoch.current !== mine) return;
+      setConfirm({ name, files: files ?? [] });
+    } catch (e) {
+      if (epoch.current === mine) fail(setDeleteError)(e);
+    } finally {
+      end();
+    }
+  };
+  const doDelete = async () => {
+    if (!confirm || !begin("other")) return;
+    const { name, files } = confirm;
+    setConfirm(null);
+    try {
+      await DeleteProfile(name, files);
+      if (!live.current) return;
+      closeDelete();
+      setNotice(`Deleted profile ${name} from the archive folder.`);
+      onDeleted();
+    } catch (e) {
+      fail(setDeleteError)(e);
+      if (live.current) onDeleted();
+    } finally {
+      end();
+    }
+  };
+
+  const createMyFile = async (key: string) => {
+    if (!begin("other")) return;
+    try {
+      const path = await CreateMyProjectFile(key);
+      if (!live.current) return;
+      setNotice(`Created ${path}. Fill it in below.`);
+      onSaved();
+      onOpen(path);
+    } catch (e) {
+      fail(setError)(e);
+    } finally {
+      end();
+    }
+  };
+
   const loaded = saved !== null || settingsError !== "";
   const extra = [saved?.profile ?? "", profile].filter((n, i, a) => n && !profiles.includes(n) && a.indexOf(n) === i);
   const names = [...profiles, ...extra];
@@ -367,6 +429,37 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
             </select>
             <span className="nt-setup__help nt-setup__help--block">{hasArchive ? "Your file in instructions/people/ of the archive." : "Choose the archive folder first."}</span>
             {profilesError && <p className="nt-setup__help nt-setup__help--block">{profilesError}</p>}
+            {hasArchive && profiles.length > 0 && !deleteOpen && (
+              <div>
+                <button type="button" ref={deleteLink} className="nt-btn--link" disabled={busy !== ""} onClick={() => setDeleteOpen(true)}>
+                  Delete a profile…
+                </button>
+              </div>
+            )}
+            {hasArchive && deleteOpen && (
+              <div className="nt-setup__inline">
+                <div className="nt-setup__sub">Delete a profile</div>
+                <span className="nt-setup__help">Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.</span>
+                {profiles.map((name) => {
+                  const inUse = name === saved?.profile;
+                  return (
+                    <div className="nt-setup__person" key={name}>
+                      <span className="nt-setup__person-name">{name}</span>
+                      <button type="button" className="nt-btn" aria-label={"Delete profile " + name} disabled={busy !== "" || inUse} onClick={() => askDelete(name)}>
+                        Delete…
+                      </button>
+                      {inUse ? <span className="nt-setup__help">In use. Choose another profile above first.</span> : <span />}
+                    </div>
+                  );
+                })}
+                {deleteError && <ErrorCard text={deleteError} />}
+                <div className="nt-setup__actions">
+                  <button type="button" className="nt-btn" onClick={closeDelete} disabled={busy !== ""}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
             {profileOpen && (
               <div className="nt-setup__inline">
                 <label htmlFor="nt-new-profile">New profile name</label>
@@ -389,6 +482,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
             <div className="nt-setup__sub">Projects</div>
             <span className="nt-setup__help">Optional. A folder per project that Claude Code may read during that project's meetings.</span>
             {!hasArchive && <p className="nt-setup__help nt-setup__help--block">Choose the archive folder first.</p>}
+            {hasArchive && hasProfile && myProjectsError && <p className="nt-setup__help nt-setup__help--block">{myProjectsError}</p>}
             {hasArchive && projectsError && <p className="nt-setup__help nt-setup__help--block">{projectsError}</p>}
             {hasArchive && !projectsError && projects.length === 0 && <p className="nt-setup__help nt-setup__help--block">No projects yet. Add one with New project.</p>}
             {hasArchive &&
@@ -397,6 +491,13 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
                   <label htmlFor={"nt-root-" + key}>{key}</label>
                   <input id={"nt-root-" + key} placeholder="/full/path/to/the/project" value={roots[key] ?? ""} onChange={(e) => setRoots({ ...roots, [key]: e.target.value })} />
                   <Choose label={"Choose the root folder for " + key} onClick={() => pickRoot(key)} disabled={busy !== ""} />
+                  {hasProfile && myProjects !== null && !myProjectsError && !myProjects.includes(key) ? (
+                    <button type="button" className="nt-btn" aria-label={"Create your file for " + key} onClick={() => createMyFile(key)} disabled={busy !== ""}>
+                      Create my file
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                 </div>
               ))}
             <div className="nt-setup__new">
@@ -431,6 +532,18 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
             {notice && <span className="nt-setup__notice">{notice}</span>}
           </div>
         </>
+      )}
+      {confirm && (
+        <ConfirmDialog
+          title={`Delete profile ${confirm.name}?`}
+          body="Notted deletes these files and folders from your archive folder:"
+          items={confirm.files}
+          hint="Nothing is committed. The deletion shows in the archive's working tree, like an edit."
+          cancelLabel="Keep profile"
+          confirmLabel="Delete profile"
+          onCancel={() => setConfirm(null)}
+          onConfirm={doDelete}
+        />
       )}
     </section>
   );

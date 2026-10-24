@@ -42,6 +42,10 @@ export const CloneArchive = vi.fn();
 export const ListProfiles = vi.fn();
 export const CreateProfile = vi.fn();
 export const CreateProject = vi.fn();
+export const ListProfileFiles = vi.fn();
+export const DeleteProfile = vi.fn();
+export const ListMyProjectKeys = vi.fn();
+export const CreateMyProjectFile = vi.fn();
 export const StartSession = vi.fn();
 export const WriteSession = vi.fn();
 export const ResizeSession = vi.fn();
@@ -49,7 +53,7 @@ export const StopSession = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, ListProfiles, CreateProfile, CreateProject, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -79,6 +83,10 @@ export function resetBindings() {
   ListProfiles.mockResolvedValue(["ana", "bruno"]);
   CreateProfile.mockResolvedValue("instructions/people/carla.md");
   CreateProject.mockResolvedValue(["instructions/projects/initech-web.md", "instructions/people/ana/initech-web.md"]);
+  ListProfileFiles.mockResolvedValue(["instructions/people/bruno.md", "instructions/people/bruno/", "instructions/people/bruno/acme.md"]);
+  DeleteProfile.mockResolvedValue(undefined);
+  ListMyProjectKeys.mockResolvedValue(["acme", "globex"]);
+  CreateMyProjectFile.mockResolvedValue("instructions/people/ana/globex.md");
   StartSession.mockResolvedValue(undefined);
   WriteSession.mockResolvedValue(undefined);
   ResizeSession.mockResolvedValue(undefined);
