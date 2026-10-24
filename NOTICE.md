@@ -39,3 +39,5 @@ SOFTWARE.
 | `internal/integration/speech/sherpa.go` | `internal/integration/voice/engine/sherpaengine/sherpaengine.go` (lines 1-97, 124-132, 199-292, 354-381, 472-555) | speech-to-text only; Kokoro removed; language per call; decodes with wavinfo.DecodeWAV |
 | `internal/integration/speech/manifest.go` | `internal/integration/voiceruntime/manifest.go` (lines 13-110) | NOTTED_MODEL_MANIFEST; per-language selection; raw-file artifacts |
 | `internal/integration/speech/download.go` | `internal/integration/voiceruntime/download.go` (lines 1-237) | folders as parameters; raw-file install |
+| `internal/integration/claude/env.go` | `internal/application/service/job_manager.go` (lines 1827-1848) | renamed LoginShellEnv; added CleanEnv and LookPath |
+| `internal/integration/claude/runner.go` | `internal/application/service/job_manager.go` (lines 844-982) | fixed read-only argument lists; no shell; no stream-json; credentials removed; never the permission-skipping flag |
