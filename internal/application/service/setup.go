@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ var (
 	errNoProjectKey  = errors.New("Enter a key for the new project.")
 	errProjectKey    = errors.New(`Project key must use lowercase letters, digits and dashes, like "acme" or "acme-web".`)
 	errProfileUnset  = errors.New("Set your profile in Settings > Instructions first.")
+	errNoDeleteName  = errors.New("Choose a profile to delete.")
+	errProfileInUse  = errors.New("You cannot delete the profile in use. Choose another profile first.")
 )
 
 // cloneTimeout bounds one git clone; tests shorten it.
@@ -254,6 +257,101 @@ func (s *SetupService) CreateProject(ctx context.Context, key string) ([]string,
 		created = append(created, q)
 	}
 	return created, nil
+}
+
+// profileList runs every check and returns the archive folder, the trimmed name and the current list.
+func (s *SetupService) profileList(ctx context.Context, name string) (checkout, n string, list []string, err error) {
+	st, err := s.settings.GetSettings(ctx)
+	if err != nil {
+		return "", "", nil, err
+	}
+	if st.CheckoutPath == "" {
+		return "", "", nil, errNoArchive
+	}
+	n = strings.TrimSpace(name)
+	if n == "" {
+		return "", "", nil, errNoDeleteName
+	}
+	if !keyRe.MatchString(n) {
+		return "", "", nil, errProfileFormat
+	}
+	if n == st.Profile {
+		return "", "", nil, errProfileInUse
+	}
+	list, err = profileFiles(st.CheckoutPath, n)
+	if err != nil {
+		return "", "", nil, err
+	}
+	return st.CheckoutPath, n, list, nil
+}
+
+// ListProfileFiles returns every file and folder that deleting the profile would remove.
+func (s *SetupService) ListProfileFiles(ctx context.Context, name string) ([]string, error) {
+	_, _, list, err := s.profileList(ctx, name)
+	return list, err
+}
+
+// DeleteProfile deletes exactly the files ListProfileFiles returns now, when they equal files; it never runs git.
+func (s *SetupService) DeleteProfile(ctx context.Context, name string, files []string) error {
+	checkout, n, list, err := s.profileList(ctx, name)
+	if err != nil {
+		return err
+	}
+	if !slices.Equal(list, files) {
+		return fmt.Errorf("The files of profile %q changed. Review the list again before deleting.", n)
+	}
+	return removeListed(checkout, list)
+}
+
+// ListMyProjectKeys returns the projects the saved profile has its own file for.
+func (s *SetupService) ListMyProjectKeys(ctx context.Context) ([]string, error) {
+	st, err := s.settings.GetSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if st.CheckoutPath == "" {
+		return nil, errNoArchive
+	}
+	if st.Profile == "" {
+		return nil, errProfileUnset
+	}
+	return listMarkdownKeys(st.CheckoutPath, "instructions/people/"+st.Profile)
+}
+
+// CreateMyProjectFile creates the saved profile's file for an existing project and returns its path.
+func (s *SetupService) CreateMyProjectFile(ctx context.Context, key string) (string, error) {
+	st, err := s.settings.GetSettings(ctx)
+	if err != nil {
+		return "", err
+	}
+	if st.CheckoutPath == "" {
+		return "", errNoArchive
+	}
+	if st.Profile == "" {
+		return "", errProfileUnset
+	}
+	k := strings.TrimSpace(key)
+	if k == "" {
+		return "", errNoProjectKey
+	}
+	if !keyRe.MatchString(k) {
+		return "", errProjectKey
+	}
+	has, err := instructionExists(st.CheckoutPath, "instructions/projects/"+k+".md")
+	if err != nil {
+		return "", err
+	}
+	if !has {
+		return "", fmt.Errorf("There is no project %q in the archive. Create it with New project.", k)
+	}
+	q := "instructions/people/" + st.Profile + "/" + k + ".md"
+	if err := createInstruction(st.CheckoutPath, q, personProjectTemplate(st.Profile, k)); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return "", fmt.Errorf("%s already exists.", q)
+		}
+		return "", err
+	}
+	return q, nil
 }
 
 func personTemplate(name string) string {

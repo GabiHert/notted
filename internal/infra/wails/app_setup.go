@@ -43,3 +43,23 @@ func (a *App) CreateProfile(name string) (string, error) {
 func (a *App) CreateProject(key string) ([]string, error) {
 	return a.setup.CreateProject(a.context(), key)
 }
+
+// ListProfileFiles returns every file and folder that deleting the profile would remove.
+func (a *App) ListProfileFiles(name string) ([]string, error) {
+	return a.setup.ListProfileFiles(a.context(), name)
+}
+
+// DeleteProfile deletes exactly the files ListProfileFiles returned; it never commits.
+func (a *App) DeleteProfile(name string, files []string) error {
+	return a.setup.DeleteProfile(a.context(), name, files)
+}
+
+// ListMyProjectKeys returns the projects the saved profile has its own file for.
+func (a *App) ListMyProjectKeys() ([]string, error) {
+	return a.setup.ListMyProjectKeys(a.context())
+}
+
+// CreateMyProjectFile creates the saved profile's file for a project and returns its path.
+func (a *App) CreateMyProjectFile(key string) (string, error) {
+	return a.setup.CreateMyProjectFile(a.context(), key)
+}

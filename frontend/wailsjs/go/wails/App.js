@@ -18,12 +18,20 @@ export function CommitAndPushMeeting(arg1) {
   return window['go']['wails']['App']['CommitAndPushMeeting'](arg1);
 }
 
+export function CreateMyProjectFile(arg1) {
+  return window['go']['wails']['App']['CreateMyProjectFile'](arg1);
+}
+
 export function CreateProfile(arg1) {
   return window['go']['wails']['App']['CreateProfile'](arg1);
 }
 
 export function CreateProject(arg1) {
   return window['go']['wails']['App']['CreateProject'](arg1);
+}
+
+export function DeleteProfile(arg1, arg2) {
+  return window['go']['wails']['App']['DeleteProfile'](arg1, arg2);
 }
 
 export function DownloadModels(arg1) {
@@ -60,6 +68,14 @@ export function ListInstructionFiles() {
 
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function ListMyProjectKeys() {
+  return window['go']['wails']['App']['ListMyProjectKeys']();
+}
+
+export function ListProfileFiles(arg1) {
+  return window['go']['wails']['App']['ListProfileFiles'](arg1);
 }
 
 export function ListProfiles() {

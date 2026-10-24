@@ -388,3 +388,171 @@ func instructionExists(checkout, rel string) (bool, error) {
 	}
 	return true, nil
 }
+
+func notRegularErr(rel string) error {
+	return fmt.Errorf("Notted cannot delete %s: it is not a regular file.", rel)
+}
+
+// profileFiles lists every file and folder of the person name under instructions/people/, sorted;
+// folder entries end in "/". It refuses links and special files and deletes nothing.
+func profileFiles(checkout, name string) ([]string, error) {
+	base := "instructions/people/" + name
+	a, b, d := base+".md", base+".local.md", base
+	var realRoot string
+	for _, rel := range []string{a, b, d} {
+		r, err := confine(checkout, rel)
+		if err != nil {
+			return nil, err
+		}
+		realRoot = r
+	}
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+
+	var list []string
+	for _, rel := range []string{a, b} {
+		fi, err := root.Lstat(filepath.FromSlash(rel))
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return nil, mapRootErr(err)
+		}
+		if fi.Mode()&fs.ModeSymlink != 0 {
+			return nil, errOutside
+		}
+		if !fi.Mode().IsRegular() {
+			return nil, notRegularErr(rel)
+		}
+		list = append(list, rel)
+	}
+
+	fi, err := root.Lstat(filepath.FromSlash(d))
+	switch {
+	case err == nil:
+		if fi.Mode()&fs.ModeSymlink != 0 {
+			return nil, errOutside
+		}
+		if !fi.IsDir() {
+			return nil, fmt.Errorf("Notted cannot delete %s: it is not a folder.", d)
+		}
+		list = append(list, d+"/")
+		list, err = walkProfileDir(root, d, list)
+		if err != nil {
+			return nil, err
+		}
+	case !errors.Is(err, fs.ErrNotExist):
+		return nil, mapRootErr(err)
+	}
+
+	if len(list) == 0 {
+		return nil, fmt.Errorf("There is no profile %q in the archive.", name)
+	}
+	sort.Strings(list)
+	return list, nil
+}
+
+func walkProfileDir(root *os.Root, dir string, list []string) ([]string, error) {
+	f, err := root.Open(filepath.FromSlash(dir))
+	if err != nil {
+		return nil, mapRootErr(err)
+	}
+	entries, err := f.ReadDir(-1)
+	f.Close()
+	if err != nil {
+		return nil, mapRootErr(err)
+	}
+	for _, e := range entries {
+		rel := dir + "/" + e.Name()
+		switch {
+		case e.Type()&fs.ModeSymlink != 0:
+			return nil, errOutside
+		case e.IsDir():
+			list = append(list, rel+"/")
+			if list, err = walkProfileDir(root, rel, list); err != nil {
+				return nil, err
+			}
+		case e.Type().IsRegular():
+			list = append(list, rel)
+		default:
+			return nil, notRegularErr(rel)
+		}
+	}
+	return list, nil
+}
+
+// removeListed deletes exactly the listed paths: files first, in list order, then folders in
+// reverse list order (deepest first), each with os.Root.Remove, so a folder goes only when empty.
+func removeListed(checkout string, list []string) error {
+	realRoot, err := confine(checkout, "instructions/people")
+	if err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+	rm := func(rel string) error {
+		if err := root.Remove(filepath.FromSlash(strings.TrimSuffix(rel, "/"))); err != nil {
+			return fmt.Errorf("Notted could not delete %s: %v. The files listed before it are already deleted.", rel, mapRootErr(err))
+		}
+		return nil
+	}
+	for _, rel := range list {
+		if !strings.HasSuffix(rel, "/") {
+			if err := rm(rel); err != nil {
+				return err
+			}
+		}
+	}
+	for i := len(list) - 1; i >= 0; i-- {
+		if strings.HasSuffix(list[i], "/") {
+			if err := rm(list[i]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// listMarkdownKeys returns the sorted stems of the regular *.md files directly in dir whose stem
+// matches keyRe; a missing dir gives []string{}. Never nil.
+func listMarkdownKeys(checkout, dir string) ([]string, error) {
+	realRoot, err := confine(checkout, dir)
+	if err != nil {
+		return nil, err
+	}
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	d, err := root.Open(filepath.FromSlash(dir))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return []string{}, nil
+		}
+		return nil, mapRootErr(err)
+	}
+	defer d.Close()
+	entries, err := d.ReadDir(-1)
+	if err != nil {
+		return nil, mapRootErr(err)
+	}
+	out := []string{}
+	for _, e := range entries {
+		n := e.Name()
+		if !e.Type().IsRegular() || !strings.HasSuffix(n, ".md") {
+			continue
+		}
+		if stem := strings.TrimSuffix(n, ".md"); keyRe.MatchString(stem) {
+			out = append(out, stem)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}

@@ -10,9 +10,13 @@ export function CloneArchive(arg1:string,arg2:string):Promise<string>;
 
 export function CommitAndPushMeeting(arg1:string):Promise<wails.CommitDTO>;
 
+export function CreateMyProjectFile(arg1:string):Promise<string>;
+
 export function CreateProfile(arg1:string):Promise<string>;
 
 export function CreateProject(arg1:string):Promise<Array<string>>;
+
+export function DeleteProfile(arg1:string,arg2:Array<string>):Promise<void>;
 
 export function DownloadModels(arg1:string):Promise<void>;
 
@@ -31,6 +35,10 @@ export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 export function ListInstructionFiles():Promise<Array<wails.InstructionFileDTO>>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function ListMyProjectKeys():Promise<Array<string>>;
+
+export function ListProfileFiles(arg1:string):Promise<Array<string>>;
 
 export function ListProfiles():Promise<Array<string>>;
 
