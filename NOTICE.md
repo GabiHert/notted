@@ -44,6 +44,7 @@ SOFTWARE.
 | `internal/integration/process/manager.go` | `internal/integration/process/manager.go` (lines 85-115, 245-494, 551-562) | generic argv from the caller; no shell, persona, MCP, output file or remote; Wails events per meeting; no automatic respawn; the permission-skipping flag removed |
 | `internal/application/service/instructions_fs.go` | `internal/application/service/file_service.go` (lines 70-104, 198-238, 311-332) | rooted at the archive folder; instruction patterns only; no events |
 | `frontend/src/components/MarkdownView.tsx` | `frontend/src/components/MarkdownView.tsx` (lines 1-32) | no Mermaid, no highlighting; Ledger notes style |
+| `frontend/src/components/TerminalPane.tsx` | `frontend/src/components/TerminalPane.tsx` (lines 1-4, 36-145, 425-470, 590-645) | per-meeting events; direct bindings; Ledger colours; no replay, voice or remote |
 | `scripts/fixup-macos-dylibs.sh` | `scripts/fixup-macos-dylibs.sh` (lines 1-154) | Notted paths |
 
 ## Fonts

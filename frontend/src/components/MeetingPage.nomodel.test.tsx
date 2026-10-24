@@ -23,10 +23,10 @@ test("a summarized meeting page has no model, provider or API key control", asyn
   expect(document.body.textContent).not.toMatch(/provider|api key/i);
 });
 
-test("the Client, Summary and Suggestions cards sit in that order below the transcript", async () => {
+test("the Client, Summary, Suggestions and session cards sit in that order below the transcript", async () => {
   GetMeeting.mockResolvedValue(meeting());
   render(<MeetingPage meetingId="m1" />);
   await screen.findByText("Transcript");
   const headers = [...document.querySelectorAll(".nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Transcript", "Client", "Summary", "Suggestions"]);
+  expect(headers).toEqual(["Transcript", "Client", "Summary", "Suggestions", "Claude Code session"]);
 });

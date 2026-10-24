@@ -26,7 +26,27 @@ export function initPreview(): View {
     case "save-dialog":
     case "save-failed":
       return { kind: "meeting", id: "fx-ready" };
+    case "session-closed":
+    case "session-no-folder":
+    case "session-error":
+      return { kind: "meeting", id: "fx-session" };
+    case "session-open":
+    case "session-ended":
+      autoOpenSession();
+      return { kind: "meeting", id: "fx-session" };
     default:
       return { kind: "meeting", id: "fx-recording" };
   }
+}
+
+// Preview only: press "Open session" once the card has rendered, so a screenshot URL shows the terminal.
+function autoOpenSession() {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Open session" && !b.disabled);
+    if (btn) {
+      window.clearInterval(timer);
+      btn.click();
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
 }

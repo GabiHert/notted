@@ -24,6 +24,19 @@ const meetings = [
       "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n\n## Decisions\n\n- Keep the current vendor until March\n- Move the review to **Fridays**\n\n## Open questions\n\n1. Who owns the `forecast.xlsx` update?\n2. Is the second invoice already paid?\n",
     suggestionsMd: "# Suggestions\n\n- [ ] Send the draft budget to the acme team\n- [ ] Book the Friday review\n- [x] Share last week's notes\n",
   },
+  {
+    id: "fx-session",
+    title: "Budget review",
+    startedAt: "2026-10-19T15:00:00",
+    endedAt: "2026-10-19T15:50:00",
+    language: "en",
+    clientKey: "acme",
+    state: "summarized",
+    hasSession: true,
+    folder: "clients/acme/2026-10-19-budget-review",
+    summaryMd: "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n",
+    suggestionsMd: "# Suggestions\n\n- [ ] Send the draft budget to the acme team\n",
+  },
 ];
 
 const transcript = [
@@ -74,6 +87,21 @@ if (screen === "save-dialog" || screen === "save-failed") {
     }),
   );
 }
+
+const PROMPT =
+  "\x1b[1m> /suggest\x1b[0m\r\n\r\nI can write the suggestions to the meeting folder.\r\n\r\n" +
+  "Do you want to create suggestions.md?\r\n \x1b[36m1.\x1b[0m Yes\r\n  2. Yes, and allow all edits this session\r\n  3. No\r\n\r\n";
+export async function GetSettings() {
+  return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
+}
+export async function StartSession(id: string) {
+  if (screen === "session-error") throw new Error("Claude Code is not installed. Install it and try again.");
+  setTimeout(() => emit("terminal:data:" + id, PROMPT), 300);
+  if (screen === "session-ended") setTimeout(() => emit("terminal:exit:" + id, { code: 0 }), 1200);
+}
+export async function WriteSession(_id: string, _data: string) {}
+export async function ResizeSession(_id: string, _cols: number, _rows: number) {}
+export async function StopSession(_id: string) {}
 
 export async function ListClients() {
   return clientsEmpty ? [] : clientFixtures;

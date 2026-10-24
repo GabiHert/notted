@@ -4,6 +4,7 @@ import { errorMessage, formatDate, languageName } from "../format";
 import { ClientCard } from "./ClientCard";
 import { ModelBanner } from "./ModelBanner";
 import { RecordingPill } from "./RecordingPill";
+import { SessionCard } from "./SessionCard";
 import { SaveDialog } from "./SaveDialog";
 import { SuggestionsCard } from "./SuggestionsCard";
 import { SummaryCard } from "./SummaryCard";
@@ -111,6 +112,7 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       <ClientCard meetingId={meetingId} clientKey={meeting.clientKey} hasSession={meeting.hasSession} onChanged={refresh} />
       <SummaryCard meeting={meeting} notCommitted={notCommitted} onRefresh={refresh} />
       <SuggestionsCard suggestionsMd={meeting.suggestionsMd} />
+      <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} />
       <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
     </div>
   );
