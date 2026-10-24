@@ -51,7 +51,7 @@ func TestPromptFailureReportsLastStderrLine(t *testing.T) {
 func TestPromptMissingBinMeeting(t *testing.T) {
 	checkout := t.TempDir()
 	_, err := newSource(nil).Prompt(context.Background(), checkout, "ana", "acme")
-	want := "That folder is not a meetings archive checkout: bin/meeting is missing."
+	want := "The meetings archive folder is missing bin/meeting. Choose the folder again in Settings > Instructions to set it up."
 	if err == nil || err.Error() != want {
 		t.Fatalf("got %v", err)
 	}

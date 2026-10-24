@@ -45,7 +45,7 @@ func (s *ArchiveService) checkout(ctx context.Context) (domain.Settings, error) 
 		return st, errors.New("Set the meetings archive folder in Settings > Instructions first.")
 	}
 	if fi, err := os.Stat(filepath.Join(st.CheckoutPath, "bin", "meeting")); err != nil || fi.IsDir() {
-		return st, errors.New("That folder is not a meetings archive checkout: bin/meeting is missing.")
+		return st, errors.New("The meetings archive folder is missing bin/meeting. Choose the folder again in Settings > Instructions to set it up.")
 	}
 	return st, nil
 }
@@ -164,45 +164,64 @@ func (s *ArchiveService) ExportMeeting(ctx context.Context, meetingID string) (E
 	return ExportResult{Folder: folder, Files: files}, nil
 }
 
-// CommitAndPushMeeting commits only the meeting folder and pushes the current branch.
+// CommitResult is the short sha of the saved commit and whether it reached a remote.
+type CommitResult struct {
+	SHA    string
+	Pushed bool
+}
+
+// CommitAndPushMeeting commits only the meeting folder and pushes the current branch when the archive has an origin.
 // Call it only after the person said yes.
-func (s *ArchiveService) CommitAndPushMeeting(ctx context.Context, meetingID string) (string, error) {
+func (s *ArchiveService) CommitAndPushMeeting(ctx context.Context, meetingID string) (CommitResult, error) {
 	st, err := s.checkout(ctx)
 	if err != nil {
-		return "", err
+		return CommitResult{}, err
 	}
 	m, err := s.meeting(ctx, meetingID)
 	if err != nil {
-		return "", err
+		return CommitResult{}, err
 	}
 	if m.Folder == "" {
-		return "", errors.New("Export the meeting first.")
+		return CommitResult{}, errors.New("Export the meeting first.")
 	}
 	repo, folder := st.CheckoutPath, m.Folder
 	date := m.StartedAt.In(time.Local).Format("2006-01-02")
-	if out, err := s.git.Run(ctx, repo, "add", "--", folder); err != nil {
-		return "", errors.New("The commit was rejected:\n" + out)
+	paths := []string{folder}
+	// The pre-commit hook wants the meeting's project file in the index: a file the archive has never tracked goes in too.
+	if pf := "instructions/projects/" + m.ProjectKey + ".md"; keyRe.MatchString(m.ProjectKey) {
+		if fi, err := os.Stat(filepath.Join(repo, filepath.FromSlash(pf))); err == nil && fi.Mode().IsRegular() {
+			if _, err := s.git.Run(ctx, repo, "ls-files", "--error-unmatch", "--", pf); err != nil {
+				paths = append(paths, pf)
+			}
+		}
 	}
-	switch out, err := s.git.Run(ctx, repo, "diff", "--cached", "--quiet", "--", folder); port.ExitCode(err) {
+	restore := func() { _, _ = s.git.Run(ctx, repo, append([]string{"restore", "--staged", "--"}, paths...)...) }
+	if out, err := s.git.Run(ctx, repo, append([]string{"add", "--"}, paths...)...); err != nil {
+		return CommitResult{}, errors.New("The commit was rejected:\n" + out)
+	}
+	switch out, err := s.git.Run(ctx, repo, append([]string{"diff", "--cached", "--quiet", "--"}, paths...)...); port.ExitCode(err) {
 	case 0:
-		return "", errors.New("Nothing changed in " + folder + " since the last commit.")
+		return CommitResult{}, errors.New("Nothing changed in " + folder + " since the last commit.")
 	case 1:
 	default:
-		_, _ = s.git.Run(ctx, repo, "restore", "--staged", "--", folder)
-		return "", errors.New("The commit was rejected:\n" + out)
+		restore()
+		return CommitResult{}, errors.New("The commit was rejected:\n" + out)
 	}
 	msg := "meeting(" + m.ProjectKey + "): " + date + " " + m.Title
-	if out, err := s.git.Run(ctx, repo, "commit", "-m", msg, "--only", "--", folder); err != nil {
-		_, _ = s.git.Run(ctx, repo, "restore", "--staged", "--", folder)
-		return "", errors.New("The commit was rejected:\n" + out)
+	if out, err := s.git.Run(ctx, repo, append([]string{"commit", "-m", msg, "--only", "--"}, paths...)...); err != nil {
+		restore()
+		return CommitResult{}, errors.New("The commit was rejected:\n" + out)
 	}
 	sha, err := s.git.Run(ctx, repo, "rev-parse", "--short", "HEAD")
 	if err != nil {
-		return "", errors.New("The commit was rejected:\n" + sha)
+		return CommitResult{}, errors.New("The commit was rejected:\n" + sha)
 	}
 	sha = strings.TrimSpace(sha)
-	if out, err := s.git.Run(ctx, repo, "push", "-u", "origin", "HEAD"); err != nil {
-		return "", errors.New("The commit " + sha + " was saved locally but not pushed:\n" + out)
+	if _, err := s.git.Run(ctx, repo, "remote", "get-url", "origin"); err != nil {
+		return CommitResult{SHA: sha}, nil
 	}
-	return sha, nil
+	if out, err := s.git.Run(ctx, repo, "push", "-u", "origin", "HEAD"); err != nil {
+		return CommitResult{}, errors.New("The commit " + sha + " was saved locally but not pushed:\n" + out)
+	}
+	return CommitResult{SHA: sha, Pushed: true}, nil
 }

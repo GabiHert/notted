@@ -12,6 +12,7 @@ export function SaveDialog({ meetingId, onDeclined }: { meetingId: string; onDec
   const [ready, setReady] = useState<Ready | null>(null);
   const [phase, setPhase] = useState<Phase>("ask");
   const [commit, setCommit] = useState("");
+  const [pushed, setPushed] = useState(true);
   const [error, setError] = useState("");
   const panel = useRef<HTMLDivElement>(null);
 
@@ -82,7 +83,8 @@ export function SaveDialog({ meetingId, onDeclined }: { meetingId: string; onDec
     setError("");
     CommitAndPushMeeting(meetingId)
       .then((r) => {
-        setCommit(r.commit);
+        setCommit(r.sha);
+        setPushed(r.pushed);
         setPhase("done");
       })
       .catch((e) => {
@@ -97,7 +99,7 @@ export function SaveDialog({ meetingId, onDeclined }: { meetingId: string; onDec
         <h3 id="nt-save-title">Save this meeting to git?</h3>
         {phase === "done" ? (
           <>
-            <p className="nt-dialog__text">{`Committed and pushed: ${commit}`}</p>
+            <p className="nt-dialog__text">{pushed ? `Committed and pushed: ${commit}` : `Committed ${commit}. This archive has no remote, so nothing was pushed.`}</p>
             <div className="nt-dialog__actions">
               <button className="nt-btn nt-btn--primary" onClick={close}>
                 Close

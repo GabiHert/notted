@@ -49,14 +49,14 @@ test("Escape is Not now", async () => {
 });
 
 test("Commit and push: pending then success", async () => {
-  let resolve!: (v: { commit: string }) => void;
+  let resolve!: (v: { sha: string; pushed: boolean }) => void;
   CommitAndPushMeeting.mockReturnValue(new Promise((r) => (resolve = r)));
   await open();
   fireEvent.click(screen.getByRole("button", { name: "Commit and push" }));
   expect(CommitAndPushMeeting).toHaveBeenCalledWith("m1");
   expect(screen.getByRole("button", { name: "Committing…" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Not now" })).toBeDisabled();
-  await act(async () => resolve({ commit: "abc1234" }));
+  await act(async () => resolve({ sha: "abc1234", pushed: true }));
   expect(screen.getByText("Committed and pushed: abc1234")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -113,4 +113,12 @@ test("Tab from the last control wraps to the first, also after success and when 
   (document.activeElement as HTMLElement).blur();
   fireEvent.keyDown(document.body, { key: "Tab" });
   expect(close).toHaveFocus();
+});
+
+test("a commit with no remote says nothing was pushed", async () => {
+  CommitAndPushMeeting.mockResolvedValue({ sha: "abc1234", pushed: false });
+  await open();
+  fireEvent.click(screen.getByRole("button", { name: "Commit and push" }));
+  expect(await screen.findByText("Committed abc1234. This archive has no remote, so nothing was pushed.")).toBeInTheDocument();
+  expect(screen.queryByText(/Committed and pushed/)).not.toBeInTheDocument();
 });

@@ -38,20 +38,26 @@ var (
 	repoNameRe   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 )
 
-// checkArchive returns nil when path is a meetings archive folder, else the user-facing reason.
+// checkArchive returns nil when path holds everything a meetings archive needs, else the user-facing reason.
+// It is the last check before saving the folder; InspectArchive and PrepareArchive add what is missing.
 func checkArchive(path string) error {
 	if !isDir(path) {
 		return fmt.Errorf("That folder does not exist: %s", path)
 	}
-	const notArchive = "That folder is not a meetings archive checkout: "
+	const notReady = "That folder is not set up as a meetings archive yet: "
 	if fi, err := os.Stat(filepath.Join(path, "bin", "meeting")); err != nil || fi.IsDir() {
-		return errors.New(notArchive + "bin/meeting is missing.")
+		return errors.New(notReady + "bin/meeting is missing.")
+	} else if fi.Mode()&0o111 == 0 {
+		return errors.New(notReady + "bin/meeting is not executable.")
 	}
 	if fi, err := os.Stat(filepath.Join(path, "prompts", "base.md")); err != nil || !fi.Mode().IsRegular() {
-		return errors.New(notArchive + "prompts/base.md is missing.")
+		return errors.New(notReady + "prompts/base.md is missing.")
 	}
 	if fi, err := os.Stat(filepath.Join(path, "instructions")); err != nil || !fi.IsDir() {
-		return errors.New(notArchive + "instructions/ is missing.")
+		return errors.New(notReady + "instructions/ is missing.")
+	}
+	if fi, err := os.Stat(filepath.Join(path, ".claude", "skills", "meetings", "SKILL.md")); err != nil || !fi.Mode().IsRegular() {
+		return errors.New(notReady + ".claude/skills/meetings/SKILL.md is missing.")
 	}
 	return nil
 }
@@ -134,6 +140,9 @@ func (s *SetupService) CloneArchive(ctx context.Context, address, parentDir stri
 	}
 	if out, err := s.git.Run(ctx, target, "config", "core.hooksPath", ".githooks"); err != nil {
 		return "", fmt.Errorf("The archive was cloned to %s, but setting its git hooks failed:\n%s", target, strings.TrimSpace(out))
+	}
+	if err := prepareFiles(target); err != nil {
+		return "", fmt.Errorf("Could not set up %s: %s", target, err)
 	}
 	if err := checkArchive(target); err != nil {
 		return "", err

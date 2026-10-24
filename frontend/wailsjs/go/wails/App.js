@@ -66,6 +66,10 @@ export function GetUpdateStatus() {
   return window['go']['wails']['App']['GetUpdateStatus']();
 }
 
+export function InspectArchive(arg1) {
+  return window['go']['wails']['App']['InspectArchive'](arg1);
+}
+
 export function ListInstructionFiles() {
   return window['go']['wails']['App']['ListInstructionFiles']();
 }
@@ -88,6 +92,10 @@ export function ListProfiles() {
 
 export function ListProjects() {
   return window['go']['wails']['App']['ListProjects']();
+}
+
+export function PrepareArchive(arg1) {
+  return window['go']['wails']['App']['PrepareArchive'](arg1);
 }
 
 export function PreviewPrompt(arg1) {

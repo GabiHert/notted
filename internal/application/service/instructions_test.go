@@ -65,6 +65,7 @@ func newInsFixture(t *testing.T) *insFixture {
 	put(t, filepath.Join(root, "bin", "meeting"), "#!/bin/sh\n")
 	put(t, filepath.Join(root, "bin", "other.sh"), "echo hi\n")
 	put(t, filepath.Join(root, "prompts", "base.md"), "BASE")
+	put(t, filepath.Join(root, ".claude", "skills", "meetings", "SKILL.md"), "S")
 	put(t, filepath.Join(root, "instructions", "README.md"), "README")
 	put(t, filepath.Join(root, "instructions", "projects", "acme.md"), "ACME")
 	put(t, filepath.Join(root, "instructions", "people", "ana.md"), "ANA")
@@ -268,7 +269,7 @@ func TestInstructionsSettingsValidation(t *testing.T) {
 		{"profile dash first", domain.Settings{Profile: "-ana"}, `Profile must use lowercase letters, digits and dashes, like "ana" or "ana-lima".`},
 		{"folder missing", domain.Settings{CheckoutPath: missing}, "That folder does not exist: " + missing},
 		{"folder relative", domain.Settings{CheckoutPath: "rel/dir"}, "That folder does not exist: rel/dir"},
-		{"folder not archive", domain.Settings{CheckoutPath: notArchive}, "That folder is not a meetings archive checkout: bin/meeting is missing."},
+		{"folder not archive", domain.Settings{CheckoutPath: notArchive}, "That folder is not set up as a meetings archive yet: bin/meeting is missing."},
 		{"root missing", domain.Settings{ProjectRoots: map[string]string{"acme": missing}}, "The project root for acme does not exist: " + missing},
 		{"root relative", domain.Settings{ProjectRoots: map[string]string{"acme": "rel"}}, "The project root for acme does not exist: rel"},
 	}

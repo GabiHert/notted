@@ -57,6 +57,7 @@ func archiveDir(t *testing.T) string {
 	put(t, filepath.Join(d, "bin", "meeting"), "x")
 	put(t, filepath.Join(d, "prompts", "base.md"), "BASE")
 	put(t, filepath.Join(d, "instructions", "README.md"), "R")
+	put(t, filepath.Join(d, ".claude", "skills", "meetings", "SKILL.md"), "S")
 	return d
 }
 
@@ -68,11 +69,21 @@ func TestCheckArchive(t *testing.T) {
 	rel := "rel"
 	wantErr(t, checkArchive(rel), "That folder does not exist: rel")
 	d := t.TempDir()
-	wantErr(t, checkArchive(d), "That folder is not a meetings archive checkout: bin/meeting is missing.")
+	wantErr(t, checkArchive(d), "That folder is not set up as a meetings archive yet: bin/meeting is missing.")
 	put(t, filepath.Join(d, "bin", "meeting"), "x")
-	wantErr(t, checkArchive(d), "That folder is not a meetings archive checkout: prompts/base.md is missing.")
+	wantErr(t, checkArchive(d), "That folder is not set up as a meetings archive yet: prompts/base.md is missing.")
 	put(t, filepath.Join(d, "prompts", "base.md"), "x")
-	wantErr(t, checkArchive(d), "That folder is not a meetings archive checkout: instructions/ is missing.")
+	wantErr(t, checkArchive(d), "That folder is not set up as a meetings archive yet: instructions/ is missing.")
+	put(t, filepath.Join(d, "instructions", "README.md"), "x")
+	wantErr(t, checkArchive(d), "That folder is not set up as a meetings archive yet: .claude/skills/meetings/SKILL.md is missing.")
+	put(t, filepath.Join(d, ".claude", "skills", "meetings", "SKILL.md"), "x")
+	if err := checkArchive(d); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Join(d, "bin", "meeting"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	wantErr(t, checkArchive(d), "That folder is not set up as a meetings archive yet: bin/meeting is not executable.")
 }
 
 func TestSetSettingsChecksPrompts(t *testing.T) {
@@ -80,7 +91,7 @@ func TestSetSettingsChecksPrompts(t *testing.T) {
 	d := t.TempDir()
 	put(t, filepath.Join(d, "bin", "meeting"), "x")
 	wantErr(t, f.svc.SetSettings(f.ctx, domain.Settings{CheckoutPath: d}),
-		"That folder is not a meetings archive checkout: prompts/base.md is missing.")
+		"That folder is not set up as a meetings archive yet: prompts/base.md is missing.")
 }
 
 type setupFx struct {
@@ -182,9 +193,19 @@ func TestCloneArchiveFailures(t *testing.T) {
 	f.git.mode = "noprompts"
 	parent = t.TempDir()
 	_, err = f.svc.CloneArchive(f.ctx, addr, parent)
-	wantErr(t, err, "That folder is not a meetings archive checkout: prompts/base.md is missing.")
-	if _, serr := os.Stat(filepath.Join(parent, "meetings")); serr != nil {
-		t.Fatal("clone should stay")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clone := filepath.Join(parent, "meetings")
+	if read(t, filepath.Join(clone, "bin", "meeting")) != "#!/bin/sh\n" {
+		t.Fatal("the clone's own bin/meeting was replaced")
+	}
+	tpl, _ := archiveTemplate.ReadFile("archive_template/prompts/base.md")
+	if read(t, filepath.Join(clone, "prompts", "base.md")) != string(tpl) {
+		t.Fatal("missing prompts/base.md was not added")
+	}
+	if err := checkArchive(clone); err != nil {
+		t.Fatal(err)
 	}
 }
 

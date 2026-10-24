@@ -1,0 +1,27 @@
+# Notted: recordings and session logs never enter git
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.opus
+*.webm
+*.mp4
+*.mov
+*.mkv
+*.aiff
+*.aif
+*.caf
+*.wma
+# Databases and Claude Code session logs
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.jsonl
+# Personal local overrides
+instructions/people/*.local.md
+# OS and tooling
+.DS_Store
+__pycache__/

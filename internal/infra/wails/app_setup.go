@@ -31,6 +31,30 @@ func (a *App) CloneArchive(address string, parentDir string) (string, error) {
 	return a.setup.CloneArchive(a.context(), address, parentDir)
 }
 
+// ArchiveCheckDTO says what a folder still needs to be a meetings archive.
+type ArchiveCheckDTO struct {
+	Path     string   `json:"path"`
+	Missing  []string `json:"missing"`
+	InRepo   bool     `json:"inRepo"`
+	Nested   bool     `json:"nested"`
+	RepoRoot string   `json:"repoRoot"`
+	Ready    bool     `json:"ready"`
+}
+
+// InspectArchive reports what the folder lacks to be a meetings archive. It changes nothing.
+func (a *App) InspectArchive(path string) (ArchiveCheckDTO, error) {
+	c, err := a.setup.InspectArchive(a.context(), path)
+	if err != nil {
+		return ArchiveCheckDTO{}, err
+	}
+	return ArchiveCheckDTO{Path: c.Path, Missing: c.Missing, InRepo: c.InRepo, Nested: c.Nested, RepoRoot: c.RepoRoot, Ready: c.Ready}, nil
+}
+
+// PrepareArchive adds the missing archive files to the folder and runs git init when it is in no repository.
+func (a *App) PrepareArchive(path string) error {
+	return a.setup.PrepareArchive(a.context(), path)
+}
+
 // ListProfiles returns the people in the saved archive folder.
 func (a *App) ListProfiles() ([]string, error) { return a.setup.ListProfiles(a.context()) }
 

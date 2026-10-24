@@ -6,9 +6,10 @@ type ExportDTO struct {
 	Files  []string `json:"files"`
 }
 
-// CommitDTO is the short sha of the saved commit.
+// CommitDTO is the short sha of the saved commit and whether it was pushed.
 type CommitDTO struct {
-	Commit string `json:"commit"`
+	Sha    string `json:"sha"`
+	Pushed bool   `json:"pushed"`
 }
 
 // ListProjects returns the project keys found in the archive checkout.
@@ -32,9 +33,9 @@ func (a *App) ExportMeeting(meetingID string) (ExportDTO, error) {
 
 // CommitAndPushMeeting commits only the meeting folder and pushes. Call it only after the person said yes.
 func (a *App) CommitAndPushMeeting(meetingID string) (CommitDTO, error) {
-	sha, err := a.archive.CommitAndPushMeeting(a.context(), meetingID)
+	r, err := a.archive.CommitAndPushMeeting(a.context(), meetingID)
 	if err != nil {
 		return CommitDTO{}, err
 	}
-	return CommitDTO{Commit: sha}, nil
+	return CommitDTO{Sha: r.SHA, Pushed: r.Pushed}, nil
 }

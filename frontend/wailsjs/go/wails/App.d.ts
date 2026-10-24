@@ -34,6 +34,8 @@ export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
 export function GetUpdateStatus():Promise<wails.UpdateStatusDTO>;
 
+export function InspectArchive(arg1:string):Promise<wails.ArchiveCheckDTO>;
+
 export function ListInstructionFiles():Promise<Array<wails.InstructionFileDTO>>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
@@ -45,6 +47,8 @@ export function ListProfileFiles(arg1:string):Promise<Array<string>>;
 export function ListProfiles():Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<string>>;
+
+export function PrepareArchive(arg1:string):Promise<void>;
 
 export function PreviewPrompt(arg1:string):Promise<string>;
 

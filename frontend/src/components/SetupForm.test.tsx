@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { SetupForm } from "./SetupForm";
-import { ChooseFolder, CloneArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, resetBindings } from "../test/bindingsMock";
+import { ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -179,6 +179,140 @@ describe("archive folder picker", () => {
     await act(async () => d.resolve("/late"));
     expect(SetSettings).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
+  });
+});
+
+const NEEDS = ["bin/meeting", "prompts/base.md", ".gitignore (adds the recording rules)"];
+const check = (over: Record<string, unknown> = {}) => ({ path: "/picked", missing: NEEDS, inRepo: false, nested: false, repoRoot: "", ready: false, ...over });
+const GIT_INIT_LINE = "This folder is not a git repository yet. Notted runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.";
+
+describe("a folder that is not set up as an archive yet", () => {
+  test("a ready folder is inspected and saved with no panel", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    setup();
+    click("Choose the meetings archive folder");
+    await screen.findByText("Settings saved.");
+    expect(InspectArchive).toHaveBeenCalledWith("/picked");
+    expect(screen.queryByRole("region", { name: "Set up this folder as your meetings archive?" })).not.toBeInTheDocument();
+    expect(PrepareArchive).not.toHaveBeenCalled();
+  });
+
+  test("a folder outside any repository shows the panel with the list and the git init line, and saves nothing", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check());
+    setup();
+    click("Choose the meetings archive folder");
+    const region = await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    const heading = within(region).getByRole("heading", { name: "Set up this folder as your meetings archive?" });
+    expect(heading).toHaveFocus();
+    expect(within(region).getByText("Notted adds these files to /picked. It does not change or remove anything already there.")).toBeInTheDocument();
+    for (const f of NEEDS) expect(within(region).getByText(f).tagName).toBe("CODE");
+    expect(within(region).getByText(GIT_INIT_LINE)).toBeInTheDocument();
+    expect(within(region).queryByText(/is inside the git repository/)).not.toBeInTheDocument();
+    expect(SetSettings).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Archive folder")).toHaveValue("/archive");
+  });
+
+  test("a folder inside another repository shows the repository line and no git init line", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check({ inRepo: true, nested: true, repoRoot: "/home/ana/notes" }));
+    setup();
+    click("Choose the meetings archive folder");
+    const region = await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    expect(within(region).getByText("This folder is inside the git repository at /home/ana/notes. Meetings are committed there.")).toBeInTheDocument();
+    expect(within(region).queryByText(GIT_INIT_LINE)).not.toBeInTheDocument();
+  });
+
+  test("the top of a repository shows neither line", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check({ inRepo: true, repoRoot: "/picked" }));
+    setup();
+    click("Choose the meetings archive folder");
+    const region = await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    expect(within(region).queryByText(/git repository/)).not.toBeInTheDocument();
+  });
+
+  test("a repository top whose path differs from git's spelling shows neither line", async () => {
+    ChooseFolder.mockResolvedValue("/picked/");
+    InspectArchive.mockResolvedValue(check({ path: "/picked/", inRepo: true, nested: false, repoRoot: "/private/picked" }));
+    setup();
+    click("Choose the meetings archive folder");
+    const region = await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    expect(within(region).queryByText(/git repository/)).not.toBeInTheDocument();
+  });
+
+  test("Set up this folder prepares it, then saves the setting", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check());
+    const { onSaved } = setup();
+    click("Choose the meetings archive folder");
+    await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    click("Set up this folder");
+    expect(await screen.findByText("Settings saved.")).toBeInTheDocument();
+    expect(PrepareArchive).toHaveBeenCalledWith("/picked");
+    expect(SetSettings).toHaveBeenCalledWith({ profile: "ana", checkoutPath: "/picked", projectRoots: { acme: "/work/acme" } });
+    expect(PrepareArchive.mock.invocationCallOrder[0]).toBeLessThan(SetSettings.mock.invocationCallOrder[0]);
+    expect(screen.queryByRole("region", { name: "Set up this folder as your meetings archive?" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Archive folder")).toHaveValue("/picked");
+    expect(screen.getByLabelText("Archive folder")).toHaveFocus();
+    expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  test("Choose another folder closes the panel and saves nothing", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check());
+    setup();
+    click("Choose the meetings archive folder");
+    await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    click("Choose another folder");
+    expect(screen.queryByRole("region", { name: "Set up this folder as your meetings archive?" })).not.toBeInTheDocument();
+    expect(PrepareArchive).not.toHaveBeenCalled();
+    expect(SetSettings).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Archive folder")).toHaveValue("/archive");
+  });
+
+  test("a PrepareArchive error shows in the form's error line and saves nothing", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockResolvedValue(check());
+    PrepareArchive.mockRejectedValue(new Error("Could not set up /picked: permission denied"));
+    setup();
+    click("Choose the meetings archive folder");
+    await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    click("Set up this folder");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not set up /picked: permission denied");
+    expect(SetSettings).not.toHaveBeenCalled();
+  });
+
+  test("an InspectArchive error shows in the error line", async () => {
+    ChooseFolder.mockResolvedValue("/picked");
+    InspectArchive.mockRejectedValue(new Error("That folder does not exist: /picked"));
+    setup();
+    click("Choose the meetings archive folder");
+    expect(await screen.findByRole("alert")).toHaveTextContent("That folder does not exist: /picked");
+    expect(SetSettings).not.toHaveBeenCalled();
+  });
+
+  test("a typed path is inspected on save, and the panel's setup saves the typed settings", async () => {
+    InspectArchive.mockResolvedValue(check({ path: "/typed" }));
+    setup();
+    type("Archive folder", " /typed ");
+    type("globex", "/work/globex");
+    click("Save settings");
+    await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
+    expect(InspectArchive).toHaveBeenCalledWith("/typed");
+    expect(SetSettings).not.toHaveBeenCalled();
+    click("Set up this folder");
+    await screen.findByText("Settings saved.");
+    expect(PrepareArchive).toHaveBeenCalledWith("/typed");
+    expect(SetSettings).toHaveBeenCalledWith({ profile: "ana", checkoutPath: "/typed", projectRoots: { acme: "/work/acme", globex: "/work/globex" } });
+  });
+
+  test("clearing the archive field saves without inspecting", async () => {
+    setup();
+    type("Archive folder", "");
+    click("Save settings");
+    await screen.findByText("Settings saved.");
+    expect(InspectArchive).not.toHaveBeenCalled();
   });
 });
 

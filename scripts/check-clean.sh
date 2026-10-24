@@ -9,7 +9,7 @@ report() { # rule file line text
   fail=1
 }
 
-files=$(git ls-files -co --exclude-standard | grep -E '\.(go|ts|tsx|js|mjs|swift|json|sh|plist)$' |
+files=$(git ls-files -co --exclude-standard | grep -E '\.(go|ts|tsx|js|mjs|swift|json|sh|plist)$|^internal/application/service/archive_template/' |
   grep -vE '^(go\.sum|frontend/package-lock\.json|scripts/check-clean\.sh|scripts/test-checks\.sh)$' |
   grep -vE '^frontend/wailsjs/' | sort -u)
 

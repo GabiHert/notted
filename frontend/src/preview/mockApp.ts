@@ -92,7 +92,7 @@ const PROMPT =
   "\x1b[1m> /suggest\x1b[0m\r\n\r\nI can write the suggestions to the meeting folder.\r\n\r\n" +
   "Do you want to create suggestions.md?\r\n \x1b[36m1.\x1b[0m Yes\r\n  2. Yes, and allow all edits this session\r\n  3. No\r\n\r\n";
 const ARCHIVE = "/Users/ana/meetings-archive";
-const setupScreens = ["first-run", "setup-clone-failed", "setup-profile", "setup-new-profile", "setup-new-project", "setup-project-created", "setup-delete-profile", "setup-delete-confirm", "setup-my-file", "setup-my-file-created"];
+const setupScreens = ["first-run", "setup-clone-failed", "setup-profile", "setup-new-profile", "setup-new-project", "setup-project-created", "setup-delete-profile", "setup-delete-confirm", "setup-my-file", "setup-my-file-created", "setup-folder-new", "setup-folder-in-repo"];
 let projectCreated = false;
 let myFileCreated = false;
 export async function GetSettings() {
@@ -100,6 +100,7 @@ export async function GetSettings() {
   if (screen === "setup-profile" || screen === "setup-new-profile") return { profile: "", checkoutPath: ARCHIVE, projectRoots: {} };
   if (screen === "setup-new-project" || screen === "setup-project-created") return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
+  if (screen.startsWith("setup-folder")) return { profile: "ana", checkoutPath: "/Users/ana/old-archive", projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
@@ -188,9 +189,17 @@ export async function CreateMyProjectFile(key: string) {
   myFileCreated = true;
   return `instructions/people/ana/${key}.md`;
 }
+const NEW_FOLDER = "/Users/ana/Documents/meetings";
+const NEW_FOLDER_FILES = ["bin/meeting", "prompts/base.md", ".claude/skills/meetings/SKILL.md", "instructions/README.md", "instructions/people/.gitkeep", "instructions/projects/.gitkeep", "meetings/.gitkeep", ".githooks/pre-commit", ".gitignore", "CLAUDE.md"];
 export async function ChooseFolder(_title: string, _startDir: string) {
-  return ARCHIVE;
+  return screen.startsWith("setup-folder") ? NEW_FOLDER : ARCHIVE;
 }
+export async function InspectArchive(path: string) {
+  if (screen === "setup-folder-new") return { path, missing: NEW_FOLDER_FILES, inRepo: false, nested: false, repoRoot: "", ready: false };
+  if (screen === "setup-folder-in-repo") return { path, missing: NEW_FOLDER_FILES.slice(0, 4).concat(".gitignore (adds the recording rules)"), inRepo: true, nested: true, repoRoot: "/Users/ana/Documents", ready: false };
+  return { path, missing: [], inRepo: true, nested: false, repoRoot: path, ready: true };
+}
+export async function PrepareArchive(_path: string) {}
 export async function CloneArchive(_address: string, _parentDir: string) {
   if (screen === "setup-clone-failed") throw new Error("git clone failed:\nERROR: Repository not found.\nfatal: Could not read from remote repository.");
   return "/Users/ana/code/meetings-archive";
@@ -231,7 +240,7 @@ export async function SetMeetingProject(_id: string, _key: string) {}
 export async function GenerateSummary(_id: string) {}
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
-  return { commit: "abc1234" };
+  return { sha: "abc1234", pushed: true };
 }
 
 export async function ListMeetings() {

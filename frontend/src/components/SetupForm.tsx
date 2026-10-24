@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChooseFolder, CloneArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, type wails } from "../api/bindings";
+import { ChooseFolder, CloneArchive, CreateMyProjectFile, InspectArchive, PrepareArchive, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
 import { ConfirmDialog } from "./ConfirmDialog";
 import "./SetupForm.css";
@@ -47,6 +47,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const [busy, setBusy] = useState<"" | "clone" | "other">("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [setupPanel, setSetupPanel] = useState<{ check: wails.ArchiveCheckDTO; save: () => Promise<boolean> } | null>(null);
 
   const [cloneOpen, setCloneOpen] = useState(false);
   const [cloneAddress, setCloneAddress] = useState("");
@@ -72,6 +73,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const timer = useRef<number | undefined>(undefined);
   const refocus = useRef<(() => void) | null>(null);
   const archiveInput = useRef<HTMLInputElement>(null);
+  const setupHeading = useRef<HTMLHeadingElement>(null);
   const cloneLink = useRef<HTMLButtonElement>(null);
   const profileSelect = useRef<HTMLSelectElement>(null);
   const projectButton = useRef<HTMLButtonElement>(null);
@@ -106,6 +108,10 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
       return next;
     });
   }, [saved]);
+
+  useEffect(() => {
+    if (setupPanel) setupHeading.current?.focus();
+  }, [setupPanel]);
 
   useEffect(() => {
     refocus.current?.();
@@ -150,13 +156,24 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     return true;
   };
 
+  // A folder that already holds an archive saves at once; any other waits for the person's yes in the setup panel.
+  const saveArchive = async (path: string, save: () => Promise<boolean>) => {
+    const check = await InspectArchive(path);
+    if (!live.current) return;
+    if (check.ready) {
+      setCheckoutPath(path);
+      await save();
+      return;
+    }
+    setSetupPanel({ check, save });
+  };
+
   const pickArchive = async () => {
     if (!begin("other")) return;
     try {
       const path = await ChooseFolder(ARCHIVE_TITLE, checkoutPath);
       if (!live.current || !path) return;
-      setCheckoutPath(path);
-      await saveNow({ checkoutPath: path });
+      await saveArchive(path, () => saveNow({ checkoutPath: path }));
     } catch (e) {
       fail(setError)(e);
     } finally {
@@ -186,13 +203,36 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
       if (v) projectRoots[key] = v;
       else delete projectRoots[key];
     }
+    const save = () => saveNow({ checkoutPath: checkoutPath.trim(), projectRoots });
     try {
-      await saveNow({ checkoutPath: checkoutPath.trim(), projectRoots });
+      if (checkoutPath.trim()) await saveArchive(checkoutPath.trim(), save);
+      else await save();
     } catch (e) {
       fail(setError)(e);
     } finally {
       end();
     }
+  };
+
+  const setUpFolder = async () => {
+    if (!setupPanel || !begin("other")) return;
+    const { check, save } = setupPanel;
+    try {
+      await PrepareArchive(check.path);
+      if (!live.current) return;
+      setCheckoutPath(check.path);
+      refocus.current = () => archiveInput.current?.focus();
+      setSetupPanel(null);
+      await save();
+    } catch (e) {
+      fail(setError)(e);
+    } finally {
+      end();
+    }
+  };
+  const chooseAnother = () => {
+    setSetupPanel(null);
+    refocus.current = () => archiveInput.current?.focus();
   };
 
   const closeClone = () => {
@@ -368,6 +408,35 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
               <Choose label={ARCHIVE_TITLE} onClick={pickArchive} disabled={busy !== ""} />
             </div>
             <span className="nt-setup__help">The full path of your local clone of the meetings archive.</span>
+            {setupPanel && (
+              <section className="nt-setup__inline" role="region" aria-labelledby="nt-archive-setup-title">
+                <h3 id="nt-archive-setup-title" ref={setupHeading} tabIndex={-1} className="nt-setup__sub">
+                  Set up this folder as your meetings archive?
+                </h3>
+                <p className="nt-setup__help nt-setup__help--block">{`Notted adds these files to ${setupPanel.check.path}. It does not change or remove anything already there.`}</p>
+                <ul className="nt-setup__files">
+                  {setupPanel.check.missing.map((f) => (
+                    <li key={f}>
+                      <code>{f}</code>
+                    </li>
+                  ))}
+                </ul>
+                {!setupPanel.check.inRepo && (
+                  <p className="nt-setup__help nt-setup__help--block">This folder is not a git repository yet. Notted runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.</p>
+                )}
+                {setupPanel.check.nested && (
+                  <p className="nt-setup__help nt-setup__help--block">{`This folder is inside the git repository at ${setupPanel.check.repoRoot}. Meetings are committed there.`}</p>
+                )}
+                <div className="nt-setup__actions">
+                  <button type="button" className="nt-btn nt-btn--primary" onClick={setUpFolder} disabled={busy !== ""}>
+                    Set up this folder
+                  </button>
+                  <button type="button" className="nt-btn" onClick={chooseAnother} disabled={busy !== ""}>
+                    Choose another folder
+                  </button>
+                </div>
+              </section>
+            )}
             {!cloneOpen && (
               <div>
                 <button

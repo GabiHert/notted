@@ -14,7 +14,7 @@ make install
 
 ### What you need
 
-`make install` checks this list and stops with a fix for each missing item. A missing Claude Code only gives a warning, and the archive clone is not checked.
+`make install` checks this list and stops with a fix for each missing item. A missing Claude Code only gives a warning, and the archive folder is not checked.
 
 - macOS 14 or later on Apple silicon.
 - Go 1.26 or later.
@@ -22,7 +22,7 @@ make install
 - Node 20.19 or later (Node 24 recommended).
 - Xcode Command Line Tools (`xcode-select --install`), which provide `swiftc` 6 and the macOS SDK.
 - Claude Code installed and logged in, with `claude` on your login shell's `PATH` (aliases are not followed).
-- A local clone of the meetings archive repository.
+- A folder for your meetings archive: an empty folder, or a clone of your team's archive. Notted sets it up the first time you choose it.
 
 ## Build
 
@@ -51,7 +51,7 @@ it, delete "Notted Local Signing" in Keychain Access.
 
 The first time you open Notted, it shows **Settings > Instructions** with a short checklist.
 
-1. **Archive folder:** click **Choose…** and pick your local clone of the meetings archive, or
+1. **Archive folder:** click **Choose…** and pick a folder for your meetings archive (an empty folder works), or
    click **Clone the archive from GitHub instead**, paste its address and choose where to put it.
    Notted runs your own git, with your own login.
 2. **Profile:** choose yourself from the people in the archive, or choose **New profile…** to
@@ -90,7 +90,7 @@ On first use per language, Notted downloads the Whisper model (about 640 MB for 
 
 ## Your data
 
-Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/`, `models/` and `update.log`. Audio never leaves the Mac and is never committed. The archive folder gets only `meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`, and only after you say yes.
+Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/`, `models/` and `update.log`. Audio never leaves the Mac and is never committed. The first time you choose a folder, Notted adds what the archive needs (bin/meeting, prompts/, instructions/, the meetings skill, a commit hook and the recording rules in .gitignore) and changes nothing already there. A folder that is not in a git repository gets git init; with no remote, meetings are committed on this Mac only. A meeting's files (`meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`) go in only after you say yes.
 
 ## Claude Code
 

@@ -30,6 +30,8 @@ export function initPreview(): View {
     case "setup-delete-confirm":
     case "setup-my-file":
     case "setup-my-file-created":
+    case "setup-folder-new":
+    case "setup-folder-in-repo":
     case "update-idle":
     case "update-no-source":
     case "update-running":
@@ -133,6 +135,8 @@ function autoDriveSettings(screen: string) {
     "setup-delete-profile": [open("Delete a profile…")],
     "setup-delete-confirm": [open("Delete a profile…"), byLabel("Delete profile bruno")],
     "setup-my-file-created": [byLabel("Create your file for globex")],
+    "setup-folder-new": [byLabel("Choose the meetings archive folder")],
+    "setup-folder-in-repo": [byLabel("Choose the meetings archive folder")],
     "update-idle": [scrollTo(".nt-update")],
     "update-no-source": [scrollTo(".nt-update")],
     "update-running": [scrollTo(".nt-update")],

@@ -39,6 +39,8 @@ export const WriteInstructionFile = vi.fn();
 export const PreviewPrompt = vi.fn();
 export const ChooseFolder = vi.fn();
 export const CloneArchive = vi.fn();
+export const InspectArchive = vi.fn();
+export const PrepareArchive = vi.fn();
 export const ListProfiles = vi.fn();
 export const CreateProfile = vi.fn();
 export const CreateProject = vi.fn();
@@ -56,7 +58,7 @@ export const StartUpdate = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -74,7 +76,7 @@ export function resetBindings() {
   ListProjects.mockResolvedValue(["acme", "globex"]);
   SetMeetingProject.mockResolvedValue(undefined);
   GenerateSummary.mockResolvedValue(undefined);
-  CommitAndPushMeeting.mockResolvedValue({ commit: "abc1234" });
+  CommitAndPushMeeting.mockResolvedValue({ sha: "abc1234", pushed: true });
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
   SetSettings.mockResolvedValue(undefined);
   ListInstructionFiles.mockResolvedValue([]);
@@ -83,6 +85,8 @@ export function resetBindings() {
   PreviewPrompt.mockResolvedValue("");
   ChooseFolder.mockResolvedValue("");
   CloneArchive.mockResolvedValue("/x/meetings-archive");
+  InspectArchive.mockImplementation(async (path: string) => ({ path, missing: [], inRepo: true, nested: false, repoRoot: path, ready: true }));
+  PrepareArchive.mockResolvedValue(undefined);
   ListProfiles.mockResolvedValue(["ana", "bruno"]);
   CreateProfile.mockResolvedValue("instructions/people/carla.md");
   CreateProject.mockResolvedValue(["instructions/projects/initech-web.md", "instructions/people/ana/initech-web.md"]);

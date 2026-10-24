@@ -69,6 +69,16 @@
 .nt-setup__inline .nt-setup__help {
   display: block;
 }
+.nt-setup__files {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+.nt-setup__inline h3.nt-setup__sub {
+  margin: 0 0 6px;
+}
 .nt-btn--link {
   background: none;
   border: none;

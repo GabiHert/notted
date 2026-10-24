@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# bin/meeting: builds a meeting's prompt. Knows the file layout only.
+set -o pipefail
+
+src="$0"
+while [ -h "$src" ]; do
+  dir=$(cd -P "$(dirname "$src")" && pwd)
+  src=$(readlink "$src")
+  case $src in /*) ;; *) src="$dir/$src" ;; esac
+done
+ROOT=$(cd -P "$(dirname "$src")/.." && pwd)
+
+die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
+usage() {
+  printf 'usage: bin/meeting prompt --project <key>\n' >&2
+  exit 2
+}
+
+cmd="$1"
+case $cmd in
+  prompt) shift ;;
+  "") usage ;;
+  *) die "bin/meeting $cmd is not in this version. Start meetings from Notted." ;;
+esac
+
+project=""
+while [ $# -gt 0 ]; do
+  case $1 in
+    --project) project="$2"; shift 2 || usage ;;
+    *) usage ;;
+  esac
+done
+
+known_projects() {
+  local f out="" b
+  for f in "$ROOT"/instructions/projects/*.md; do
+    [ -e "$f" ] || continue
+    b=$(basename "$f" .md)
+    out="${out:+$out, }$b"
+  done
+  printf '%s' "$out"
+}
+
+# 1. Profile
+p="$MEETINGS_PROFILE"
+if [ -z "$p" ]; then
+  die "MEETINGS_PROFILE is not set. Create instructions/people/<your-name>.md (see instructions/README.md), then add 'export MEETINGS_PROFILE=<your-name>' to your shell profile."
+fi
+echo "profile: $p" >&2
+if ! printf '%s' "$p" | grep -Eq '^[a-z0-9][a-z0-9-]*$' || [ ! -f "$ROOT/instructions/people/$p.md" ]; then
+  die "No person file instructions/people/$p.md for MEETINGS_PROFILE=$p. Create it (see instructions/README.md); no other person's file is used."
+fi
+
+# 2. Project
+[ -n "$project" ] || die "--project <key> is required. Known projects: $(known_projects)"
+if ! printf '%s' "$project" | grep -Eq '^[a-z0-9][a-z0-9-]*$' || [ ! -f "$ROOT/instructions/projects/$project.md" ]; then
+  die "No project file instructions/projects/$project.md. Known projects: $(known_projects)"
+fi
+
+# 5. Assemble
+tmp=$(mktemp "${TMPDIR:-/tmp}/meeting-prompt.XXXXXX") || die "cannot create a temporary file" 1
+trap 'rm -f "$tmp"' EXIT
+layer() {  # $1 = n, $2 = path relative to ROOT
+  printf '<!-- layer %s: %s -->\n\n' "$1" "$2" >> "$tmp"
+  cat "$ROOT/$2" >> "$tmp"
+  printf '\n\n' >> "$tmp"
+}
+l4="instructions/people/$p/$project.md"
+layer 1 prompts/base.md
+layer 2 "instructions/projects/$project.md"
+layer 3 "instructions/people/$p.md"
+if [ -f "$ROOT/$l4" ]; then
+  layer 4 "$l4"
+else
+  echo "no per-project file $l4: no extra directory, and accepting a suggestion prints its text only" >&2
+fi
+if [ -f "$ROOT/instructions/people/$p.local.md" ]; then
+  layer 5 "instructions/people/$p.local.md"
+  echo "local override: instructions/people/$p.local.md" >&2
+fi
+
+cat "$tmp"
+exit 0

@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bhlabz/notted/internal/application/service"
+	"github.com/bhlabz/notted/internal/integration/git"
+
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -54,6 +57,25 @@ func TestChooseFolderCancelAndError(t *testing.T) {
 	fakeDialog(t, "", errors.New("boom"))
 	_, err = (&App{emitter: &Emitter{}}).ChooseFolder("t", "")
 	if err == nil || err.Error() != "The folder picker failed: boom" {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestInspectAndPrepareArchiveBindings(t *testing.T) {
+	t.Setenv("NOTTED_HOME", t.TempDir())
+	a := &App{emitter: &Emitter{}, setup: service.NewSetupService(nil, git.New(os.Environ))}
+	dir := t.TempDir()
+	c, err := a.InspectArchive(dir)
+	if err != nil || c.Path != dir || c.Ready || len(c.Missing) == 0 || c.InRepo {
+		t.Fatalf("%+v %v", c, err)
+	}
+	if err := a.PrepareArchive(dir); err != nil {
+		t.Fatal(err)
+	}
+	if c, err = a.InspectArchive(dir); err != nil || !c.Ready || c.Missing == nil {
+		t.Fatalf("%+v %v", c, err)
+	}
+	if _, err := a.InspectArchive("rel"); err == nil || err.Error() != "That folder does not exist: rel" {
 		t.Fatalf("%v", err)
 	}
 }

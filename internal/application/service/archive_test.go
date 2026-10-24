@@ -170,7 +170,7 @@ func TestArchiveCheckoutMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = f.svc.ListProjects(f.ctx)
-	wantErr(t, err, "That folder is not a meetings archive checkout: bin/meeting is missing.")
+	wantErr(t, err, "The meetings archive folder is missing bin/meeting. Choose the folder again in Settings > Instructions to set it up.")
 }
 
 const goldenMeeting = `---
@@ -273,9 +273,9 @@ func TestArchiveCommitKeepsOtherStagedWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	runGit(t, f.archive, "add", "notes.txt")
-	sha, err := f.svc.CommitAndPushMeeting(f.ctx, "m1")
-	if err != nil || sha == "" {
-		t.Fatalf("commit: %q %v", sha, err)
+	res2, err := f.svc.CommitAndPushMeeting(f.ctx, "m1")
+	if err != nil || res2.SHA == "" || !res2.Pushed {
+		t.Fatalf("commit: %+v %v", res2, err)
 	}
 	names := strings.Fields(runGit(t, f.archive, "show", "--name-only", "--format=", "HEAD"))
 	if len(names) != 4 {

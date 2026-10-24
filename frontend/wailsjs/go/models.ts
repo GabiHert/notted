@@ -1,7 +1,30 @@
 export namespace wails {
 	
+	export class ArchiveCheckDTO {
+	    path: string;
+	    missing: string[];
+	    inRepo: boolean;
+	    nested: boolean;
+	    repoRoot: string;
+	    ready: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ArchiveCheckDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.missing = source["missing"];
+	        this.inRepo = source["inRepo"];
+	        this.nested = source["nested"];
+	        this.repoRoot = source["repoRoot"];
+	        this.ready = source["ready"];
+	    }
+	}
 	export class CommitDTO {
-	    commit: string;
+	    sha: string;
+	    pushed: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new CommitDTO(source);
@@ -9,7 +32,8 @@ export namespace wails {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.commit = source["commit"];
+	        this.sha = source["sha"];
+	        this.pushed = source["pushed"];
 	    }
 	}
 	export class ExportDTO {

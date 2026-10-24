@@ -24,7 +24,7 @@ func (p PromptSource) Prompt(ctx context.Context, checkout, profile, projectKey 
 	bin := filepath.Join(checkout, "bin", "meeting")
 	st, err := os.Stat(bin)
 	if err != nil || st.IsDir() || st.Mode()&0o111 == 0 {
-		return "", errors.New("That folder is not a meetings archive checkout: bin/meeting is missing.")
+		return "", errors.New("The meetings archive folder is missing bin/meeting. Choose the folder again in Settings > Instructions to set it up.")
 	}
 	envFn := p.EnvFn
 	if envFn == nil {
