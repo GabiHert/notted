@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 type gitCall struct {

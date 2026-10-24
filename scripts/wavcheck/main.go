@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
+	"github.com/GabiHert/notted/internal/integration/audio/wavinfo"
 )
 
 func main() {

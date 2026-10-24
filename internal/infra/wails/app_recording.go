@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 func (a *App) context() context.Context {

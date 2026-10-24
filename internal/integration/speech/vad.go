@@ -8,7 +8,7 @@ import (
 
 	sherpa "github.com/k2-fsa/sherpa-onnx-go/sherpa_onnx"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 )
 
 var _ port.SpeechDetector = (*Detector)(nil)

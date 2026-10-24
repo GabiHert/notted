@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 )
 
 var _ port.LineStreamer = (*Streamer)(nil)

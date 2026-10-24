@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/application/port"
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 // fakeModels builds a manifest of tiny archives named like the real ones, so the

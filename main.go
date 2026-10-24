@@ -4,7 +4,7 @@ import (
 	"embed"
 	"log"
 
-	"github.com/bhlabz/notted/internal/infra"
+	"github.com/GabiHert/notted/internal/infra"
 )
 
 //go:embed all:frontend/dist

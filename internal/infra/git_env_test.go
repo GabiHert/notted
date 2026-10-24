@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/GabiHert/notted/internal/integration/git"
 )
 
 func TestGitAdapterEnvDropsAnthropicCredentials(t *testing.T) {

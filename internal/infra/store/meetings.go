@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 const meetingCols = `id, title, started_at, ended_at, language, project_key, claude_session_id, folder, state, summary_md, suggestions_md`

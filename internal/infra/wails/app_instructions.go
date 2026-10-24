@@ -1,6 +1,6 @@
 package wails
 
-import "github.com/bhlabz/notted/internal/domain"
+import "github.com/GabiHert/notted/internal/domain"
 
 // InstructionFileDTO is one instruction file of the archive.
 type InstructionFileDTO struct {

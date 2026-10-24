@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bhlabz/notted/internal/application/port"
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 var keyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)

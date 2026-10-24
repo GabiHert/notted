@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 type memSettings struct{ s domain.Settings }

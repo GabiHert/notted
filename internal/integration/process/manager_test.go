@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bhlabz/notted/internal/integration/claude"
+	"github.com/GabiHert/notted/internal/integration/claude"
 )
 
 type ev struct {

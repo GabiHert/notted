@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 )
 
 var (

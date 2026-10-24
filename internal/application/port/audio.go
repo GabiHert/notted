@@ -1,6 +1,6 @@
 package port
 
-import "github.com/bhlabz/notted/internal/domain"
+import "github.com/GabiHert/notted/internal/domain"
 
 // HelperEvent is one parsed line of the audio helper's stdout.
 type HelperEvent struct {

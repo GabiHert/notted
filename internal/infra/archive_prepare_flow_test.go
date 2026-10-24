@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/application/service"
-	"github.com/bhlabz/notted/internal/domain"
-	"github.com/bhlabz/notted/internal/infra/store"
-	"github.com/bhlabz/notted/internal/integration/claude"
-	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/GabiHert/notted/internal/application/service"
+	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/infra/store"
+	"github.com/GabiHert/notted/internal/integration/claude"
+	"github.com/GabiHert/notted/internal/integration/git"
 )
 
 // An empty folder becomes an archive: profile and project files go in, and the folder's own bin/meeting builds the prompt.

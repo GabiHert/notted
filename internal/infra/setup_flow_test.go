@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/application/service"
-	"github.com/bhlabz/notted/internal/infra/store"
-	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/GabiHert/notted/internal/application/service"
+	"github.com/GabiHert/notted/internal/infra/store"
+	"github.com/GabiHert/notted/internal/integration/git"
 )
 
 func TestSetupCloneWithRealGit(t *testing.T) {

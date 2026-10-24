@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bhlabz/notted/internal/application/port"
-	"github.com/bhlabz/notted/internal/domain"
-	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
+	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/integration/audio/wavinfo"
 )
 
 func modelsCache(t *testing.T) string {

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/application/service"
-	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/GabiHert/notted/internal/application/service"
+	"github.com/GabiHert/notted/internal/integration/git"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )

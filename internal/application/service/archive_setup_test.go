@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bhlabz/notted/internal/domain"
-	"github.com/bhlabz/notted/internal/infra/store"
-	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/infra/store"
+	"github.com/GabiHert/notted/internal/integration/git"
 )
 
 var wantTemplateOrder = []string{

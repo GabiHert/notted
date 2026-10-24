@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 )
 
 var _ port.PromptSource = PromptSource{}

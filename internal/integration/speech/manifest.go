@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 // defaultManifestJSON is the manifest pinned to this build: the upstream

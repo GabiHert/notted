@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bhlabz/notted/internal/application/port"
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 // SessionService runs a meeting's own Claude Code conversation in a terminal.

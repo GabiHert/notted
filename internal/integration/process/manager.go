@@ -11,7 +11,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 	"github.com/creack/pty"
 )
 

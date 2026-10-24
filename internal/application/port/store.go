@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/bhlabz/notted/internal/domain"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 // MeetingStore persists meetings, their chunks and their segments.

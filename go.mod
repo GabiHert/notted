@@ -1,4 +1,4 @@
-module github.com/bhlabz/notted
+module github.com/GabiHert/notted
 
 go 1.26
 

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 )
 
 func newStreamer(t *testing.T, extra ...string) *Streamer {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/bhlabz/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/application/port"
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
