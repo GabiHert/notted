@@ -18,9 +18,22 @@ Run `make build`. The app is `build/bin/Notted.app`. `make test` runs every chec
 
 ## First run
 
-The app is signed ad hoc, not notarized, so the first open is blocked. Open System Settings > Privacy & Security and click **Open Anyway**.
+The app is not notarized, so macOS may block the first open. Open System Settings > Privacy & Security and click **Open Anyway**.
 
-Notted asks for the microphone and for Screen & System Audio Recording when you first record. After you grant screen recording, quit and reopen Notted. Every rebuild changes the ad-hoc signature, so macOS may ask for both permissions again.
+Notted asks for the microphone and for Screen & System Audio Recording when you first record. After you grant screen recording, quit and reopen Notted. If your keychain has no "Notted Local Signing" certificate, every build is signed ad hoc with a new identity, and macOS asks for both permissions again after each build. See the next section.
+
+## Sign with your own certificate (once)
+
+Run `bash scripts/create-signing-identity.sh` once. It creates a self-signed code-signing
+certificate named "Notted Local Signing" in your login keychain, and macOS asks for your login
+password so it can trust that certificate for code signing. From then on, `make build` signs
+with it and prints `sign-bundle: signing with "Notted Local Signing"`, so macOS keeps the
+microphone and screen recording permissions across builds and updates. If macOS asks whether
+codesign may use the key, click **Always Allow**. Without the certificate, `make build` signs ad
+hoc and prints a note.
+
+The certificate stays in your keychain and signs only the builds you make yourself. To remove
+it, delete "Notted Local Signing" in Keychain Access.
 
 ## Set up
 

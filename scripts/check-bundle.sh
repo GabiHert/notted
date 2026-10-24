@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bundle check: the built Notted.app carries its helper and speech libraries and is signed.
+# Bundle check: the built Notted.app carries its helper and speech libraries and is signed ad hoc or with Notted Local Signing.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -34,4 +34,26 @@ sig="$(codesign -dv --verbose=2 "$C/MacOS/audiocap" 2>&1)"
 grep -qx 'Identifier=tech.bhlabs.notted.audiocap' <<<"$sig" ||
   fail "audiocap identifier is not tech.bhlabs.notted.audiocap"
 
-echo "check-bundle: OK"
+# kind_of <path>: adhoc, local (Notted Local Signing) or other.
+kind_of() {
+  local info
+  info="$(codesign -dv --verbose=2 "$1" 2>&1)"
+  if grep -qx 'Signature=adhoc' <<<"$info"; then
+    echo adhoc
+  elif grep -qx 'Authority=Notted Local Signing' <<<"$info"; then
+    echo local
+  else
+    echo other
+  fi
+}
+want="$(kind_of "$APP")"
+[ "$want" != other ] || fail "Notted.app is signed neither ad hoc nor with Notted Local Signing"
+for f in "$C/MacOS/audiocap" "$C"/Frameworks/*.dylib; do
+  [ -e "$f" ] || continue
+  [ "$(kind_of "$f")" = "$want" ] || fail "${f#"$C/"} is signed differently from Notted.app"
+done
+if [ "$want" = adhoc ]; then
+  echo "check-bundle: OK (signed ad hoc)"
+else
+  echo "check-bundle: OK (signed with Notted Local Signing)"
+fi

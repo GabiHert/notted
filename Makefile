@@ -11,8 +11,8 @@ build: helper
 	MACOSX_DEPLOYMENT_TARGET=14.0 CGO_CFLAGS=-mmacosx-version-min=14.0 CGO_LDFLAGS=-mmacosx-version-min=14.0 wails build -platform darwin/arm64
 	touch frontend/dist/.gitkeep
 	cp helpers/audiocap/build/audiocap $(APP)/Contents/MacOS/audiocap
-	codesign -f -s - --identifier tech.bhlabs.notted.audiocap $(APP)/Contents/MacOS/audiocap
 	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Notted
+	bash scripts/sign-bundle.sh $(APP)
 	bash scripts/check-bundle.sh
 test-go:
 	go vet ./...
@@ -23,4 +23,5 @@ check:
 	bash scripts/check-clean.sh
 	bash scripts/check-invariants.sh
 	bash scripts/test-checks.sh
+	bash scripts/test-signing.sh
 test: test-go check test-fe
