@@ -1,0 +1,22 @@
+.nt-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+.nt-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.nt-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.nt-main__col {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 40px;
+}

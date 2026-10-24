@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "preview:fixtures": "vite build --mode preview --outDir dist-preview --emptyOutDir && vite preview --mode preview --outDir dist-preview --port 4173 --strictPort"
   },
   "dependencies": {
     "react": "^18.3.1",

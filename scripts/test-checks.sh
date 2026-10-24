@@ -42,7 +42,8 @@ fresh; mkdir -p "$tmp/internal"; printf 'package x\n\nimport _ "quant/internal/x
 expect "reference-import" check-clean.sh reference-import
 
 fresh; mkdir -p "$tmp/internal"; echo 'package x' > "$tmp/internal/nolicense.go"
-echo '| `internal/nolicense.go` | `internal/nolicense.go` (lines 1-1) | planted |' >> "$tmp/NOTICE.md"
+row='| `internal/nolicense.go` | `internal/nolicense.go` (lines 1-1) | planted |'
+awk -v row="$row" '{print} /^\|---\|---\|---\|$/{print row}' "$tmp/NOTICE.md" > "$tmp/NOTICE.new" && mv "$tmp/NOTICE.new" "$tmp/NOTICE.md"
 expect "notice" check-clean.sh notice
 
 fresh; sed -i.bak 's/tech\.bhlabs\.notted/com.wails.notted/' "$tmp/build/darwin/Info.plist"; rm -f "$tmp/build/darwin/Info.plist.bak"

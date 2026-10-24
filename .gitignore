@@ -9,3 +9,4 @@ frontend/dist/*
 !**/testdata/**/*.wav
 *.sqlite
 build/appicon.png
+frontend/dist-preview/

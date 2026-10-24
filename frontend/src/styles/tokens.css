@@ -1,0 +1,72 @@
+:root {
+  --bg: #fbfbf8;
+  --bar: #f1f2ee;
+  --side: #f1f2ee;
+  --card: #ffffff;
+  --fg: #1d2330;
+  --fg2: #4b5263;
+  --fg3: #7c8292;
+  --fg3-text: #686e7e;
+  --border: #dfe1da;
+  --sel: #e3e7f5;
+  --dot: #d3d5cd;
+  --accent: #24408e;
+  --on-accent: #ffffff;
+  --rec: #b4322a;
+  --rec-bg: #f6e3e1;
+  --wave: #9aa6c8;
+  --speaker: #24408e;
+  --font-sans: "IBM Plex Sans", sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
+  --font-notes: "Newsreader", Georgia, serif;
+  --notes-size: 14.5px;
+  --h3: 19px;
+  --radius: 10px;
+  --r-sm: 5px;
+  --r-md: 6px;
+  --shadow: 0 1px 2px rgba(29,35,48,.06), 0 14px 30px -14px rgba(29,35,48,.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1a18;
+    --bar: #151412;
+    --side: #151412;
+    --card: #232220;
+    --fg: #ece8df;
+    --fg2: #bab6ab;
+    --fg3: #8e8f98;
+    --fg3-text: #9c9da6;
+    --border: #35332f;
+    --sel: #2b3142;
+    --dot: #4a4843;
+    --accent: #8fa3e8;
+    --on-accent: #12162a;
+    --rec: #f0877d;
+    --rec-bg: #3b2220;
+    --wave: #5b6794;
+    --speaker: #a9b8f0;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 30px -14px rgba(0, 0, 0, 0.7);
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #1b1a18;
+  --bar: #151412;
+  --side: #151412;
+  --card: #232220;
+  --fg: #ece8df;
+  --fg2: #bab6ab;
+  --fg3: #8e8f98;
+  --fg3-text: #9c9da6;
+  --border: #35332f;
+  --sel: #2b3142;
+  --dot: #4a4843;
+  --accent: #8fa3e8;
+  --on-accent: #12162a;
+  --rec: #f0877d;
+  --rec-bg: #3b2220;
+  --wave: #5b6794;
+  --speaker: #a9b8f0;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 30px -14px rgba(0, 0, 0, 0.7);
+}

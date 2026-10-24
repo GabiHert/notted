@@ -1,0 +1,112 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--fg);
+  margin: 0 0 4px;
+}
+h3 {
+  font-family: var(--font-display);
+  font-size: var(--h3);
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+button,
+input,
+select {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg);
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input,
+select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 6px 8px;
+}
+.nt-btn {
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+}
+.nt-btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+}
+.nt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.nt-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.nt-card--error {
+  border-color: var(--rec);
+  color: var(--fg);
+}
+.nt-card__header {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg3-text);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.nt-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.nt-bar__fill {
+  height: 100%;
+  background: var(--wave);
+}
+.nt-bar--indeterminate .nt-bar__fill {
+  width: 40%;
+  animation: nt-slide 1.4s cubic-bezier(0, 0, 1, 1) infinite;
+}
+@keyframes nt-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}

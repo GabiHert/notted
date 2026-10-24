@@ -21,6 +21,7 @@ import (
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
 // helperPath is $NOTTED_AUDIOCAP if set, else the helper next to the app binary.
@@ -61,11 +62,13 @@ func Run(assets embed.FS) error {
 	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
-		Title:     "Notted",
-		Width:     1280,
-		Height:    800,
-		MinWidth:  960,
-		MinHeight: 600,
+		Title:            "Notted",
+		Width:            1280,
+		Height:           800,
+		MinWidth:         960,
+		MinHeight:        600,
+		BackgroundColour: &options.RGBA{R: 251, G: 251, B: 248, A: 255},
+		Mac:              &mac.Options{TitleBar: mac.TitleBarHiddenInset()},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

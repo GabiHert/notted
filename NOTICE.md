@@ -44,3 +44,12 @@ SOFTWARE.
 | `internal/integration/process/manager.go` | `internal/integration/process/manager.go` (lines 85-115, 245-494, 551-562) | generic argv from the caller; no shell, persona, MCP, output file or remote; Wails events per meeting; no automatic respawn; the permission-skipping flag removed |
 | `internal/application/service/instructions_fs.go` | `internal/application/service/file_service.go` (lines 70-104, 198-238, 311-332) | rooted at the archive folder; instruction patterns only; no events |
 | `scripts/fixup-macos-dylibs.sh` | `scripts/fixup-macos-dylibs.sh` (lines 1-154) | Notted paths |
+
+## Fonts
+
+Newsreader and IBM Plex Sans are bundled under the SIL Open Font License 1.1; see
+`frontend/src/assets/fonts/OFL-*.txt`. The woff2 files come from the npm packages
+`@fontsource-variable/newsreader` 5.3.0 (Newsreader, optical-size variable files, latin and
+latin-ext) and `@fontsource/ibm-plex-sans` 5.3.0 (IBM Plex Sans 400, 500 and 600, latin and
+latin-ext), fetched with `npm pack`. The packages are not dependencies, and nothing is fetched
+at runtime.
