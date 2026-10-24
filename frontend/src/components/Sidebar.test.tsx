@@ -57,3 +57,10 @@ test("refreshes the list on recording:state", async () => {
   expect(await screen.findByText("Planning review")).toBeInTheDocument();
   expect(ListMeetings).toHaveBeenCalledTimes(2);
 });
+
+test("Settings carries aria-current only while selected", async () => {
+  const { rerender } = render(<Sidebar view={{ kind: "new" }} onSelect={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Settings" })).not.toHaveAttribute("aria-current");
+  rerender(<Sidebar view={{ kind: "settings" }} onSelect={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "true");
+});

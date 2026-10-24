@@ -50,6 +50,7 @@ test("warning and error cards show the message verbatim", async () => {
   expect(screen.getByText("No sound from other people yet.")).toBeInTheDocument();
   await act(async () => emit("recording:state", { meetingId: "m1", state: "ready", error: "The recorder stopped." }));
   expect(screen.getByText("The recorder stopped.")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("The recorder stopped.");
 });
 
 test("ignores state events of other meetings", async () => {

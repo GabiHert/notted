@@ -25,10 +25,14 @@ export const StartRecording = vi.fn();
 export const StopRecording = vi.fn();
 export const GetModelStatus = vi.fn();
 export const DownloadModels = vi.fn();
+export const ListClients = vi.fn();
+export const SetMeetingClient = vi.fn();
+export const GenerateSummary = vi.fn();
+export const CommitAndPushMeeting = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListClients, SetMeetingClient, GenerateSummary, CommitAndPushMeeting, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -40,6 +44,10 @@ export function resetBindings() {
   GetTranscript.mockResolvedValue([]);
   DownloadModels.mockResolvedValue(undefined);
   StopRecording.mockResolvedValue(undefined);
+  ListClients.mockResolvedValue(["acme", "globex"]);
+  SetMeetingClient.mockResolvedValue(undefined);
+  GenerateSummary.mockResolvedValue(undefined);
+  CommitAndPushMeeting.mockResolvedValue({ commit: "abc1234" });
   GetModelStatus.mockResolvedValue({ language: "pt-BR", ready: true, missing: "", downloadBytes: 0, downloading: false });
 }
 

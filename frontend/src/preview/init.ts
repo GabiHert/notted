@@ -15,6 +15,17 @@ export function initPreview(): View {
       return { kind: "meeting", id: "fx-transcribing" };
     case "ready":
       return { kind: "meeting", id: "fx-ready" };
+    case "no-client":
+      return { kind: "meeting", id: "fx-no-client" };
+    case "summarizing":
+    case "summary-error":
+      return { kind: "meeting", id: "fx-ready" };
+    case "summarized":
+    case "client-locked":
+      return { kind: "meeting", id: "fx-summarized" };
+    case "save-dialog":
+    case "save-failed":
+      return { kind: "meeting", id: "fx-ready" };
     default:
       return { kind: "meeting", id: "fx-recording" };
   }

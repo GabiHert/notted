@@ -9,6 +9,21 @@ const meetings = [
   { id: "fx-recording", title: "Weekly sync", startedAt: minutes(5), endedAt: "", language: "en", clientKey: "acme", state: "recording", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
   { id: "fx-transcribing", title: "Planning review", startedAt: "2026-10-22T16:00:00", endedAt: "2026-10-22T16:42:00", language: "pt-BR", clientKey: "acme", state: "transcribing", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
   { id: "fx-ready", title: "Kickoff with the acme team", startedAt: "2026-10-21T10:30:00", endedAt: "2026-10-21T11:15:00", language: "en", clientKey: "acme", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  { id: "fx-no-client", title: "Intro call", startedAt: "2026-10-20T09:00:00", endedAt: "2026-10-20T09:30:00", language: "en", clientKey: "", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  {
+    id: "fx-summarized",
+    title: "Budget review",
+    startedAt: "2026-10-19T15:00:00",
+    endedAt: "2026-10-19T15:50:00",
+    language: "en",
+    clientKey: "acme",
+    state: "summarized",
+    hasSession: screen === "client-locked",
+    folder: "clients/acme/2026-10-19-budget-review",
+    summaryMd:
+      "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n\n## Decisions\n\n- Keep the current vendor until March\n- Move the review to **Fridays**\n\n## Open questions\n\n1. Who owns the `forecast.xlsx` update?\n2. Is the second invoice already paid?\n",
+    suggestionsMd: "# Suggestions\n\n- [ ] Send the draft budget to the acme team\n- [ ] Book the Friday review\n- [x] Share last week's notes\n",
+  },
 ];
 
 const transcript = [
@@ -35,6 +50,39 @@ if (screen === "alerts") {
       }),
     500,
   );
+}
+
+const clientsEmpty = false;
+const clientFixtures = ["acme", "globex", "initech"];
+function afterOpen(fn: () => void) {
+  setTimeout(fn, 500);
+}
+if (screen === "summarizing") {
+  afterOpen(() => emit("summary:state", { meetingId: "fx-ready", pass: "suggestions", state: "running" }));
+}
+if (screen === "summary-error") {
+  afterOpen(() =>
+    emit("summary:state", { meetingId: "fx-ready", pass: "summary", state: "error", message: "Claude Code stopped with an error:\nnot logged in. Run claude in a terminal and sign in." }),
+  );
+}
+if (screen === "save-dialog" || screen === "save-failed") {
+  afterOpen(() =>
+    emit("export:ready", {
+      meetingId: "fx-ready",
+      folder: "clients/acme/2026-10-21-kickoff-with-the-acme-team",
+      files: ["clients/acme/2026-10-21-kickoff-with-the-acme-team/transcript.md", "clients/acme/2026-10-21-kickoff-with-the-acme-team/summary.md", "clients/acme/2026-10-21-kickoff-with-the-acme-team/suggestions.md"],
+    }),
+  );
+}
+
+export async function ListClients() {
+  return clientsEmpty ? [] : clientFixtures;
+}
+export async function SetMeetingClient(_id: string, _key: string) {}
+export async function GenerateSummary(_id: string) {}
+export async function CommitAndPushMeeting(_id: string) {
+  if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
+  return { commit: "abc1234" };
 }
 
 export async function ListMeetings() {

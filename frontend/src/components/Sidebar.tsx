@@ -50,6 +50,7 @@ export function Sidebar({ view, onSelect }: Props) {
       </div>
       <button
         className={"nt-sidebar__settings" + (view.kind === "settings" ? " nt-row--selected" : "")}
+        aria-current={view.kind === "settings" ? "true" : undefined}
         onClick={() => onSelect({ kind: "settings" })}
       >
         Settings

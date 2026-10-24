@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EventsOn, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
+import { ClientCard } from "./ClientCard";
 import { ModelBanner } from "./ModelBanner";
 import { RecordingPill } from "./RecordingPill";
+import { SaveDialog } from "./SaveDialog";
+import { SuggestionsCard } from "./SuggestionsCard";
+import { SummaryCard } from "./SummaryCard";
 import { TranscriptCard } from "./TranscriptCard";
 import "./MeetingPage.css";
 
@@ -12,6 +16,9 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
   const [warning, setWarning] = useState("");
   const [error, setError] = useState("");
   const [stopping, setStopping] = useState(false);
+  const [notCommitted, setNotCommitted] = useState(false);
+  const loadRef = useRef<() => void>(() => {});
+  const refresh = useCallback(() => loadRef.current(), []);
 
   useEffect(() => {
     let live = true;
@@ -20,10 +27,12 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
     setWarning("");
     setError("");
     setStopping(false);
+    setNotCommitted(false);
     const load = () =>
       GetMeeting(meetingId)
         .then((m) => live && setMeeting(m))
         .catch((e) => live && setError(errorMessage(e)));
+    loadRef.current = load;
     load();
     GetTranscript(meetingId)
       .then((list) => {
@@ -41,14 +50,20 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       if (e.meetingId !== meetingId) return;
       setSegments((cur) => mergeSegments(cur, [e.segment]));
     });
+    const offExport = EventsOn("export:ready", (e: { meetingId: string }) => {
+      if (e.meetingId === meetingId) setNotCommitted(false);
+    });
     return () => {
       live = false;
       offState();
       offSeg();
+      offExport();
     };
   }, [meetingId]);
 
-  if (!meeting) return error ? <div className="nt-card nt-card--error">{error}</div> : null;
+  if (!meeting) return error ? <div className="nt-card nt-card--error" role="alert">
+      {error}
+    </div> : null;
 
   const stop = () => {
     setStopping(true);
@@ -89,8 +104,14 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
           <p className="nt-meeting__msg">{warning}</p>
         </section>
       )}
-      {error && <div className="nt-card nt-card--error">{error}</div>}
+      {error && <div className="nt-card nt-card--error" role="alert">
+      {error}
+    </div>}
       <TranscriptCard segments={segments} follow={meeting.state === "recording"} />
+      <ClientCard meetingId={meetingId} clientKey={meeting.clientKey} hasSession={meeting.hasSession} onChanged={refresh} />
+      <SummaryCard meeting={meeting} notCommitted={notCommitted} onRefresh={refresh} />
+      <SuggestionsCard suggestionsMd={meeting.suggestionsMd} />
+      <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
     </div>
   );
 }
