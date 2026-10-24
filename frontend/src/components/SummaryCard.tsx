@@ -31,10 +31,10 @@ export function SummaryCard({ meeting, notCommitted, onRefresh }: Props) {
   }, [id, onRefresh]);
 
   const finished = meeting.state === "ready" || meeting.state === "summarized";
-  const hasClient = meeting.clientKey !== "";
+  const hasProject = meeting.projectKey !== "";
   const running = pass !== null;
-  const disabled = !finished || !hasClient || running;
-  const reason = !finished ? "Available when the transcript is finished." : !hasClient ? "Choose a client first." : "";
+  const disabled = !finished || !hasProject || running;
+  const reason = !finished ? "Available when the transcript is finished." : !hasProject ? "Choose a project first." : "";
   const has = meeting.summaryMd !== "";
 
   const generate = () => {

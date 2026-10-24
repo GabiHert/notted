@@ -38,16 +38,16 @@ export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }
 
-export function ListClients() {
-  return window['go']['wails']['App']['ListClients']();
-}
-
 export function ListInstructionFiles() {
   return window['go']['wails']['App']['ListInstructionFiles']();
 }
 
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function ListProjects() {
+  return window['go']['wails']['App']['ListProjects']();
 }
 
 export function PreviewPrompt(arg1) {
@@ -62,8 +62,8 @@ export function ResizeSession(arg1, arg2, arg3) {
   return window['go']['wails']['App']['ResizeSession'](arg1, arg2, arg3);
 }
 
-export function SetMeetingClient(arg1, arg2) {
-  return window['go']['wails']['App']['SetMeetingClient'](arg1, arg2);
+export function SetMeetingProject(arg1, arg2) {
+  return window['go']['wails']['App']['SetMeetingProject'](arg1, arg2);
 }
 
 export function SetSettings(arg1) {

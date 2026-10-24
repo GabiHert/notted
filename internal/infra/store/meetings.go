@@ -9,7 +9,7 @@ import (
 	"github.com/bhlabz/notted/internal/domain"
 )
 
-const meetingCols = `id, title, started_at, ended_at, language, client_key, claude_session_id, folder, state, summary_md, suggestions_md`
+const meetingCols = `id, title, started_at, ended_at, language, project_key, claude_session_id, folder, state, summary_md, suggestions_md`
 
 const trackOrder = `CASE track WHEN 'mic' THEN 0 ELSE 1 END`
 
@@ -27,9 +27,9 @@ type scanner interface{ Scan(dest ...any) error }
 func scanMeeting(r scanner) (domain.Meeting, error) {
 	var m domain.Meeting
 	var started string
-	var ended, client, session, folder, summary, sugg sql.NullString
+	var ended, project, session, folder, summary, sugg sql.NullString
 	var lang, state string
-	if err := r.Scan(&m.ID, &m.Title, &started, &ended, &lang, &client, &session, &folder, &state, &summary, &sugg); err != nil {
+	if err := r.Scan(&m.ID, &m.Title, &started, &ended, &lang, &project, &session, &folder, &state, &summary, &sugg); err != nil {
 		return m, err
 	}
 	t, err := time.Parse(time.RFC3339Nano, started)
@@ -47,7 +47,7 @@ func scanMeeting(r scanner) (domain.Meeting, error) {
 	}
 	m.Language = domain.Language(lang)
 	m.State = domain.MeetingState(state)
-	m.ClientKey, m.ClaudeSessionID, m.Folder = client.String, session.String, folder.String
+	m.ProjectKey, m.ClaudeSessionID, m.Folder = project.String, session.String, folder.String
 	m.SummaryMD, m.SuggestionsMD = summary.String, sugg.String
 	return m, nil
 }
@@ -58,7 +58,7 @@ func (s *Store) CreateMeeting(ctx context.Context, m domain.Meeting) error {
 		ended = fmtTime(*m.EndedAt)
 	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO meetings (`+meetingCols+`) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-		m.ID, m.Title, fmtTime(m.StartedAt), ended, string(m.Language), nullable(m.ClientKey),
+		m.ID, m.Title, fmtTime(m.StartedAt), ended, string(m.Language), nullable(m.ProjectKey),
 		nullable(m.ClaudeSessionID), nullable(m.Folder), string(m.State), nullable(m.SummaryMD), nullable(m.SuggestionsMD))
 	return err
 }
@@ -112,8 +112,8 @@ func (s *Store) SetEndedAt(ctx context.Context, id string, t time.Time) error {
 	return s.updateOne(ctx, `UPDATE meetings SET ended_at = ? WHERE id = ?`, fmtTime(t), id)
 }
 
-func (s *Store) SetClientKey(ctx context.Context, id, key string) error {
-	return s.updateOne(ctx, `UPDATE meetings SET client_key = ? WHERE id = ?`, nullable(key), id)
+func (s *Store) SetProjectKey(ctx context.Context, id, key string) error {
+	return s.updateOne(ctx, `UPDATE meetings SET project_key = ? WHERE id = ?`, nullable(key), id)
 }
 
 func (s *Store) SetSummary(ctx context.Context, id, summaryMD string) error {

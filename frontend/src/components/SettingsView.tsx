@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ListClients } from "../api/bindings";
+import { ListProjects } from "../api/bindings";
 import { errorMessage } from "../format";
 import { InstructionFiles } from "./InstructionFiles";
 import { PromptPreview } from "./PromptPreview";
@@ -7,31 +7,31 @@ import { SetupForm } from "./SetupForm";
 import "./SettingsView.css";
 
 export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | null) => void } = {}) {
-  const [clients, setClients] = useState<string[]>([]);
-  const [clientsError, setClientsError] = useState("");
+  const [projects, setProjects] = useState<string[]>([]);
+  const [projectsError, setProjectsError] = useState("");
   const request = useRef(0);
 
-  const loadClients = useCallback(() => {
+  const loadProjects = useCallback(() => {
     const id = ++request.current;
-    ListClients()
+    ListProjects()
       .then((list) => {
         if (request.current !== id) return;
-        setClients(list ?? []);
-        setClientsError("");
+        setProjects(list ?? []);
+        setProjectsError("");
       })
       .catch((e) => {
         if (request.current !== id) return;
-        setClients([]);
-        setClientsError(errorMessage(e));
+        setProjects([]);
+        setProjectsError(errorMessage(e));
       });
   }, []);
 
   useEffect(() => {
-    loadClients();
+    loadProjects();
     return () => {
       request.current = -1;
     };
-  }, [loadClients]);
+  }, [loadProjects]);
 
   return (
     <div className="nt-settings">
@@ -42,9 +42,9 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         </button>
       </div>
       <div role="tabpanel" id="nt-panel-instructions" aria-labelledby="nt-tab-instructions">
-        <SetupForm clients={clients} clientsError={clientsError} onSaved={loadClients} />
+        <SetupForm projects={projects} projectsError={projectsError} onSaved={loadProjects} />
         <InstructionFiles onDirtyPath={onDirtyPath} />
-        <PromptPreview clients={clients} clientsError={clientsError} />
+        <PromptPreview projects={projects} projectsError={projectsError} />
       </div>
     </div>
   );

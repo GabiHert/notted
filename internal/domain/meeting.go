@@ -35,7 +35,7 @@ type Meeting struct {
 	StartedAt       time.Time  // UTC
 	EndedAt         *time.Time // nil while recording
 	Language        Language
-	ClientKey       string // "" = not chosen
+	ProjectKey      string // "" = not chosen
 	ClaudeSessionID string // "" = none yet
 	Folder          string // "" = never exported; else path relative to the archive checkout
 	State           MeetingState

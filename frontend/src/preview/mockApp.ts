@@ -6,20 +6,20 @@ const screen = readScreen();
 const minutes = (n: number) => new Date(Date.now() - n * 60_000).toISOString();
 
 const meetings = [
-  { id: "fx-recording", title: "Weekly sync", startedAt: minutes(5), endedAt: "", language: "en", clientKey: "acme", state: "recording", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
-  { id: "fx-transcribing", title: "Planning review", startedAt: "2026-10-22T16:00:00", endedAt: "2026-10-22T16:42:00", language: "pt-BR", clientKey: "acme", state: "transcribing", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
-  { id: "fx-ready", title: "Kickoff with the acme team", startedAt: "2026-10-21T10:30:00", endedAt: "2026-10-21T11:15:00", language: "en", clientKey: "acme", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
-  { id: "fx-no-client", title: "Intro call", startedAt: "2026-10-20T09:00:00", endedAt: "2026-10-20T09:30:00", language: "en", clientKey: "", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  { id: "fx-recording", title: "Weekly sync", startedAt: minutes(5), endedAt: "", language: "en", projectKey: "acme", state: "recording", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  { id: "fx-transcribing", title: "Planning review", startedAt: "2026-10-22T16:00:00", endedAt: "2026-10-22T16:42:00", language: "pt-BR", projectKey: "acme", state: "transcribing", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  { id: "fx-ready", title: "Kickoff with the acme team", startedAt: "2026-10-21T10:30:00", endedAt: "2026-10-21T11:15:00", language: "en", projectKey: "acme", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
+  { id: "fx-no-project", title: "Intro call", startedAt: "2026-10-20T09:00:00", endedAt: "2026-10-20T09:30:00", language: "en", projectKey: "", state: "ready", hasSession: false, folder: "", summaryMd: "", suggestionsMd: "" },
   {
     id: "fx-summarized",
     title: "Budget review",
     startedAt: "2026-10-19T15:00:00",
     endedAt: "2026-10-19T15:50:00",
     language: "en",
-    clientKey: "acme",
+    projectKey: "acme",
     state: "summarized",
-    hasSession: screen === "client-locked",
-    folder: "clients/acme/2026-10-19-budget-review",
+    hasSession: screen === "project-locked",
+    folder: "meetings/acme/2026/2026-10-19-budget-review",
     summaryMd:
       "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n\n## Decisions\n\n- Keep the current vendor until March\n- Move the review to **Fridays**\n\n## Open questions\n\n1. Who owns the `forecast.xlsx` update?\n2. Is the second invoice already paid?\n",
     suggestionsMd: "# Suggestions\n\n- [ ] Send the draft budget to the acme team\n- [ ] Book the Friday review\n- [x] Share last week's notes\n",
@@ -30,10 +30,10 @@ const meetings = [
     startedAt: "2026-10-19T15:00:00",
     endedAt: "2026-10-19T15:50:00",
     language: "en",
-    clientKey: "acme",
+    projectKey: "acme",
     state: "summarized",
     hasSession: true,
-    folder: "clients/acme/2026-10-19-budget-review",
+    folder: "meetings/acme/2026/2026-10-19-budget-review",
     summaryMd: "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n",
     suggestionsMd: "# Suggestions\n\n- [ ] Send the draft budget to the acme team\n",
   },
@@ -65,8 +65,8 @@ if (screen === "alerts") {
   );
 }
 
-const clientsEmpty = false;
-const clientFixtures = ["acme", "globex", "initech"];
+const projectsEmpty = false;
+const projectFixtures = ["acme", "globex", "initech"];
 function afterOpen(fn: () => void) {
   setTimeout(fn, 500);
 }
@@ -82,8 +82,8 @@ if (screen === "save-dialog" || screen === "save-failed") {
   afterOpen(() =>
     emit("export:ready", {
       meetingId: "fx-ready",
-      folder: "clients/acme/2026-10-21-kickoff-with-the-acme-team",
-      files: ["clients/acme/2026-10-21-kickoff-with-the-acme-team/transcript.md", "clients/acme/2026-10-21-kickoff-with-the-acme-team/summary.md", "clients/acme/2026-10-21-kickoff-with-the-acme-team/suggestions.md"],
+      folder: "meetings/acme/2026/2026-10-21-kickoff-with-the-acme-team",
+      files: ["meetings/acme/2026/2026-10-21-kickoff-with-the-acme-team/transcript.md", "meetings/acme/2026/2026-10-21-kickoff-with-the-acme-team/summary.md", "meetings/acme/2026/2026-10-21-kickoff-with-the-acme-team/suggestions.md"],
     }),
   );
 }
@@ -104,17 +104,17 @@ export async function SetSettings(_s: unknown) {
 const instructionFiles = [
   { path: "prompts/base.md", kind: "base", readOnly: true },
   { path: "instructions/README.md", kind: "readme", readOnly: false },
-  { path: "instructions/clients/acme.md", kind: "client", readOnly: false },
-  { path: "instructions/clients/globex.md", kind: "client", readOnly: false },
+  { path: "instructions/projects/acme.md", kind: "project", readOnly: false },
+  { path: "instructions/projects/globex.md", kind: "project", readOnly: false },
   { path: "instructions/people/ana.md", kind: "person", readOnly: false },
-  { path: "instructions/people/ana/acme.md", kind: "person-client", readOnly: false },
+  { path: "instructions/people/ana/acme.md", kind: "person-project", readOnly: false },
   { path: "instructions/local/notes.md", kind: "local", readOnly: false },
 ];
 const instructionText: Record<string, string> = {
   "prompts/base.md": "# Base prompt\n\nSummarize the meeting in short sections.\n\n- Decisions first\n- Then open questions\n",
-  "instructions/README.md": "# Guide\n\nOne file per client, one per person.\n",
-  "instructions/clients/acme.md": "# Acme\n\nUse the acme glossary. Keep the summary under one page.\n",
-  "instructions/clients/globex.md": "# Globex\n\nName the sponsor of each decision.\n",
+  "instructions/README.md": "# Guide\n\nOne file per project, one per person.\n",
+  "instructions/projects/acme.md": "# Acme\n\nUse the acme glossary. Keep the summary under one page.\n",
+  "instructions/projects/globex.md": "# Globex\n\nName the sponsor of each decision.\n",
   "instructions/people/ana.md": "# Ana\n\nWrite in short sentences.\n",
   "instructions/people/ana/acme.md": "# Ana for Acme\n\nList the follow-ups last.\n",
   "instructions/local/notes.md": "# Local notes\n",
@@ -126,11 +126,11 @@ export async function ReadInstructionFile(path: string) {
   return instructionText[path] ?? "";
 }
 export async function WriteInstructionFile(_path: string, _text: string) {
-  if (screen === "instructions-save-failed") throw new Error("Could not write instructions/clients/acme.md: permission denied");
+  if (screen === "instructions-save-failed") throw new Error("Could not write instructions/projects/acme.md: permission denied");
 }
 export async function PreviewPrompt(key: string) {
-  if (screen === "prompt-preview-failed") throw new Error(`There is no instructions/clients/${key}.md in the archive folder.`);
-  return `${instructionText["prompts/base.md"]}\n---\n${instructionText[`instructions/clients/${key}.md`] ?? ""}\n---\n${instructionText["instructions/people/ana.md"]}`;
+  if (screen === "prompt-preview-failed") throw new Error(`There is no instructions/projects/${key}.md in the archive folder.`);
+  return `${instructionText["prompts/base.md"]}\n---\n${instructionText[`instructions/projects/${key}.md`] ?? ""}\n---\n${instructionText["instructions/people/ana.md"]}`;
 }
 export async function StartSession(id: string) {
   if (screen === "session-error") throw new Error("Claude Code is not installed. Install it and try again.");
@@ -141,11 +141,11 @@ export async function WriteSession(_id: string, _data: string) {}
 export async function ResizeSession(_id: string, _cols: number, _rows: number) {}
 export async function StopSession(_id: string) {}
 
-export async function ListClients() {
-  if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its clients.");
-  return clientsEmpty ? [] : clientFixtures;
+export async function ListProjects() {
+  if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its projects.");
+  return projectsEmpty ? [] : projectFixtures;
 }
-export async function SetMeetingClient(_id: string, _key: string) {}
+export async function SetMeetingProject(_id: string, _key: string) {}
 export async function GenerateSummary(_id: string) {}
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");

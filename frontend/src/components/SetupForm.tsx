@@ -3,9 +3,9 @@ import { GetSettings, SetSettings } from "../api/bindings";
 import { errorMessage } from "../format";
 import "./SetupForm.css";
 
-type Props = { clients: string[]; clientsError: string; onSaved: () => void };
+type Props = { projects: string[]; projectsError: string; onSaved: () => void };
 
-export function SetupForm({ clients, clientsError, onSaved }: Props) {
+export function SetupForm({ projects, projectsError, onSaved }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState("");
   const [checkoutPath, setCheckoutPath] = useState("");
@@ -39,7 +39,7 @@ export function SetupForm({ clients, clientsError, onSaved }: Props) {
 
   const save = () => {
     const projectRoots = { ...roots };
-    for (const c of clients) {
+    for (const c of projects) {
       const v = (roots[c] ?? "").trim();
       if (v) projectRoots[c] = v;
       else delete projectRoots[c];
@@ -79,9 +79,9 @@ export function SetupForm({ clients, clientsError, onSaved }: Props) {
             <span className="nt-setup__help">The full path of your local clone of the meetings archive.</span>
           </div>
           <div className="nt-setup__sub">Project roots</div>
-          <span className="nt-setup__help">Optional. A folder per client that Claude Code may read for that client's meetings.</span>
-          {clientsError && <p className="nt-setup__help nt-setup__help--block">{clientsError}</p>}
-          {clients.map((c) => (
+          <span className="nt-setup__help">Optional. A folder per project that Claude Code may read during that project's meetings.</span>
+          {projectsError && <p className="nt-setup__help nt-setup__help--block">{projectsError}</p>}
+          {projects.map((c) => (
             <div className="nt-setup__root" key={c}>
               <label htmlFor={"nt-root-" + c}>{c}</label>
               <input id={"nt-root-" + c} placeholder="/full/path/to/the/project" value={roots[c] ?? ""} onChange={(e) => setRoots({ ...roots, [c]: e.target.value })} />

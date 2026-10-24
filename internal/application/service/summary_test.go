@@ -16,11 +16,11 @@ import (
 
 type fakePrompts struct{ err error }
 
-func (f fakePrompts) Prompt(_ context.Context, _, _, client string) (string, error) {
+func (f fakePrompts) Prompt(_ context.Context, _, _, project string) (string, error) {
 	if f.err != nil {
 		return "", f.err
 	}
-	return "PROMPT " + client, nil
+	return "PROMPT " + project, nil
 }
 
 type fakeRunner struct {
@@ -94,15 +94,15 @@ func newSumFixture(t *testing.T) *sumFixture {
 	return f
 }
 
-func (f *sumFixture) meeting(t *testing.T, id string, state domain.MeetingState, client string, segs bool) {
+func (f *sumFixture) meeting(t *testing.T, id string, state domain.MeetingState, project string, segs bool) {
 	t.Helper()
 	m := domain.Meeting{ID: id, Title: "Weekly sync", StartedAt: time.Date(2026, 3, 10, 15, 0, 0, 0, time.UTC),
 		Language: domain.LangPTBR, State: state}
 	if err := f.st.CreateMeeting(f.ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	if client != "" {
-		if err := f.st.SetClientKey(f.ctx, id, client); err != nil {
+	if project != "" {
+		if err := f.st.SetProjectKey(f.ctx, id, project); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -142,7 +142,7 @@ func TestSummaryChecksInOrder(t *testing.T) {
 	wantErr(t, f.svc.Generate(f.ctx, "r1"), "The transcript is not finished yet. Wait until transcription completes.")
 
 	f.meeting(t, "nc", domain.StateReady, "", true)
-	wantErr(t, f.svc.Generate(f.ctx, "nc"), "Choose a client for this meeting first.")
+	wantErr(t, f.svc.Generate(f.ctx, "nc"), "Choose a project for this meeting first.")
 
 	f.meeting(t, "ok", domain.StateReady, "acme", true)
 	f.meeting(t, "empty", domain.StateReady, "acme", false)
@@ -181,7 +181,7 @@ func TestSummaryAlreadyRunning(t *testing.T) {
 }
 
 const wantSummaryStdin = "Use the meetings skill's `process` format (its file is .claude/skills/meetings/SKILL.md) to write this meeting's summary.md, but do not write, stage or commit any file and do not run the save step. Reply with the content of summary.md only: start with the line \"# Summary: Weekly sync\" and add nothing before or after it.\n\n" +
-	"Meeting: Weekly sync\nDate: 2026-03-10\nClient: acme\nLanguage: pt-BR\n" +
+	"Meeting: Weekly sync\nDate: 2026-03-10\nProject: acme\nLanguage: pt-BR\n" +
 	"Transcript lines: (mic) is the person who recorded; (others) is everyone else.\n\n" +
 	"[00:00:01] (mic) hello there\n[00:01:05] (others) second\n[01:02:05] (mic) third\n"
 
@@ -277,13 +277,13 @@ func TestSummaryPassFailureStoresNothing(t *testing.T) {
 
 func TestSummaryPromptFailure(t *testing.T) {
 	f := newSumFixture(t)
-	f.svc.prompts = fakePrompts{err: errors.New("No client file instructions/clients/acme.md.")}
+	f.svc.prompts = fakePrompts{err: errors.New("No project file instructions/projects/acme.md.")}
 	f.meeting(t, "m1", domain.StateReady, "acme", true)
 	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
 		t.Fatal(err)
 	}
 	f.svc.Wait()
-	if got := strings.Join(f.states(), "|"); got != "summary/error:No client file instructions/clients/acme.md." {
+	if got := strings.Join(f.states(), "|"); got != "summary/error:No project file instructions/projects/acme.md." {
 		t.Fatalf("states = %q", got)
 	}
 	if len(f.run.runs) != 0 {

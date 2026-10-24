@@ -27,8 +27,8 @@ export const StartRecording = vi.fn();
 export const StopRecording = vi.fn();
 export const GetModelStatus = vi.fn();
 export const DownloadModels = vi.fn();
-export const ListClients = vi.fn();
-export const SetMeetingClient = vi.fn();
+export const ListProjects = vi.fn();
+export const SetMeetingProject = vi.fn();
 export const GenerateSummary = vi.fn();
 export const CommitAndPushMeeting = vi.fn();
 export const GetSettings = vi.fn();
@@ -44,7 +44,7 @@ export const StopSession = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListClients, SetMeetingClient, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, StartSession, WriteSession, ResizeSession, StopSession, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -59,8 +59,8 @@ export function resetBindings() {
   GetTranscript.mockResolvedValue([]);
   DownloadModels.mockResolvedValue(undefined);
   StopRecording.mockResolvedValue(undefined);
-  ListClients.mockResolvedValue(["acme", "globex"]);
-  SetMeetingClient.mockResolvedValue(undefined);
+  ListProjects.mockResolvedValue(["acme", "globex"]);
+  SetMeetingProject.mockResolvedValue(undefined);
   GenerateSummary.mockResolvedValue(undefined);
   CommitAndPushMeeting.mockResolvedValue({ commit: "abc1234" });
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
@@ -83,7 +83,7 @@ export function meeting(over: Record<string, unknown> = {}) {
     startedAt: "2026-10-23T14:05:00",
     endedAt: "",
     language: "en",
-    clientKey: "acme",
+    projectKey: "acme",
     state: "ready",
     hasSession: false,
     folder: "",

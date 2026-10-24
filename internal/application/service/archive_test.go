@@ -56,10 +56,10 @@ func newArchFixture(t *testing.T) *archFixture {
 	}
 	must(os.MkdirAll(filepath.Join(archive, "bin"), 0o755))
 	must(os.WriteFile(filepath.Join(archive, "bin", "meeting"), []byte("#!/bin/sh\n"), 0o755))
-	must(os.MkdirAll(filepath.Join(archive, "instructions", "clients"), 0o755))
-	must(os.WriteFile(filepath.Join(archive, "instructions", "clients", "acme.md"), []byte("acme\n"), 0o644))
-	must(os.WriteFile(filepath.Join(archive, "instructions", "clients", "globex.md"), []byte("globex\n"), 0o644))
-	must(os.WriteFile(filepath.Join(archive, "instructions", "clients", "README.txt"), []byte("x\n"), 0o644))
+	must(os.MkdirAll(filepath.Join(archive, "instructions", "projects"), 0o755))
+	must(os.WriteFile(filepath.Join(archive, "instructions", "projects", "acme.md"), []byte("acme\n"), 0o644))
+	must(os.WriteFile(filepath.Join(archive, "instructions", "projects", "globex.md"), []byte("globex\n"), 0o644))
+	must(os.WriteFile(filepath.Join(archive, "instructions", "projects", "README.txt"), []byte("x\n"), 0o644))
 	must(os.MkdirAll(filepath.Join(archive, ".githooks"), 0o755))
 	hook, err := os.ReadFile(filepath.Join("..", "..", "integration", "git", "testdata", "pre-commit"))
 	must(err)
@@ -98,7 +98,7 @@ func (f *archFixture) newMeeting(id, title string) domain.Meeting {
 		f.t.Fatal(err)
 	}
 	for _, err := range []error{
-		f.st.SetClientKey(f.ctx, id, "acme"),
+		f.st.SetProjectKey(f.ctx, id, "acme"),
 		f.st.SetClaudeSessionID(f.ctx, id, "11111111-2222-3333-4444-555555555555"),
 		f.st.SetSummary(f.ctx, id, "## Summary\n\nbody\n\n\n"),
 		f.st.SetSuggestions(ctx0, id, "- task one"),
@@ -129,26 +129,26 @@ func wantErr(t *testing.T, err error, want string) {
 	}
 }
 
-func TestArchiveListAndSetClient(t *testing.T) {
+func TestArchiveListAndSetProject(t *testing.T) {
 	f := newArchFixture(t)
-	keys, err := f.svc.ListClients(f.ctx)
+	keys, err := f.svc.ListProjects(f.ctx)
 	if err != nil || strings.Join(keys, ",") != "acme,globex" {
 		t.Fatalf("keys %v %v", keys, err)
 	}
-	wantErr(t, f.svc.SetMeetingClient(f.ctx, "m1", "nope"), `Unknown client "nope". Add instructions/clients/nope.md to the archive first.`)
-	wantErr(t, f.svc.SetMeetingClient(f.ctx, "m1", "globex"), "This meeting's client is fixed once its summary exists.")
-	if err := f.svc.SetMeetingClient(f.ctx, "m1", "acme"); err != nil {
+	wantErr(t, f.svc.SetMeetingProject(f.ctx, "m1", "nope"), `Unknown project "nope". Add instructions/projects/nope.md to the archive first.`)
+	wantErr(t, f.svc.SetMeetingProject(f.ctx, "m1", "globex"), "This meeting's project is fixed once its summary exists.")
+	if err := f.svc.SetMeetingProject(f.ctx, "m1", "acme"); err != nil {
 		t.Fatalf("same key must be a no-op: %v", err)
 	}
 	f.newMeeting2NoSession("m9")
-	if err := f.svc.SetMeetingClient(f.ctx, "m9", "globex"); err != nil {
+	if err := f.svc.SetMeetingProject(f.ctx, "m9", "globex"); err != nil {
 		t.Fatal(err)
 	}
 	m, _ := f.st.GetMeeting(f.ctx, "m9")
-	if m.ClientKey != "globex" {
-		t.Fatalf("client %q", m.ClientKey)
+	if m.ProjectKey != "globex" {
+		t.Fatalf("project %q", m.ProjectKey)
 	}
-	wantErr(t, f.svc.SetMeetingClient(f.ctx, "zzz", "acme"), "Meeting not found.")
+	wantErr(t, f.svc.SetMeetingProject(f.ctx, "zzz", "acme"), "Meeting not found.")
 }
 
 func (f *archFixture) newMeeting2NoSession(id string) {
@@ -164,18 +164,18 @@ func TestArchiveCheckoutMessages(t *testing.T) {
 	if err := f.st.SaveSettings(f.ctx, domain.Settings{Profile: "ana", ProjectRoots: map[string]string{}}); err != nil {
 		t.Fatal(err)
 	}
-	_, err := f.svc.ListClients(f.ctx)
+	_, err := f.svc.ListProjects(f.ctx)
 	wantErr(t, err, "Set the meetings archive folder in Settings > Instructions first.")
 	if err := f.st.SaveSettings(f.ctx, domain.Settings{Profile: "ana", CheckoutPath: t.TempDir(), ProjectRoots: map[string]string{}}); err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.svc.ListClients(f.ctx)
+	_, err = f.svc.ListProjects(f.ctx)
 	wantErr(t, err, "That folder is not a meetings archive checkout: bin/meeting is missing.")
 }
 
 const goldenMeeting = `---
 date: %DATE%
-client: acme
+project: acme
 title: "Weekly sync — Q4"
 participants: []
 source: app
@@ -310,6 +310,24 @@ func TestArchiveHookRejection(t *testing.T) {
 	}
 	_, err = f.svc.CommitAndPushMeeting(f.ctx, "m1")
 	if err == nil || !strings.HasPrefix(err.Error(), "The commit was rejected:\n") || !strings.Contains(err.Error(), "pre-commit: rejected") {
+		t.Fatalf("err %v", err)
+	}
+	if got := runGit(t, f.archive, "diff", "--cached", "--name-only", "--", res.Folder); got != "" {
+		t.Fatalf("still staged: %q", got)
+	}
+}
+
+func TestArchiveHookRejectsUnknownProject(t *testing.T) {
+	f := newArchFixture(t)
+	if err := f.st.SetProjectKey(f.ctx, "m1", "initech"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := f.svc.ExportMeeting(f.ctx, "m1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.svc.CommitAndPushMeeting(f.ctx, "m1")
+	if err == nil || !strings.Contains(err.Error(), `project "initech" has no instructions/projects/initech.md`) {
 		t.Fatalf("err %v", err)
 	}
 	if got := runGit(t, f.archive, "diff", "--cached", "--name-only", "--", res.Folder); got != "" {

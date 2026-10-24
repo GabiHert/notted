@@ -19,7 +19,7 @@ func TestPromptReturnsStdoutAndPassesProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "PROMPT client=acme profile=ana" {
+	if got != "PROMPT project=acme profile=ana" {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -42,7 +42,7 @@ func TestPromptStripsCredentials(t *testing.T) {
 func TestPromptFailureReportsLastStderrLine(t *testing.T) {
 	checkout, _, _ := fixture(t)
 	_, err := newSource([]string{"PATH=/usr/bin:/bin"}).Prompt(context.Background(), checkout, "ana", "missing")
-	want := "bin/meeting prompt failed: No client file instructions/clients/missing.md."
+	want := "bin/meeting prompt failed: No project file instructions/projects/missing.md."
 	if err == nil || err.Error() != want {
 		t.Fatalf("got %v", err)
 	}

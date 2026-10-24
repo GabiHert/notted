@@ -20,11 +20,11 @@ export function GetSettings():Promise<wails.SettingsDTO>;
 
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
-export function ListClients():Promise<Array<string>>;
-
 export function ListInstructionFiles():Promise<Array<wails.InstructionFileDTO>>;
 
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function ListProjects():Promise<Array<string>>;
 
 export function PreviewPrompt(arg1:string):Promise<string>;
 
@@ -32,7 +32,7 @@ export function ReadInstructionFile(arg1:string):Promise<string>;
 
 export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>;
 
-export function SetMeetingClient(arg1:string,arg2:string):Promise<void>;
+export function SetMeetingProject(arg1:string,arg2:string):Promise<void>;
 
 export function SetSettings(arg1:wails.SettingsDTO):Promise<void>;
 

@@ -15,7 +15,7 @@ import (
 	"github.com/bhlabz/notted/internal/domain"
 )
 
-var clientKeyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+var keyRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
 // ExportResult is where an export landed, relative to the checkout.
 type ExportResult struct {
@@ -23,7 +23,7 @@ type ExportResult struct {
 	Files  []string
 }
 
-// ArchiveService ties a meeting to a client and writes it into the archive checkout.
+// ArchiveService ties a meeting to a project and writes it into the archive checkout.
 type ArchiveService struct {
 	store    port.MeetingStore
 	settings port.SettingsStore
@@ -58,13 +58,13 @@ func (s *ArchiveService) meeting(ctx context.Context, id string) (domain.Meeting
 	return m, err
 }
 
-// ListClients returns the client keys of the archive, sorted.
-func (s *ArchiveService) ListClients(ctx context.Context) ([]string, error) {
+// ListProjects returns the project keys of the archive, sorted.
+func (s *ArchiveService) ListProjects(ctx context.Context) ([]string, error) {
 	st, err := s.checkout(ctx)
 	if err != nil {
 		return nil, err
 	}
-	entries, err := os.ReadDir(filepath.Join(st.CheckoutPath, "instructions", "clients"))
+	entries, err := os.ReadDir(filepath.Join(st.CheckoutPath, "instructions", "projects"))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return []string{}, nil
@@ -74,7 +74,7 @@ func (s *ArchiveService) ListClients(ctx context.Context) ([]string, error) {
 	keys := []string{}
 	for _, e := range entries {
 		key, ok := strings.CutSuffix(e.Name(), ".md")
-		if !ok || e.IsDir() || !clientKeyRe.MatchString(key) {
+		if !ok || e.IsDir() || !keyRe.MatchString(key) {
 			continue
 		}
 		keys = append(keys, key)
@@ -83,13 +83,13 @@ func (s *ArchiveService) ListClients(ctx context.Context) ([]string, error) {
 	return keys, nil
 }
 
-// SetMeetingClient sets the meeting's client; it is fixed once a Claude session exists.
-func (s *ArchiveService) SetMeetingClient(ctx context.Context, meetingID, key string) error {
+// SetMeetingProject sets the meeting's project; it is fixed once a Claude session exists.
+func (s *ArchiveService) SetMeetingProject(ctx context.Context, meetingID, key string) error {
 	m, err := s.meeting(ctx, meetingID)
 	if err != nil {
 		return err
 	}
-	keys, err := s.ListClients(ctx)
+	keys, err := s.ListProjects(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,15 +98,15 @@ func (s *ArchiveService) SetMeetingClient(ctx context.Context, meetingID, key st
 		found = found || k == key
 	}
 	if !found {
-		return fmt.Errorf("Unknown client %q. Add instructions/clients/%s.md to the archive first.", key, key)
+		return fmt.Errorf("Unknown project %q. Add instructions/projects/%s.md to the archive first.", key, key)
 	}
-	if m.ClientKey == key {
+	if m.ProjectKey == key {
 		return nil
 	}
 	if m.ClaudeSessionID != "" {
-		return errors.New("This meeting's client is fixed once its summary exists.")
+		return errors.New("This meeting's project is fixed once its summary exists.")
 	}
-	return s.store.SetClientKey(ctx, meetingID, key)
+	return s.store.SetProjectKey(ctx, meetingID, key)
 }
 
 // ExportMeeting writes the meeting's four files into the archive. It never runs git.
@@ -119,7 +119,7 @@ func (s *ArchiveService) ExportMeeting(ctx context.Context, meetingID string) (E
 	if err != nil {
 		return ExportResult{}, err
 	}
-	if m.ClientKey == "" || m.ClaudeSessionID == "" || m.SummaryMD == "" || m.SuggestionsMD == "" {
+	if m.ProjectKey == "" || m.ClaudeSessionID == "" || m.SummaryMD == "" || m.SuggestionsMD == "" {
 		return ExportResult{}, errors.New("Nothing to export yet. Generate the summary first.")
 	}
 	segs, err := s.store.ListSegments(ctx, meetingID)
@@ -129,7 +129,7 @@ func (s *ArchiveService) ExportMeeting(ctx context.Context, meetingID string) (E
 	date := m.StartedAt.In(time.Local).Format("2006-01-02")
 	folder := m.Folder
 	if folder == "" {
-		base := "meetings/" + m.ClientKey + "/" + date[:4] + "/" + date + "-" + slugify(m.Title)
+		base := "meetings/" + m.ProjectKey + "/" + date[:4] + "/" + date + "-" + slugify(m.Title)
 		folder = base
 		for n := 2; ; n++ {
 			if _, err := os.Stat(filepath.Join(st.CheckoutPath, filepath.FromSlash(folder))); errors.Is(err, os.ErrNotExist) {
@@ -191,7 +191,7 @@ func (s *ArchiveService) CommitAndPushMeeting(ctx context.Context, meetingID str
 		_, _ = s.git.Run(ctx, repo, "restore", "--staged", "--", folder)
 		return "", errors.New("The commit was rejected:\n" + out)
 	}
-	msg := "meeting(" + m.ClientKey + "): " + date + " " + m.Title
+	msg := "meeting(" + m.ProjectKey + "): " + date + " " + m.Title
 	if out, err := s.git.Run(ctx, repo, "commit", "-m", msg, "--only", "--", folder); err != nil {
 		_, _ = s.git.Run(ctx, repo, "restore", "--staged", "--", folder)
 		return "", errors.New("The commit was rejected:\n" + out)

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
@@ -73,7 +74,7 @@ func TestOpenCreatesSchema(t *testing.T) {
 		t.Fatalf("tables = %v, want %v", tables, wantTables)
 	}
 	cols := map[string][]string{
-		"meetings":          {"claude_session_id", "client_key", "ended_at", "folder", "id", "language", "started_at", "state", "suggestions_md", "summary_md", "title"},
+		"meetings":          {"claude_session_id", "ended_at", "folder", "id", "language", "project_key", "started_at", "state", "suggestions_md", "summary_md", "title"},
 		"chunks":            {"end_ms", "idx", "meeting_id", "path", "start_ms", "track", "transcribed"},
 		"segments":          {"end_ms", "id", "meeting_id", "start_ms", "text", "track"},
 		"settings":          {"key", "value"},
@@ -103,8 +104,8 @@ func TestMigrationsApplyOnce(t *testing.T) {
 	if err := s2.db.QueryRow(`SELECT COUNT(*), MAX(version) FROM schema_migrations`).Scan(&n, &v); err != nil {
 		t.Fatal(err)
 	}
-	if n != 1 || v != 1 {
-		t.Fatalf("schema_migrations count=%d max=%d, want 1 and 1", n, v)
+	if n != 2 || v != 2 {
+		t.Fatalf("schema_migrations count=%d max=%d, want 2 and 2", n, v)
 	}
 }
 
@@ -161,7 +162,7 @@ func TestMeetingRoundTrip(t *testing.T) {
 	for _, err := range []error{
 		s.UpdateState(ctx, "older", domain.StateReady),
 		s.SetEndedAt(ctx, "older", end.In(time.FixedZone("x", 3600))),
-		s.SetClientKey(ctx, "older", "acme"),
+		s.SetProjectKey(ctx, "older", "acme"),
 		s.SetSummary(ctx, "older", "# sum"),
 		s.SetSuggestions(ctx, "older", "- a"),
 	} {
@@ -170,7 +171,7 @@ func TestMeetingRoundTrip(t *testing.T) {
 		}
 	}
 	got, _ = s.GetMeeting(ctx, "older")
-	if got.State != domain.StateReady || got.ClientKey != "acme" || got.SummaryMD != "# sum" || got.SuggestionsMD != "- a" {
+	if got.State != domain.StateReady || got.ProjectKey != "acme" || got.SummaryMD != "# sum" || got.SuggestionsMD != "- a" {
 		t.Fatalf("updates not stored: %+v", got)
 	}
 	if got.EndedAt == nil || !got.EndedAt.Equal(end) || got.EndedAt.Location() != time.UTC {
@@ -183,7 +184,7 @@ func TestMeetingRoundTrip(t *testing.T) {
 	for name, err := range map[string]error{
 		"state":    s.UpdateState(ctx, "zzz", domain.StateReady),
 		"ended":    s.SetEndedAt(ctx, "zzz", end),
-		"client":   s.SetClientKey(ctx, "zzz", "acme"),
+		"project":  s.SetProjectKey(ctx, "zzz", "acme"),
 		"session":  s.SetClaudeSessionID(ctx, "zzz", "s"),
 		"folder":   s.SetFolder(ctx, "zzz", "f"),
 		"summary":  s.SetSummary(ctx, "zzz", "x"),
@@ -365,5 +366,76 @@ func TestSettingsRoundTrip(t *testing.T) {
 	got, _ = s.GetSettings(ctx)
 	if got.ProjectRoots == nil || len(got.ProjectRoots) != 0 {
 		t.Fatalf("nil roots read back as %v", got.ProjectRoots)
+	}
+}
+
+func versions(t *testing.T, s *Store) []int {
+	t.Helper()
+	rows, err := s.db.Query(`SELECT version FROM schema_migrations ORDER BY version`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []int
+	for rows.Next() {
+		var v int
+		if err := rows.Scan(&v); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, v)
+	}
+	return out
+}
+
+func TestMigration2RenamesMeetingKeyColumn(t *testing.T) {
+	t.Setenv("NOTTED_HOME", t.TempDir())
+	path := filepath.Join(t.TempDir(), "meetings.sqlite")
+	old, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
+		migrations[0],
+		`INSERT INTO schema_migrations (version, applied_at) VALUES (1, '2026-01-01T00:00:00Z')`,
+		`INSERT INTO meetings (id, title, started_at, language, client_key, state) VALUES ('m1', 'Old', '2026-01-01T10:00:00Z', 'en', 'acme', 'ready')`,
+	} {
+		if _, err := old.Exec(q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if err := old.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := s.GetMeeting(context.Background(), "m1")
+	if err != nil || m.ProjectKey != "acme" {
+		t.Fatalf("meeting = %+v, err %v; want ProjectKey acme", m, err)
+	}
+	cols := names(t, s, `SELECT name FROM pragma_table_info('meetings')`)
+	hasProject, hasOld := false, false
+	for _, c := range cols {
+		hasProject = hasProject || c == "project_key"
+		hasOld = hasOld || c == "client_key"
+	}
+	if !hasProject || hasOld {
+		t.Fatalf("meetings columns = %v, want project_key and no client_key", cols)
+	}
+	if got := versions(t, s); !reflect.DeepEqual(got, []int{1, 2}) {
+		t.Fatalf("versions = %v, want [1 2]", got)
+	}
+	s.Close()
+
+	s2, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s2.Close()
+	if got := versions(t, s2); !reflect.DeepEqual(got, []int{1, 2}) {
+		t.Fatalf("second open versions = %v, want [1 2]", got)
 	}
 }

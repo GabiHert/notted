@@ -27,12 +27,12 @@ func (m *memSettings) SaveSettings(_ context.Context, s domain.Settings) error {
 	return nil
 }
 
-// layerPrompts mimics the archive's command: the base line plus the optional person-client layer.
+// layerPrompts mimics the archive's command: the base line plus the optional person-project layer.
 type layerPrompts struct{}
 
-func (layerPrompts) Prompt(_ context.Context, checkout, profile, client string) (string, error) {
-	out := "PROMPT client=" + client + " profile=" + profile
-	if b, err := os.ReadFile(filepath.Join(checkout, "instructions", "people", profile, client+".md")); err == nil {
+func (layerPrompts) Prompt(_ context.Context, checkout, profile, project string) (string, error) {
+	out := "PROMPT project=" + project + " profile=" + profile
+	if b, err := os.ReadFile(filepath.Join(checkout, "instructions", "people", profile, project+".md")); err == nil {
 		out += "\n" + string(b)
 	}
 	return out, nil
@@ -66,13 +66,13 @@ func newInsFixture(t *testing.T) *insFixture {
 	put(t, filepath.Join(root, "bin", "other.sh"), "echo hi\n")
 	put(t, filepath.Join(root, "prompts", "base.md"), "BASE")
 	put(t, filepath.Join(root, "instructions", "README.md"), "README")
-	put(t, filepath.Join(root, "instructions", "clients", "acme.md"), "ACME")
+	put(t, filepath.Join(root, "instructions", "projects", "acme.md"), "ACME")
 	put(t, filepath.Join(root, "instructions", "people", "ana.md"), "ANA")
 	put(t, filepath.Join(root, "instructions", "people", "ana", "acme.md"), "ANA-ACME")
 	put(t, filepath.Join(root, "instructions", "people", "ana.local.md"), "LOCAL")
 	put(t, filepath.Join(base, "secret.md"), "SECRET")
 	put(t, filepath.Join(outside, "secret.md"), "SECRET")
-	if err := os.Symlink(filepath.Join(base, "secret.md"), filepath.Join(root, "instructions", "clients", "evil.md")); err != nil {
+	if err := os.Symlink(filepath.Join(base, "secret.md"), filepath.Join(root, "instructions", "projects", "evil.md")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(outside, filepath.Join(root, "instructions", "people", "out")); err != nil {
@@ -81,7 +81,7 @@ func newInsFixture(t *testing.T) *insFixture {
 	set := &memSettings{s: domain.Settings{Profile: "ana", CheckoutPath: root, ProjectRoots: map[string]string{}}}
 	arch := NewArchiveService(nil, set, nil, nil)
 	return &insFixture{t: t, root: root, outside: base, set: set, ctx: context.Background(),
-		svc: NewInstructionsService(set, layerPrompts{}, arch.ListClients)}
+		svc: NewInstructionsService(set, layerPrompts{}, arch.ListProjects)}
 }
 
 func (f *insFixture) text(rel string) string {
@@ -107,10 +107,10 @@ func TestInstructionsListKindsAndOrder(t *testing.T) {
 	want := []InstructionFile{
 		{"prompts/base.md", "base", true},
 		{"instructions/README.md", "readme", true},
-		{"instructions/clients/acme.md", "client", false},
+		{"instructions/projects/acme.md", "project", false},
 		{"instructions/people/ana.md", "person", false},
 		{"instructions/people/ana.local.md", "local", false},
-		{"instructions/people/ana/acme.md", "person-client", false},
+		{"instructions/people/ana/acme.md", "person-project", false},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
@@ -124,12 +124,12 @@ func TestInstructionsUnsetArchiveFolder(t *testing.T) {
 	wantErr(t, err, "Set the meetings archive folder in Settings > Instructions first.")
 	_, err = f.svc.Read(f.ctx, "prompts/base.md")
 	wantErr(t, err, "Set the meetings archive folder in Settings > Instructions first.")
-	wantErr(t, f.svc.Write(f.ctx, "instructions/clients/acme.md", "x"), "Set the meetings archive folder in Settings > Instructions first.")
+	wantErr(t, f.svc.Write(f.ctx, "instructions/projects/acme.md", "x"), "Set the meetings archive folder in Settings > Instructions first.")
 }
 
 func TestInstructionsRead(t *testing.T) {
 	f := newInsFixture(t)
-	got, err := f.svc.Read(f.ctx, "instructions/clients/acme.md")
+	got, err := f.svc.Read(f.ctx, "instructions/projects/acme.md")
 	if err != nil || got != "ACME" {
 		t.Fatalf("got %q, %v", got, err)
 	}
@@ -137,14 +137,14 @@ func TestInstructionsRead(t *testing.T) {
 		t.Fatalf("base: %q, %v", got, err)
 	}
 	for _, p := range []string{"../secret.md", "/etc/hosts", `..\secret.md`, "C:/x.md",
-		"instructions/clients/evil.md", "instructions/people/out/secret.md",
+		"instructions/projects/evil.md", "instructions/people/out/secret.md",
 		"instructions/../../secret.md"} {
 		_, err := f.svc.Read(f.ctx, p)
 		if err == nil || err.Error() != msgOutside {
 			t.Errorf("Read(%q) error = %v, want outside message", p, err)
 		}
 	}
-	for _, p := range []string{"bin/other.sh", "instructions/clients/acme.txt", "instructions", "instructions/clients/deep/er/x.md", "README.md", "instructions/.md"} {
+	for _, p := range []string{"bin/other.sh", "instructions/projects/acme.txt", "instructions", "instructions/projects/deep/er/x.md", "README.md", "instructions/.md"} {
 		_, err := f.svc.Read(f.ctx, p)
 		if err == nil || err.Error() != msgPatterns {
 			t.Errorf("Read(%q) error = %v, want patterns message", p, err)
@@ -154,11 +154,11 @@ func TestInstructionsRead(t *testing.T) {
 
 func TestInstructionsReadTooLarge(t *testing.T) {
 	f := newInsFixture(t)
-	put(t, filepath.Join(f.root, "instructions", "clients", "big.md"), strings.Repeat("a", 2<<20+1))
-	_, err := f.svc.Read(f.ctx, "instructions/clients/big.md")
+	put(t, filepath.Join(f.root, "instructions", "projects", "big.md"), strings.Repeat("a", 2<<20+1))
+	_, err := f.svc.Read(f.ctx, "instructions/projects/big.md")
 	wantErr(t, err, "That file is too large to open here (over 2 MB).")
-	put(t, filepath.Join(f.root, "instructions", "clients", "edge.md"), strings.Repeat("a", 2<<20))
-	if _, err := f.svc.Read(f.ctx, "instructions/clients/edge.md"); err != nil {
+	put(t, filepath.Join(f.root, "instructions", "projects", "edge.md"), strings.Repeat("a", 2<<20))
+	if _, err := f.svc.Read(f.ctx, "instructions/projects/edge.md"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -174,7 +174,7 @@ func TestInstructionsWriteReadOnly(t *testing.T) {
 
 func TestInstructionsWriteOutsidePatterns(t *testing.T) {
 	f := newInsFixture(t)
-	for _, p := range []string{"bin/other.sh", "instructions/clients/x.txt", "prompts/other.md", "instructions/a/b/c.md"} {
+	for _, p := range []string{"bin/other.sh", "instructions/projects/x.txt", "prompts/other.md", "instructions/a/b/c.md"} {
 		err := f.svc.Write(f.ctx, p, "x")
 		if err == nil || err.Error() != msgPatterns {
 			t.Errorf("Write(%q) error = %v, want patterns message", p, err)
@@ -193,13 +193,13 @@ func TestInstructionsWriteSucceedsAtomically(t *testing.T) {
 	if f.text("instructions/people/ana/acme.md") != "x" {
 		t.Fatal("not written")
 	}
-	if err := f.svc.Write(f.ctx, "instructions/clients/globex.md", "NEW"); err != nil {
+	if err := f.svc.Write(f.ctx, "instructions/projects/globex.md", "NEW"); err != nil {
 		t.Fatal(err)
 	}
-	if f.text("instructions/clients/globex.md") != "NEW" {
+	if f.text("instructions/projects/globex.md") != "NEW" {
 		t.Fatal("new file not written")
 	}
-	entries, _ := os.ReadDir(filepath.Join(f.root, "instructions", "clients"))
+	entries, _ := os.ReadDir(filepath.Join(f.root, "instructions", "projects"))
 	for _, e := range entries {
 		if strings.Contains(e.Name(), "tmp") {
 			t.Fatalf("temp file left behind: %s", e.Name())
@@ -212,7 +212,7 @@ func TestInstructionsWriteSucceedsAtomically(t *testing.T) {
 
 func TestInstructionsWriteNeverLeavesTheFolder(t *testing.T) {
 	f := newInsFixture(t)
-	for _, p := range []string{"../secret.md", "/tmp/x.md", "instructions/clients/evil.md", "instructions/people/out/secret.md", "instructions/people/out/new.md"} {
+	for _, p := range []string{"../secret.md", "/tmp/x.md", "instructions/projects/evil.md", "instructions/people/out/secret.md", "instructions/people/out/new.md"} {
 		err := f.svc.Write(f.ctx, p, "PWNED")
 		if err == nil || err.Error() != msgOutside {
 			t.Errorf("Write(%q) error = %v, want outside message", p, err)
@@ -226,7 +226,7 @@ func TestInstructionsWriteNeverLeavesTheFolder(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(f.outside, "outside", "new.md")); err == nil {
 		t.Fatal("a file was created outside")
 	}
-	if fi, err := os.Lstat(filepath.Join(f.root, "instructions", "clients", "evil.md")); err != nil || fi.Mode()&os.ModeSymlink == 0 {
+	if fi, err := os.Lstat(filepath.Join(f.root, "instructions", "projects", "evil.md")); err != nil || fi.Mode()&os.ModeSymlink == 0 {
 		t.Fatal("the link was replaced")
 	}
 }
@@ -284,7 +284,7 @@ func TestInstructionsSettingsValidation(t *testing.T) {
 func TestInstructionsPreview(t *testing.T) {
 	f := newInsFixture(t)
 	got, err := f.svc.PreviewPrompt(f.ctx, "acme")
-	if err != nil || !strings.HasPrefix(got, "PROMPT client=acme profile=ana") {
+	if err != nil || !strings.HasPrefix(got, "PROMPT project=acme profile=ana") {
 		t.Fatalf("got %q, %v", got, err)
 	}
 	if err := f.svc.Write(f.ctx, "instructions/people/ana/acme.md", "FRESH TEXT"); err != nil {
@@ -295,7 +295,7 @@ func TestInstructionsPreview(t *testing.T) {
 		t.Fatalf("preview missed the new text: %q", got)
 	}
 	_, err = f.svc.PreviewPrompt(f.ctx, "initech")
-	wantErr(t, err, `Unknown client "initech". Add instructions/clients/initech.md to the archive first.`)
+	wantErr(t, err, `Unknown project "initech". Add instructions/projects/initech.md to the archive first.`)
 	f.set.s.Profile = ""
 	_, err = f.svc.PreviewPrompt(f.ctx, "acme")
 	wantErr(t, err, "Set your profile in Settings > Instructions first.")
@@ -308,16 +308,16 @@ func TestInstructionsRefuseLinksInsideTheFolder(t *testing.T) {
 	f := newInsFixture(t)
 	put(t, filepath.Join(f.root, ".git", "x.md"), "GITDATA")
 	links := map[string]string{
-		"instructions/people/p":         "../../prompts",
-		"instructions/people/g":         "../../.git",
-		"instructions/clients/alias.md": "acme.md",
+		"instructions/people/p":          "../../prompts",
+		"instructions/people/g":          "../../.git",
+		"instructions/projects/alias.md": "acme.md",
 	}
 	for name, target := range links {
 		if err := os.Symlink(target, filepath.Join(f.root, name)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, p := range []string{"instructions/people/p/base.md", "instructions/people/g/x.md", "instructions/clients/alias.md"} {
+	for _, p := range []string{"instructions/people/p/base.md", "instructions/people/g/x.md", "instructions/projects/alias.md"} {
 		got, err := f.svc.Read(f.ctx, p)
 		if err == nil || err.Error() != msgOutside || got != "" {
 			t.Errorf("Read(%q) = %q, %v; want outside message", p, got, err)
@@ -327,7 +327,7 @@ func TestInstructionsRefuseLinksInsideTheFolder(t *testing.T) {
 			t.Errorf("Write(%q) error = %v, want outside message", p, err)
 		}
 	}
-	if f.text("prompts/base.md") != "BASE" || f.text(".git/x.md") != "GITDATA" || f.text("instructions/clients/acme.md") != "ACME" {
+	if f.text("prompts/base.md") != "BASE" || f.text(".git/x.md") != "GITDATA" || f.text("instructions/projects/acme.md") != "ACME" {
 		t.Fatal("a file reached through a link changed")
 	}
 	if _, err := os.Stat(filepath.Join(f.root, "instructions", "people", "g", "new.md")); err == nil {
@@ -345,10 +345,10 @@ func TestInstructionsWorkWhenTheFolderItselfIsALink(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.set.s.CheckoutPath = alias
-	if got, err := f.svc.Read(f.ctx, "instructions/clients/acme.md"); err != nil || got != "ACME" {
+	if got, err := f.svc.Read(f.ctx, "instructions/projects/acme.md"); err != nil || got != "ACME" {
 		t.Fatalf("got %q, %v", got, err)
 	}
-	if err := f.svc.Write(f.ctx, "instructions/clients/acme.md", "Z"); err != nil {
+	if err := f.svc.Write(f.ctx, "instructions/projects/acme.md", "Z"); err != nil {
 		t.Fatal(err)
 	}
 }

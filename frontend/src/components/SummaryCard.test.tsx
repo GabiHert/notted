@@ -31,11 +31,11 @@ test("disabled with a reason while the transcript is not finished", async () => 
   }
 });
 
-test("disabled with a reason when there is no client", async () => {
-  GetMeeting.mockResolvedValue(meeting({ clientKey: "" }));
+test("disabled with a reason when there is no project", async () => {
+  GetMeeting.mockResolvedValue(meeting({ projectKey: "" }));
   render(<Harness />);
   expect(await screen.findByRole("button", { name: "Generate summary" })).toBeDisabled();
-  expect(screen.getByText("Choose a client first.")).toBeInTheDocument();
+  expect(screen.getByText("Choose a project first.")).toBeInTheDocument();
 });
 
 test("click calls GenerateSummary", async () => {

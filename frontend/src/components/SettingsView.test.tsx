@@ -1,13 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { SettingsView } from "./SettingsView";
-import { GetSettings, ListClients, ListInstructionFiles, resetBindings } from "../test/bindingsMock";
+import { GetSettings, ListProjects, ListInstructionFiles, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("../test/codemirrorMock"));
 
 beforeEach(() => {
   resetBindings();
-  ListInstructionFiles.mockResolvedValue([{ path: "instructions/clients/acme.md", kind: "client", readOnly: false }]);
+  ListInstructionFiles.mockResolvedValue([{ path: "instructions/projects/acme.md", kind: "project", readOnly: false }]);
 });
 
 test("shows the Settings heading, one selected Instructions tab and the three cards in order", async () => {
@@ -22,16 +22,16 @@ test("shows the Settings heading, one selected Instructions tab and the three ca
   expect(headers).toEqual(["Your setup", "Instruction files", "Prompt preview"]);
 });
 
-test("the client list feeds the project-root rows and the preview select; a failure shows the message in both", async () => {
+test("the project list feeds the project-root rows and the preview select; a failure shows the message in both", async () => {
   render(<SettingsView />);
   expect(await screen.findByLabelText("acme")).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "globex" })).toBeInTheDocument();
 });
 
-test("a refused client list shows its message", async () => {
-  ListClients.mockRejectedValue(new Error("Set the archive folder to list its clients."));
+test("a refused project list shows its message", async () => {
+  ListProjects.mockRejectedValue(new Error("Set the archive folder to list its projects."));
   render(<SettingsView />);
-  expect(await screen.findAllByText("Set the archive folder to list its clients.")).not.toHaveLength(0);
+  expect(await screen.findAllByText("Set the archive folder to list its projects.")).not.toHaveLength(0);
 });
 
 test("there is no model, provider or API key control or text", async () => {

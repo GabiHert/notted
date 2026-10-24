@@ -9,9 +9,9 @@ beforeEach(() => {
   GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } });
 });
 
-const props = { clients: ["acme", "globex"], clientsError: "", onSaved: () => {} };
+const props = { projects: ["acme", "globex"], projectsError: "", onSaved: () => {} };
 
-test("fills the fields from the saved settings and shows a row per client", async () => {
+test("fills the fields from the saved settings and shows a row per project", async () => {
   render(<SetupForm {...props} />);
   expect(await screen.findByLabelText("Profile")).toHaveValue("ana");
   expect(screen.getByLabelText("Archive folder")).toHaveValue("/archive");
@@ -22,7 +22,7 @@ test("fills the fields from the saved settings and shows a row per client", asyn
   expect(screen.getByText("Your file in instructions/people/, without .md (for example ana).")).toBeInTheDocument();
   expect(screen.getByText("The full path of your local clone of the meetings archive.")).toBeInTheDocument();
   expect(screen.getByText("Project roots")).toBeInTheDocument();
-  expect(screen.getByText("Optional. A folder per client that Claude Code may read for that client's meetings.")).toBeInTheDocument();
+  expect(screen.getByText("Optional. A folder per project that Claude Code may read during that project's meetings.")).toBeInTheDocument();
 });
 
 test("Save settings sends the typed values and the roots map, then says Settings saved.", async () => {
@@ -62,10 +62,10 @@ test("a rejection is shown verbatim in an error card and no saved message appear
   expect(screen.queryByText("Settings saved.")).not.toBeInTheDocument();
 });
 
-test("when the client list is refused, the message is shown and the saved roots are kept", async () => {
-  render(<SetupForm clients={[]} clientsError="Set the archive folder to list its clients." onSaved={() => {}} />);
+test("when the project list is refused, the message is shown and the saved roots are kept", async () => {
+  render(<SetupForm projects={[]} projectsError="Set the archive folder to list its projects." onSaved={() => {}} />);
   await screen.findByLabelText("Profile");
-  expect(screen.getByText("Set the archive folder to list its clients.")).toBeInTheDocument();
+  expect(screen.getByText("Set the archive folder to list its projects.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
   await screen.findByText("Settings saved.");
   expect(SetSettings).toHaveBeenCalledWith({ profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } });

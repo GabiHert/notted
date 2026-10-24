@@ -25,7 +25,7 @@ describe("leaving Settings with an unsaved instruction file", () => {
   async function openDirtyFile() {
     ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" })]);
     GetMeeting.mockResolvedValue(meeting({ id: "m2", title: "Newest" }));
-    ListInstructionFiles.mockResolvedValue([{ path: "instructions/clients/acme.md", kind: "client", readOnly: false }]);
+    ListInstructionFiles.mockResolvedValue([{ path: "instructions/projects/acme.md", kind: "project", readOnly: false }]);
     ReadInstructionFile.mockResolvedValue("# Acme");
     render(<App initialView={{ kind: "settings" }} />);
     fireEvent.click(await screen.findByRole("button", { name: /^acme\.md/ }));
@@ -38,7 +38,7 @@ describe("leaving Settings with an unsaved instruction file", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Newest/ }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "Discard unsaved changes?" })).toBeInTheDocument();
-    expect(within(dialog).getByText("Your changes to instructions/clients/acme.md are not saved.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Your changes to instructions/projects/acme.md are not saved.")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Keep editing" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByLabelText("File contents")).toHaveValue("edited");

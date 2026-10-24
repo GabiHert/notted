@@ -53,7 +53,7 @@ func (a *App) SetSettings(s SettingsDTO) error {
 	return a.instructions.SetSettings(a.context(), domain.Settings{Profile: s.Profile, CheckoutPath: s.CheckoutPath, ProjectRoots: s.ProjectRoots})
 }
 
-// PreviewPrompt returns the prompt the next summary for the client gets.
-func (a *App) PreviewPrompt(clientKey string) (string, error) {
-	return a.instructions.PreviewPrompt(a.context(), clientKey)
+// PreviewPrompt returns the prompt the next summary for the project gets.
+func (a *App) PreviewPrompt(projectKey string) (string, error) {
+	return a.instructions.PreviewPrompt(a.context(), projectKey)
 }

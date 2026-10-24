@@ -24,7 +24,7 @@ Notted asks for the microphone and for Screen & System Audio Recording when you 
 
 ## Set up
 
-In Settings > Instructions, set your profile (your file in `instructions/people/`), the archive folder, and a project root per client.
+In Settings > Instructions, set your profile (your file in `instructions/people/`), the archive folder, and a project root per project.
 
 ## What Notted downloads
 

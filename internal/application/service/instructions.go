@@ -22,13 +22,13 @@ type InstructionFile struct {
 type InstructionsService struct {
 	settings port.SettingsStore
 	prompts  port.PromptSource
-	clients  func(ctx context.Context) ([]string, error)
+	projects func(ctx context.Context) ([]string, error)
 }
 
-// NewInstructionsService builds the instructions service; clients lists the archive's client keys.
+// NewInstructionsService builds the instructions service; projects lists the archive's project keys.
 func NewInstructionsService(settings port.SettingsStore, prompts port.PromptSource,
-	clients func(ctx context.Context) ([]string, error)) *InstructionsService {
-	return &InstructionsService{settings: settings, prompts: prompts, clients: clients}
+	projects func(ctx context.Context) ([]string, error)) *InstructionsService {
+	return &InstructionsService{settings: settings, prompts: prompts, projects: projects}
 }
 
 var errNoArchive = errors.New("Set the meetings archive folder in Settings > Instructions first.")
@@ -87,7 +87,7 @@ func isDir(p string) bool {
 
 // SetSettings validates and saves the settings; empty values clear a setting.
 func (s *InstructionsService) SetSettings(ctx context.Context, st domain.Settings) error {
-	if st.Profile != "" && !clientKeyRe.MatchString(st.Profile) {
+	if st.Profile != "" && !keyRe.MatchString(st.Profile) {
 		return errors.New(`Profile must use lowercase letters, digits and dashes, like "ana" or "ana-lima".`)
 	}
 	if st.CheckoutPath != "" {
@@ -112,8 +112,8 @@ func (s *InstructionsService) SetSettings(ctx context.Context, st domain.Setting
 	return s.settings.SaveSettings(ctx, st)
 }
 
-// PreviewPrompt returns the prompt the next summary of the client's meeting gets: the same call a summary makes.
-func (s *InstructionsService) PreviewPrompt(ctx context.Context, clientKey string) (string, error) {
+// PreviewPrompt returns the prompt the next summary of the project's meeting gets: the same call a summary makes.
+func (s *InstructionsService) PreviewPrompt(ctx context.Context, projectKey string) (string, error) {
 	st, err := s.settings.GetSettings(ctx)
 	if err != nil {
 		return "", err
@@ -124,16 +124,16 @@ func (s *InstructionsService) PreviewPrompt(ctx context.Context, clientKey strin
 	if st.Profile == "" {
 		return "", errors.New("Set your profile in Settings > Instructions first.")
 	}
-	keys, err := s.clients(ctx)
+	keys, err := s.projects(ctx)
 	if err != nil {
 		return "", err
 	}
 	known := false
 	for _, k := range keys {
-		known = known || k == clientKey
+		known = known || k == projectKey
 	}
 	if !known {
-		return "", fmt.Errorf("Unknown client %q. Add instructions/clients/%s.md to the archive first.", clientKey, clientKey)
+		return "", fmt.Errorf("Unknown project %q. Add instructions/projects/%s.md to the archive first.", projectKey, projectKey)
 	}
-	return s.prompts.Prompt(ctx, st.CheckoutPath, st.Profile, clientKey)
+	return s.prompts.Prompt(ctx, st.CheckoutPath, st.Profile, projectKey)
 }

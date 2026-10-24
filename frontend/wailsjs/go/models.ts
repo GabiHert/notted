@@ -48,7 +48,7 @@ export namespace wails {
 	    startedAt: string;
 	    endedAt: string;
 	    language: string;
-	    clientKey: string;
+	    projectKey: string;
 	    state: string;
 	    hasSession: boolean;
 	    folder: string;
@@ -66,7 +66,7 @@ export namespace wails {
 	        this.startedAt = source["startedAt"];
 	        this.endedAt = source["endedAt"];
 	        this.language = source["language"];
-	        this.clientKey = source["clientKey"];
+	        this.projectKey = source["projectKey"];
 	        this.state = source["state"];
 	        this.hasSession = source["hasSession"];
 	        this.folder = source["folder"];

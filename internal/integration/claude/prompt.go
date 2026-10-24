@@ -19,8 +19,8 @@ type PromptSource struct {
 	EnvFn func() []string // default LoginShellEnv
 }
 
-// Prompt runs `bin/meeting prompt --client <clientKey>` and returns its stdout unchanged.
-func (p PromptSource) Prompt(ctx context.Context, checkout, profile, clientKey string) (string, error) {
+// Prompt runs `bin/meeting prompt --project <projectKey>` and returns its stdout unchanged.
+func (p PromptSource) Prompt(ctx context.Context, checkout, profile, projectKey string) (string, error) {
 	bin := filepath.Join(checkout, "bin", "meeting")
 	st, err := os.Stat(bin)
 	if err != nil || st.IsDir() || st.Mode()&0o111 == 0 {
@@ -30,7 +30,7 @@ func (p PromptSource) Prompt(ctx context.Context, checkout, profile, clientKey s
 	if envFn == nil {
 		envFn = LoginShellEnv
 	}
-	cmd := exec.CommandContext(ctx, bin, "prompt", "--client", clientKey)
+	cmd := exec.CommandContext(ctx, bin, "prompt", "--project", projectKey)
 	cmd.Dir = checkout
 	cmd.Env = append(CleanEnv(envFn()), "MEETINGS_PROFILE="+profile)
 	var stdout, stderr bytes.Buffer

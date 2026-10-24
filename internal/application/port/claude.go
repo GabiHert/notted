@@ -4,8 +4,8 @@ import "context"
 
 // PromptSource assembles a meeting's prompt with the archive's own command.
 type PromptSource interface {
-	// Prompt runs `bin/meeting prompt --client <clientKey>` in checkout with MEETINGS_PROFILE=profile.
-	Prompt(ctx context.Context, checkout, profile, clientKey string) (string, error)
+	// Prompt runs `bin/meeting prompt --project <projectKey>` in checkout with MEETINGS_PROFILE=profile.
+	Prompt(ctx context.Context, checkout, profile, projectKey string) (string, error)
 }
 
 // ClaudeRun describes one headless Claude Code run.

@@ -13,7 +13,7 @@ type MeetingDTO struct {
 	StartedAt     string `json:"startedAt"` // RFC 3339
 	EndedAt       string `json:"endedAt"`   // "" while recording
 	Language      string `json:"language"`  // "pt-BR" | "en"
-	ClientKey     string `json:"clientKey"`
+	ProjectKey    string `json:"projectKey"`
 	State         string `json:"state"`
 	HasSession    bool   `json:"hasSession"`
 	Folder        string `json:"folder"`
@@ -27,7 +27,7 @@ func toMeetingDTO(m domain.Meeting) MeetingDTO {
 		Title:         m.Title,
 		StartedAt:     m.StartedAt.UTC().Format(time.RFC3339),
 		Language:      string(m.Language),
-		ClientKey:     m.ClientKey,
+		ProjectKey:    m.ProjectKey,
 		State:         string(m.State),
 		HasSession:    m.ClaudeSessionID != "",
 		Folder:        m.Folder,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Source check: Notted holds no client knowledge and never writes the permission-skipping flag.
+# Source check: Notted holds no project knowledge and never writes the permission-skipping flag.
 set -uo pipefail
 export LC_ALL=C
 cd "$(dirname "$0")/.."

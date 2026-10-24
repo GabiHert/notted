@@ -24,7 +24,7 @@ var (
 )
 
 // instructionKinds lists the kinds in display order.
-var instructionKinds = []string{"base", "readme", "client", "person", "local", "person-client"}
+var instructionKinds = []string{"base", "readme", "project", "person", "local", "person-project"}
 
 // normalizeRelPath lexically validates a client-supplied relative path and
 // returns it cleaned, using the native separator. Backslashes are treated as
@@ -75,15 +75,15 @@ func classifyInstruction(rel string) (kind string, readOnly bool) {
 	}
 	stem := func(name string) bool { return strings.HasSuffix(name, ".md") && len(name) > len(".md") }
 	switch {
-	case len(parts) == 3 && parts[1] == "clients" && stem(parts[2]):
-		return "client", false
+	case len(parts) == 3 && parts[1] == "projects" && stem(parts[2]):
+		return "project", false
 	case len(parts) == 3 && parts[1] == "people" && stem(parts[2]):
 		if strings.HasSuffix(parts[2], ".local.md") && len(parts[2]) > len(".local.md") {
 			return "local", false
 		}
 		return "person", false
 	case len(parts) == 4 && parts[1] == "people" && parts[2] != "" && stem(parts[3]):
-		return "person-client", false
+		return "person-project", false
 	}
 	return "", false
 }
@@ -295,9 +295,9 @@ func listInstructions(checkout string) ([]InstructionFile, error) {
 
 	add("prompts/base.md")
 	add("instructions/README.md")
-	files, _ := names("instructions/clients")
+	files, _ := names("instructions/projects")
 	for _, n := range files {
-		add("instructions/clients/" + n)
+		add("instructions/projects/" + n)
 	}
 	files, dirs := names("instructions/people")
 	for _, n := range files {

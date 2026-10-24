@@ -53,10 +53,10 @@ func TestSummaryFlowWithStubClaude(t *testing.T) {
 	sh(t, archive, "config", "user.email", "test@example.com")
 	td := filepath.Join("..", "integration", "claude", "testdata")
 	copyFile(t, filepath.Join(td, "stub-meeting.sh"), filepath.Join(archive, "bin", "meeting"))
-	if err := os.MkdirAll(filepath.Join(archive, "instructions", "clients"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(archive, "instructions", "projects"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(archive, "instructions", "clients", "acme.md"), []byte("acme\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(archive, "instructions", "projects", "acme.md"), []byte("acme\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sh(t, archive, "add", "-A")
@@ -87,7 +87,7 @@ func TestSummaryFlowWithStubClaude(t *testing.T) {
 	if err := st.CreateMeeting(ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.SetClientKey(ctx, "m1", "acme"); err != nil {
+	if err := st.SetProjectKey(ctx, "m1", "acme"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := st.AddSegment(ctx, domain.Segment{MeetingID: "m1", Track: domain.TrackMic, StartMs: 1000, EndMs: 2000, Text: "hello"}); err != nil {

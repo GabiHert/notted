@@ -20,7 +20,7 @@ func jsonString(s string) string {
 func meetingFile(date string, m domain.Meeting, profile string) string {
 	return "---\n" +
 		"date: " + date + "\n" +
-		"client: " + m.ClientKey + "\n" +
+		"project: " + m.ProjectKey + "\n" +
 		"title: " + jsonString(m.Title) + "\n" +
 		"participants: []\n" +
 		"source: app\n" +

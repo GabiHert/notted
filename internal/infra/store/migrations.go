@@ -52,6 +52,7 @@ CREATE TRIGGER meetings_folder_write_once
 BEFORE UPDATE OF folder ON meetings
 WHEN OLD.folder IS NOT NULL AND NEW.folder IS NOT OLD.folder
 BEGIN SELECT RAISE(ABORT, 'folder is write-once'); END;`,
+	`ALTER TABLE meetings RENAME COLUMN client_key TO project_key;`,
 }
 
 func runMigrations(db *sql.DB) error {

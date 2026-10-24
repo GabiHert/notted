@@ -10,15 +10,15 @@ type File = { path: string; kind: string; readOnly: boolean };
 const GROUPS: [string, string][] = [
   ["base", "Base prompt"],
   ["readme", "Guide"],
-  ["client", "Clients"],
+  ["project", "Projects"],
   ["person", "People"],
-  ["person-client", "Per client"],
+  ["person-project", "Per project"],
   ["local", "Local overrides"],
 ];
 
 function itemName(f: File): string {
   const parts = f.path.split("/").filter(Boolean);
-  return f.kind === "person-client" ? parts.slice(-2).join("/") : (parts.pop() ?? f.path);
+  return f.kind === "person-project" ? parts.slice(-2).join("/") : (parts.pop() ?? f.path);
 }
 
 export function InstructionFiles({ onDirtyPath }: { onDirtyPath?: (path: string | null) => void } = {}) {

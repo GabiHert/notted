@@ -26,13 +26,13 @@ export function initPreview(): View {
       return { kind: "meeting", id: "fx-transcribing" };
     case "ready":
       return { kind: "meeting", id: "fx-ready" };
-    case "no-client":
-      return { kind: "meeting", id: "fx-no-client" };
+    case "no-project":
+      return { kind: "meeting", id: "fx-no-project" };
     case "summarizing":
     case "summary-error":
       return { kind: "meeting", id: "fx-ready" };
     case "summarized":
-    case "client-locked":
+    case "project-locked":
       return { kind: "meeting", id: "fx-summarized" };
     case "save-dialog":
     case "save-failed":
@@ -78,7 +78,7 @@ function autoDriveSettings(screen: string) {
     return true;
   };
   const choose = () => {
-    const sel = document.querySelector<HTMLSelectElement>("#nt-preview-client");
+    const sel = document.querySelector<HTMLSelectElement>("#nt-preview-project");
     if (!sel || sel.options.length < 2) return false;
     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(sel, "acme");
     sel.dispatchEvent(new Event("change", { bubbles: true }));

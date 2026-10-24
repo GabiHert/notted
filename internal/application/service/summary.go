@@ -48,7 +48,7 @@ func summaryStdin(m domain.Meeting, segs []domain.Segment) string {
 	return "Use the meetings skill's `process` format (its file is .claude/skills/meetings/SKILL.md) to write this meeting's summary.md, but do not write, stage or commit any file and do not run the save step. Reply with the content of summary.md only: start with the line \"# Summary: " + m.Title + "\" and add nothing before or after it.\n\n" +
 		"Meeting: " + m.Title + "\n" +
 		"Date: " + date + "\n" +
-		"Client: " + m.ClientKey + "\n" +
+		"Project: " + m.ProjectKey + "\n" +
 		"Language: " + string(m.Language) + "\n" +
 		"Transcript lines: (mic) is the person who recorded; (others) is everyone else.\n\n" +
 		transcriptLines(segs)
@@ -77,8 +77,8 @@ func (s *SummaryService) Generate(ctx context.Context, meetingID string) error {
 	if m.State == domain.StateRecording || m.State == domain.StateTranscribing {
 		return errors.New("The transcript is not finished yet. Wait until transcription completes.")
 	}
-	if m.ClientKey == "" {
-		return errors.New("Choose a client for this meeting first.")
+	if m.ProjectKey == "" {
+		return errors.New("Choose a project for this meeting first.")
 	}
 	st, err := s.settings.GetSettings(ctx)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *SummaryService) state(id, pass, state, message string) {
 
 func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Settings, segs []domain.Segment) {
 	id := m.ID
-	prompt, err := s.prompts.Prompt(ctx, st.CheckoutPath, st.Profile, m.ClientKey)
+	prompt, err := s.prompts.Prompt(ctx, st.CheckoutPath, st.Profile, m.ProjectKey)
 	if err != nil {
 		s.state(id, "summary", "error", err.Error())
 		return
@@ -145,7 +145,7 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 	if !resume {
 		sid = s.newID()
 	}
-	root := st.ProjectRoots[m.ClientKey]
+	root := st.ProjectRoots[m.ProjectKey]
 
 	s.state(id, "summary", "running", "")
 	out, err := s.runner.Run(ctx, port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: sid, Resume: resume,

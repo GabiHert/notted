@@ -80,14 +80,14 @@ func newSessFixture(t *testing.T) *sessFixture {
 	return f
 }
 
-func (f *sessFixture) meeting(t *testing.T, id, client, sid string) {
+func (f *sessFixture) meeting(t *testing.T, id, project, sid string) {
 	t.Helper()
 	m := domain.Meeting{ID: id, Title: "Sync", StartedAt: time.Now().UTC(), Language: domain.LangEN, State: domain.StateSummarized}
 	if err := f.st.CreateMeeting(f.ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	if client != "" {
-		_ = f.st.SetClientKey(f.ctx, id, client)
+	if project != "" {
+		_ = f.st.SetProjectKey(f.ctx, id, project)
 	}
 	if sid != "" {
 		if err := f.st.SetClaudeSessionID(f.ctx, id, sid); err != nil {

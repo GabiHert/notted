@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EventsOn, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
-import { ClientCard } from "./ClientCard";
+import { ProjectCard } from "./ProjectCard";
 import { ModelBanner } from "./ModelBanner";
 import { RecordingPill } from "./RecordingPill";
 import { SessionCard } from "./SessionCard";
@@ -109,7 +109,7 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       {error}
     </div>}
       <TranscriptCard segments={segments} follow={meeting.state === "recording"} />
-      <ClientCard meetingId={meetingId} clientKey={meeting.clientKey} hasSession={meeting.hasSession} onChanged={refresh} />
+      <ProjectCard meetingId={meetingId} projectKey={meeting.projectKey} hasSession={meeting.hasSession} onChanged={refresh} />
       <SummaryCard meeting={meeting} notCommitted={notCommitted} onRefresh={refresh} />
       <SuggestionsCard suggestionsMd={meeting.suggestionsMd} />
       <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} />

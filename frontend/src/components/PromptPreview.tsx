@@ -3,9 +3,9 @@ import { PreviewPrompt } from "../api/bindings";
 import { errorMessage } from "../format";
 import "./PromptPreview.css";
 
-type Props = { clients: string[]; clientsError: string };
+type Props = { projects: string[]; projectsError: string };
 
-export function PromptPreview({ clients, clientsError }: Props) {
+export function PromptPreview({ projects, projectsError }: Props) {
   const [key, setKey] = useState("");
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -48,13 +48,13 @@ export function PromptPreview({ clients, clientsError }: Props) {
   return (
     <section className="nt-card">
       <div className="nt-card__header">Prompt preview</div>
-      <p className="nt-preview__note">This is exactly what the next summary for this client receives.</p>
-      {clientsError && <p className="nt-preview__note">{clientsError}</p>}
+      <p className="nt-preview__note">This is exactly what the next summary for this project receives.</p>
+      {projectsError && <p className="nt-preview__note">{projectsError}</p>}
       <div className="nt-preview__row">
-        <label htmlFor="nt-preview-client">Preview the prompt for</label>
-        <select id="nt-preview-client" value={key} onChange={(e) => choose(e.target.value)}>
-          <option value="">Choose a client</option>
-          {clients.map((c) => (
+        <label htmlFor="nt-preview-project">Preview the prompt for</label>
+        <select id="nt-preview-project" value={key} onChange={(e) => choose(e.target.value)}>
+          <option value="">Choose a project</option>
+          {projects.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

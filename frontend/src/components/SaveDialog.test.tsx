@@ -6,7 +6,7 @@ vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
 beforeEach(resetBindings);
 
-const ready = { meetingId: "m1", folder: "clients/acme/2026-10-23-weekly-sync", files: ["clients/acme/2026-10-23-weekly-sync/transcript.md", "clients/acme/2026-10-23-weekly-sync/summary.md"] };
+const ready = { meetingId: "m1", folder: "meetings/acme/2026/2026-10-23-weekly-sync", files: ["meetings/acme/2026/2026-10-23-weekly-sync/transcript.md", "meetings/acme/2026/2026-10-23-weekly-sync/summary.md"] };
 
 async function open(onDeclined = vi.fn()) {
   render(<SaveDialog meetingId="m1" onDeclined={onDeclined} />);
@@ -26,7 +26,7 @@ test("opens only on export:ready for this meeting", async () => {
 
 test("lists the folder and the file names", async () => {
   await open();
-  expect(screen.getByText("Notted wrote these files to clients/acme/2026-10-23-weekly-sync in the archive folder:")).toBeInTheDocument();
+  expect(screen.getByText("Notted wrote these files to meetings/acme/2026/2026-10-23-weekly-sync in the archive folder:")).toBeInTheDocument();
   expect(screen.getByText("transcript.md")).toBeInTheDocument();
   expect(screen.getByText("summary.md")).toBeInTheDocument();
   expect(screen.getByText("Nothing is staged or committed until you choose.")).toBeInTheDocument();

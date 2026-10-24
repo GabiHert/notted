@@ -11,14 +11,14 @@ type CommitDTO struct {
 	Commit string `json:"commit"`
 }
 
-// ListClients returns the client keys found in the archive checkout.
-func (a *App) ListClients() ([]string, error) {
-	return a.archive.ListClients(a.context())
+// ListProjects returns the project keys found in the archive checkout.
+func (a *App) ListProjects() ([]string, error) {
+	return a.archive.ListProjects(a.context())
 }
 
-// SetMeetingClient ties a meeting to a client key from ListClients.
-func (a *App) SetMeetingClient(meetingID string, key string) error {
-	return a.archive.SetMeetingClient(a.context(), meetingID, key)
+// SetMeetingProject ties a meeting to a project key from ListProjects.
+func (a *App) SetMeetingProject(meetingID string, key string) error {
+	return a.archive.SetMeetingProject(a.context(), meetingID, key)
 }
 
 // ExportMeeting writes the meeting's four files into the archive checkout.

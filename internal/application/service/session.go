@@ -52,7 +52,7 @@ func (s *SessionService) Start(ctx context.Context, meetingID string) error {
 		return errors.New("Claude Code was not found. Install it and make sure the claude command runs in your terminal.")
 	}
 	args := []string{claudePath, "--resume", m.ClaudeSessionID}
-	if root := st.ProjectRoots[m.ClientKey]; root != "" {
+	if root := st.ProjectRoots[m.ProjectKey]; root != "" {
 		args = append(args, "--add-dir", root)
 	}
 	return s.term.Start(meetingID, st.CheckoutPath, args, env)

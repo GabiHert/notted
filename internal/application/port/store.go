@@ -14,7 +14,7 @@ type MeetingStore interface {
 	ListMeetings(ctx context.Context) ([]domain.Meeting, error)        // started_at DESC
 	UpdateState(ctx context.Context, id string, s domain.MeetingState) error
 	SetEndedAt(ctx context.Context, id string, t time.Time) error
-	SetClientKey(ctx context.Context, id, key string) error
+	SetProjectKey(ctx context.Context, id, key string) error
 	SetClaudeSessionID(ctx context.Context, id, sessionID string) error // write-once
 	SetFolder(ctx context.Context, id, folder string) error             // write-once
 	SetSummary(ctx context.Context, id, summaryMD string) error
