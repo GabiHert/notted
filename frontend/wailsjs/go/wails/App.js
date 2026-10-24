@@ -30,6 +30,10 @@ export function GetModelStatus(arg1) {
   return window['go']['wails']['App']['GetModelStatus'](arg1);
 }
 
+export function GetSettings() {
+  return window['go']['wails']['App']['GetSettings']();
+}
+
 export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }
@@ -38,8 +42,20 @@ export function ListClients() {
   return window['go']['wails']['App']['ListClients']();
 }
 
+export function ListInstructionFiles() {
+  return window['go']['wails']['App']['ListInstructionFiles']();
+}
+
 export function ListMeetings() {
   return window['go']['wails']['App']['ListMeetings']();
+}
+
+export function PreviewPrompt(arg1) {
+  return window['go']['wails']['App']['PreviewPrompt'](arg1);
+}
+
+export function ReadInstructionFile(arg1) {
+  return window['go']['wails']['App']['ReadInstructionFile'](arg1);
 }
 
 export function ResizeSession(arg1, arg2, arg3) {
@@ -48,6 +64,10 @@ export function ResizeSession(arg1, arg2, arg3) {
 
 export function SetMeetingClient(arg1, arg2) {
   return window['go']['wails']['App']['SetMeetingClient'](arg1, arg2);
+}
+
+export function SetSettings(arg1) {
+  return window['go']['wails']['App']['SetSettings'](arg1);
 }
 
 export function StartRecording(arg1, arg2) {
@@ -64,6 +84,10 @@ export function StopRecording(arg1) {
 
 export function StopSession(arg1) {
   return window['go']['wails']['App']['StopSession'](arg1);
+}
+
+export function WriteInstructionFile(arg1, arg2) {
+  return window['go']['wails']['App']['WriteInstructionFile'](arg1, arg2);
 }
 
 export function WriteSession(arg1, arg2) {

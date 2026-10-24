@@ -7,15 +7,16 @@ import (
 
 // App holds every method bound to the frontend.
 type App struct {
-	emitter   *Emitter
-	recording *service.RecordingService
-	transcr   *service.TranscriptionService
-	archive   *service.ArchiveService
-	summary   *service.SummaryService
-	session   *service.SessionService
-	meetings  port.MeetingStore
-	models    port.ModelManager
-	events    port.EventEmitter
+	emitter      *Emitter
+	recording    *service.RecordingService
+	transcr      *service.TranscriptionService
+	archive      *service.ArchiveService
+	summary      *service.SummaryService
+	session      *service.SessionService
+	instructions *service.InstructionsService
+	meetings     port.MeetingStore
+	models       port.ModelManager
+	events       port.EventEmitter
 }
 
 // Deps are the services the bound methods call.
@@ -25,6 +26,7 @@ type Deps struct {
 	Archive       *service.ArchiveService
 	Summary       *service.SummaryService
 	Session       *service.SessionService
+	Instructions  *service.InstructionsService
 	Meetings      port.MeetingStore
 	Models        port.ModelManager
 	// Events overrides the event sink; it defaults to the emitter given to New.
@@ -37,7 +39,7 @@ func New(e *Emitter, d Deps) *App {
 	if events == nil {
 		events = e
 	}
-	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, meetings: d.Meetings, models: d.Models, events: events}
+	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, meetings: d.Meetings, models: d.Models, events: events}
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.

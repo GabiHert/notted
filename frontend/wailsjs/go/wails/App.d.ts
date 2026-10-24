@@ -16,15 +16,25 @@ export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
 
 export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
+export function GetSettings():Promise<wails.SettingsDTO>;
+
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
 export function ListClients():Promise<Array<string>>;
 
+export function ListInstructionFiles():Promise<Array<wails.InstructionFileDTO>>;
+
 export function ListMeetings():Promise<Array<wails.MeetingDTO>>;
+
+export function PreviewPrompt(arg1:string):Promise<string>;
+
+export function ReadInstructionFile(arg1:string):Promise<string>;
 
 export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function SetMeetingClient(arg1:string,arg2:string):Promise<void>;
+
+export function SetSettings(arg1:wails.SettingsDTO):Promise<void>;
 
 export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;
 
@@ -33,5 +43,7 @@ export function StartSession(arg1:string):Promise<void>;
 export function StopRecording(arg1:string):Promise<void>;
 
 export function StopSession(arg1:string):Promise<void>;
+
+export function WriteInstructionFile(arg1:string,arg2:string):Promise<void>;
 
 export function WriteSession(arg1:string,arg2:string):Promise<void>;

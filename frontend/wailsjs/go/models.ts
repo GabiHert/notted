@@ -26,6 +26,22 @@ export namespace wails {
 	        this.files = source["files"];
 	    }
 	}
+	export class InstructionFileDTO {
+	    path: string;
+	    kind: string;
+	    readOnly: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new InstructionFileDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.kind = source["kind"];
+	        this.readOnly = source["readOnly"];
+	    }
+	}
 	export class MeetingDTO {
 	    id: string;
 	    title: string;
@@ -96,6 +112,22 @@ export namespace wails {
 	        this.startMs = source["startMs"];
 	        this.endMs = source["endMs"];
 	        this.text = source["text"];
+	    }
+	}
+	export class SettingsDTO {
+	    profile: string;
+	    checkoutPath: string;
+	    projectRoots: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new SettingsDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.profile = source["profile"];
+	        this.checkoutPath = source["checkoutPath"];
+	        this.projectRoots = source["projectRoots"];
 	    }
 	}
 

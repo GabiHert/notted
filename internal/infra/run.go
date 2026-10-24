@@ -55,9 +55,10 @@ func Run(assets embed.FS) error {
 	})
 	archive := service.NewArchiveService(st, st, git.New(claude.LoginShellEnv), emitter)
 	summary := service.NewSummaryService(st, st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, claude.Runner{EnvFn: claude.LoginShellEnv}, archive, emitter)
+	instructions := service.NewInstructionsService(st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, archive.ListClients)
 	term := process.NewManager(emitter)
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:     "Notted",
