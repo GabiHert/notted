@@ -130,6 +130,30 @@ export namespace wails {
 	        this.projectRoots = source["projectRoots"];
 	    }
 	}
+	export class UpdateStatusDTO {
+	    sourcePath: string;
+	    installedApp: string;
+	    signing: boolean;
+	    state: string;
+	    message: string;
+	    lines: string[];
+	    seq: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateStatusDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sourcePath = source["sourcePath"];
+	        this.installedApp = source["installedApp"];
+	        this.signing = source["signing"];
+	        this.state = source["state"];
+	        this.message = source["message"];
+	        this.lines = source["lines"];
+	        this.seq = source["seq"];
+	    }
+	}
 
 }
 

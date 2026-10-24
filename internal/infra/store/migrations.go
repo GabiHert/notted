@@ -53,6 +53,13 @@ BEFORE UPDATE OF folder ON meetings
 WHEN OLD.folder IS NOT NULL AND NEW.folder IS NOT OLD.folder
 BEGIN SELECT RAISE(ABORT, 'folder is write-once'); END;`,
 	`ALTER TABLE meetings RENAME COLUMN client_key TO project_key;`,
+	`CREATE TABLE settings_new (
+  key   TEXT PRIMARY KEY CHECK (key IN ('profile','checkout_path','project_roots','source_path')),
+  value TEXT NOT NULL
+);
+INSERT INTO settings_new (key, value) SELECT key, value FROM settings;
+DROP TABLE settings;
+ALTER TABLE settings_new RENAME TO settings;`,
 }
 
 func runMigrations(db *sql.DB) error {

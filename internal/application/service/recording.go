@@ -267,6 +267,13 @@ func (s *RecordingService) RecoverOnStartup(ctx context.Context) error {
 	return nil
 }
 
+// Recording reports whether a recording is running.
+func (s *RecordingService) Recording() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.active != nil
+}
+
 // StopAll stops the active recording; the app calls it on shutdown.
 func (s *RecordingService) StopAll() {
 	s.mu.Lock()

@@ -559,3 +559,23 @@ func TestStoppedListenerCalledOnStopExitAndRecovery(t *testing.T) {
 		t.Fatalf("after recovery = %v", g)
 	}
 }
+
+func TestRecordingReports(t *testing.T) {
+	f := newFixture(t)
+	if f.svc.Recording() {
+		t.Fatal("recording before Start")
+	}
+	m, err := f.svc.Start(context.Background(), "a", domain.LangEN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !f.svc.Recording() {
+		t.Fatal("not recording after Start")
+	}
+	if err := f.svc.Stop(context.Background(), m.ID); err != nil {
+		t.Fatal(err)
+	}
+	if f.svc.Recording() {
+		t.Fatal("recording after Stop")
+	}
+}

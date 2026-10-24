@@ -18,6 +18,7 @@ import (
 var (
 	_ port.MeetingStore  = (*Store)(nil)
 	_ port.SettingsStore = (*Store)(nil)
+	_ port.SourceStore   = (*Store)(nil)
 )
 
 func openTemp(t *testing.T) (*Store, string) {
@@ -104,8 +105,8 @@ func TestMigrationsApplyOnce(t *testing.T) {
 	if err := s2.db.QueryRow(`SELECT COUNT(*), MAX(version) FROM schema_migrations`).Scan(&n, &v); err != nil {
 		t.Fatal(err)
 	}
-	if n != 2 || v != 2 {
-		t.Fatalf("schema_migrations count=%d max=%d, want 2 and 2", n, v)
+	if n != 3 || v != 3 {
+		t.Fatalf("schema_migrations count=%d max=%d, want 3 and 3", n, v)
 	}
 }
 
@@ -425,8 +426,8 @@ func TestMigration2RenamesMeetingKeyColumn(t *testing.T) {
 	if !hasProject || hasOld {
 		t.Fatalf("meetings columns = %v, want project_key and no client_key", cols)
 	}
-	if got := versions(t, s); !reflect.DeepEqual(got, []int{1, 2}) {
-		t.Fatalf("versions = %v, want [1 2]", got)
+	if got := versions(t, s); !reflect.DeepEqual(got, []int{1, 2, 3}) {
+		t.Fatalf("versions = %v, want [1 2 3]", got)
 	}
 	s.Close()
 
@@ -435,7 +436,74 @@ func TestMigration2RenamesMeetingKeyColumn(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s2.Close()
-	if got := versions(t, s2); !reflect.DeepEqual(got, []int{1, 2}) {
-		t.Fatalf("second open versions = %v, want [1 2]", got)
+	if got := versions(t, s2); !reflect.DeepEqual(got, []int{1, 2, 3}) {
+		t.Fatalf("second open versions = %v, want [1 2 3]", got)
+	}
+}
+
+func TestSourcePathRoundTrip(t *testing.T) {
+	s, _ := openTemp(t)
+	ctx := context.Background()
+	if got, err := s.GetSourcePath(ctx); err != nil || got != "" {
+		t.Fatalf("first = %q, %v", got, err)
+	}
+	for _, p := range []string{"/a", "/b"} {
+		if err := s.SetSourcePath(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, _ := s.GetSourcePath(ctx); got != "/b" {
+		t.Fatalf("got %q", got)
+	}
+	want := domain.Settings{Profile: "ana", CheckoutPath: "/c", ProjectRoots: map[string]string{"acme": "/p/acme"}}
+	if err := s.SaveSettings(ctx, want); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetSourcePath(ctx); got != "/b" {
+		t.Fatalf("SaveSettings touched the source: %q", got)
+	}
+	got, err := s.GetSettings(ctx)
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("settings = %+v, %v", got, err)
+	}
+}
+
+func TestMigration3KeepsSettings(t *testing.T) {
+	t.Setenv("NOTTED_HOME", t.TempDir())
+	all := migrations
+	t.Cleanup(func() { migrations = all })
+	migrations = all[:2]
+	path := filepath.Join(t.TempDir(), "meetings.sqlite")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	want := domain.Settings{Profile: "ana", CheckoutPath: "/a", ProjectRoots: map[string]string{"acme": "/p/acme"}}
+	if err := s.SaveSettings(ctx, want); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	migrations = all
+	s, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	got, err := s.GetSettings(ctx)
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("settings = %+v, %v", got, err)
+	}
+	if err := s.SetSourcePath(ctx, "/src"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO settings (key, value) VALUES ('bogus', 'x')`); err == nil {
+		t.Error("bogus key accepted")
+	}
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&n); err != nil || n != 3 {
+		t.Fatalf("schema_migrations rows = %d, %v", n, err)
 	}
 }

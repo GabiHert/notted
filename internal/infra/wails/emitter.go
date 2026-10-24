@@ -43,3 +43,13 @@ func (e *Emitter) Emit(name string, payload any) {
 	}
 	wruntime.EventsEmit(ctx, name, payload)
 }
+
+// Quit closes the app; before startup it does nothing.
+func (e *Emitter) Quit() {
+	e.mu.RLock()
+	ctx := e.ctx
+	e.mu.RUnlock()
+	if ctx != nil {
+		wruntime.Quit(ctx)
+	}
+}

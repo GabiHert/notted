@@ -62,6 +62,10 @@ export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }
 
+export function GetUpdateStatus() {
+  return window['go']['wails']['App']['GetUpdateStatus']();
+}
+
 export function ListInstructionFiles() {
   return window['go']['wails']['App']['ListInstructionFiles']();
 }
@@ -106,12 +110,20 @@ export function SetSettings(arg1) {
   return window['go']['wails']['App']['SetSettings'](arg1);
 }
 
+export function SetUpdateSource(arg1) {
+  return window['go']['wails']['App']['SetUpdateSource'](arg1);
+}
+
 export function StartRecording(arg1, arg2) {
   return window['go']['wails']['App']['StartRecording'](arg1, arg2);
 }
 
 export function StartSession(arg1) {
   return window['go']['wails']['App']['StartSession'](arg1);
+}
+
+export function StartUpdate() {
+  return window['go']['wails']['App']['StartUpdate']();
 }
 
 export function StopRecording(arg1) {

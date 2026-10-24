@@ -16,6 +16,7 @@ import (
 	"github.com/bhlabz/notted/internal/integration/audio/wavinfo"
 	"github.com/bhlabz/notted/internal/integration/claude"
 	"github.com/bhlabz/notted/internal/integration/git"
+	"github.com/bhlabz/notted/internal/integration/install"
 	"github.com/bhlabz/notted/internal/integration/process"
 	"github.com/bhlabz/notted/internal/integration/speech"
 	wailsv2 "github.com/wailsapp/wails/v2"
@@ -59,8 +60,21 @@ func Run(assets embed.FS) error {
 	instructions := service.NewInstructionsService(st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, archive.ListProjects)
 	term := process.NewManager(emitter)
 	setup := service.NewSetupService(st, git.New(gitEnv(claude.LoginShellEnv)))
+	update := service.NewUpdateService(service.UpdateDeps{
+		Source:     st,
+		Git:        git.New(gitEnv(claude.LoginShellEnv)),
+		Stream:     &process.Streamer{EnvFn: gitEnv(claude.LoginShellEnv)},
+		Install:    &install.Installer{},
+		Signing:    install.Signing{}.Present,
+		Recording:  recording.Recording,
+		Executable: os.Executable,
+		Pid:        os.Getpid,
+		Quit:       emitter.Quit,
+		LogPath:    paths.UpdateLog,
+		Emit:       emitter,
+	})
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Meetings: st, Models: models})
 
 	runErr := wailsv2.Run(&options.App{
 		Title:            "Notted",

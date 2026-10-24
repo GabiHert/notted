@@ -37,3 +37,6 @@ func AudioDir(meetingID string) string { return filepath.Join(Home(), "audio", m
 
 // ModelsDir returns the directory holding downloaded speech models.
 func ModelsDir() string { return filepath.Join(Home(), "models") }
+
+// UpdateLog returns the installer's log file under Home.
+func UpdateLog() string { return filepath.Join(Home(), "update.log") }
