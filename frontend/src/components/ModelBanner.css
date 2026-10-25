@@ -1,0 +1,7 @@
+.nt-banner p {
+  margin: 0 0 10px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.5;
+}

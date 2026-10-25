@@ -1,0 +1,35 @@
+.nt-transcript {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.nt-transcript__empty {
+  margin: 0;
+  font-family: var(--font-notes);
+  font-size: var(--notes-size);
+  color: var(--fg3-text);
+}
+.nt-line {
+  display: grid;
+  grid-template-columns: 64px 64px 1fr;
+  gap: 0 8px;
+  padding: 3px 0;
+  align-items: baseline;
+}
+.nt-line__time {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--fg3-text);
+  font-variant-numeric: tabular-nums;
+}
+.nt-line__speaker {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--speaker);
+}
+.nt-line__text {
+  font-family: var(--font-notes);
+  font-size: var(--notes-size);
+  line-height: 1.6;
+  color: var(--fg);
+}

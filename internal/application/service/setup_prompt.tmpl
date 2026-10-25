@@ -1,0 +1,86 @@
+You are helping me finish setting up Notted, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.
+
+## How Notted works
+
+1. I record a meeting. Notted captures my microphone and the system audio, and keeps the recording on this Mac.
+2. Notted transcribes the recording on this Mac, with no network.
+3. I open one Claude Code session per meeting. It reads the transcript and writes the summary and the suggested tasks, following the instruction files described below.
+4. When I say yes, the meeting is saved to my archive, a git folder.
+5. I accept a suggestion to act on it. What accepting does comes from my instruction files.
+
+## My current state
+
+- Archive folder: {{if .Archive}}{{.Archive}}{{else}}not chosen yet{{end}}
+- Profile: {{if .Profile}}{{.Profile}}{{else}}not chosen yet{{end}}
+{{- if .Archive}}
+{{- if .ArchiveProblem}}
+- Notted's check of the archive folder says: {{.ArchiveProblem}}
+{{- end}}
+{{- if .Ready}}
+{{- if .ProjectsError}}
+- Notted could not read the archive's projects: {{.ProjectsError}}
+{{- else}}
+- Projects in the archive: {{if .Projects}}{{join .Projects ", "}}{{else}}none yet{{end}}
+{{- end}}
+{{- if .Profile}}
+- My files in the archive: {{if .ProfileFiles}}{{join .ProfileFiles ", "}}{{else}}none yet{{end}}
+{{- if and (not .ProjectsError) (not .ProfileProjectsError)}}
+- Projects without a file of mine: {{if .Missing}}{{join .Missing ", "}}{{else}}none{{end}}
+{{- end}}
+{{- if .ProfileProjectsError}}
+- Notted could not read my per-project files: {{.ProfileProjectsError}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+## The archive
+{{if .Ready}}
+The archive is the folder {{.Archive}}. It has this layout:
+
+- bin/meeting starts a meeting session.
+- prompts/base.md is the base prompt every session starts from.
+- instructions/projects/ holds one file per project, named after the project's key.
+- instructions/people/ holds one file per person, and a folder per person with one file per project.
+- meetings/ holds the saved meetings.
+
+The schema of every instruction file (headings, order, precedence, an example of each) is in instructions/README.md in the archive. Read it first. Do not guess a heading.
+
+## What I need you to do
+
+1. Read instructions/README.md and prompts/base.md in the archive.
+2. Interview me one question at a time. Wait for my answer before you ask the next.
+{{- if not .Profile}}
+   I have no profile yet, so start by asking me for a short profile name: lowercase letters, digits and dashes, starting with a letter or digit, like "ana" or "ana-lima". My person file will be instructions/people/<name>.md: draft it from my answers below with the headings the README gives, show it to me in full as rule 5 says, and write it only after my yes. Then ask about:
+{{- else}}
+   Ask about:
+{{- end}}
+   - my role and my style, for my person file (language, phrasing, how many suggestions I want);
+   - for each project I work on: its name, the other names it appears under in meeting titles (aliases), what it is about, where its existing work lives (task files, notes, folders), and what accepting a task should do for it;
+   - for each project: the local folder of its work, which I set in Notted afterwards.
+3. Write only under instructions/ in the archive, and only the files for my profile and the projects we talk about. Use the headings the README gives.
+4. You must never edit prompts/base.md, bin/meeting or anything under meetings/.
+5. Before you write a file, show each file to me in full and wait for my yes. After I say yes, write it.
+6. You must never commit or push without my yes. Writing a file is not a commit.
+7. When we are done, tell me to open Notted's Settings and:
+{{if .Profile}}   - choose my profile;
+{{else}}   - choose the profile I just named, which Notted lists once its file exists;
+{{end}}   - set each project's root folder, with Choose;
+   - check the result in Prompt preview, which shows exactly what the next summary for a project receives.
+{{else if .Archive}}
+The folder {{.Archive}} is not set up as a meetings archive yet.
+
+## What I need you to do
+
+Explain, in a few sentences, that I choose this folder again in Notted's Settings, in the Instructions tab, so Notted sets it up with everything an archive needs. Then I copy this setup prompt again from the same Settings page.
+
+Then stop. Do not ask me questions about my projects, do not create any file or folder, and do not run any command in the folder.
+{{else}}
+The archive is a git folder where Notted keeps my instruction files and my saved meetings. I have not chosen one yet.
+
+## What I need you to do
+
+Explain, in a few sentences, that I first choose or clone my archive in Notted's Settings, in the Instructions tab: Choose an empty or existing folder, or clone one from its git address. Notted sets the folder up with everything it needs. Choose or clone the archive, then copy this setup prompt again from the same Settings page.
+
+Then stop. Do not ask me questions about my projects and do not create any file or folder yet.
+{{end}}

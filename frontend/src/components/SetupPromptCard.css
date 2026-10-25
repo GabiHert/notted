@@ -1,0 +1,35 @@
+.nt-setup-prompt__note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-setup-prompt__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nt-setup-prompt__status {
+  font-size: 12px;
+  color: var(--fg2);
+}
+.nt-setup-prompt__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+.nt-setup-prompt__out {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 320px;
+  margin: 12px 0 0;
+  padding: 12px;
+  resize: vertical;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--side);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+}

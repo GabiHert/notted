@@ -1,0 +1,17 @@
+.nt-titlebar {
+  --wails-draggable: drag;
+  flex: none;
+  height: 38px;
+  padding-left: 80px;
+  padding-right: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bar);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg2);
+  user-select: none;
+}

@@ -1,0 +1,25 @@
+.nt-summary__actions {
+  margin-top: 12px;
+}
+.nt-summary__note {
+  margin: 8px 0 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-summary__busy {
+  margin-top: 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg2);
+}
+.nt-summary__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.nt-summary__note--bare {
+  margin: 0;
+}

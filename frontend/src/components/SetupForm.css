@@ -1,0 +1,122 @@
+.nt-setup__section {
+  margin-bottom: 18px;
+}
+.nt-setup__section label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.nt-setup__path {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  max-width: 620px;
+}
+.nt-setup__select {
+  display: block;
+  max-width: 620px;
+  width: 100%;
+}
+.nt-setup__help {
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-setup__help--block {
+  display: block;
+  margin: 6px 0 0;
+}
+.nt-setup__sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg2);
+  margin: 4px 0 2px;
+}
+.nt-setup__root {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.nt-setup__root label {
+  margin-bottom: 0;
+}
+.nt-setup__new {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.nt-setup__inline {
+  background: var(--side);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  margin-top: 8px;
+  max-width: 620px;
+}
+.nt-setup__inline > label:not(:first-child),
+.nt-setup__inline > .nt-setup__help + label {
+  margin-top: 10px;
+}
+.nt-setup__inline > input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
+.nt-setup__inline .nt-setup__help {
+  display: block;
+}
+.nt-setup__files {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+.nt-setup__inline h3.nt-setup__sub {
+  margin: 0 0 6px;
+}
+.nt-btn--link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+}
+.nt-btn--link:hover,
+.nt-btn--link:focus-visible {
+  text-decoration: underline;
+}
+.nt-setup__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+.nt-setup__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.nt-setup__notice {
+  color: var(--fg3-text);
+  font-size: 12px;
+}
+.nt-setup__person {
+  display: grid;
+  grid-template-columns: 140px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.nt-setup__person-name {
+  font-size: 13px;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}

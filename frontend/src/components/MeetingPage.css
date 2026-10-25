@@ -1,0 +1,30 @@
+.nt-meeting__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.nt-meeting__meta {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg2);
+}
+.nt-meeting__live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.nt-meeting__busy {
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg2);
+}
+.nt-meeting__msg {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--fg);
+}
