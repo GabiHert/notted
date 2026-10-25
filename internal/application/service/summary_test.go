@@ -416,3 +416,58 @@ func TestSummaryRerunInTheGapResumesTheStoredSession(t *testing.T) {
 		t.Fatalf("meeting = %+v", m)
 	}
 }
+
+// ctxRunner blocks until the run's context ends, then returns its error.
+type ctxRunner struct{ started chan struct{} }
+
+func (r ctxRunner) Run(ctx context.Context, _ port.ClaudeRun) (string, error) {
+	close(r.started)
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+func TestCancelStopsTheMeetingsRunAndWaitsForIt(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	r := ctxRunner{started: make(chan struct{})}
+	f.svc.runner = r
+	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	<-r.started
+	f.svc.Cancel("m1")
+	// Cancel returns only once the run ended, so nothing writes to the meeting afterwards.
+	f.svc.mu.Lock()
+	n := len(f.svc.active)
+	f.svc.mu.Unlock()
+	if n != 0 {
+		t.Fatalf("runs still active after Cancel: %d", n)
+	}
+	for _, s := range f.states() {
+		if strings.Contains(s, "error") {
+			t.Fatalf("a cancelled run reported an error: %v", f.states())
+		}
+	}
+	f.svc.Wait()
+}
+
+func TestCancelWithoutARunIsANoOp(t *testing.T) {
+	f := newSumFixture(t)
+	f.svc.Cancel("none")
+}
+
+func TestCancelLeavesAnotherMeetingsRunAlone(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	f.run.block = make(chan struct{})
+	f.run.reply = []func() (string, error){ok("# Summary: X"), ok("# Suggestions: X")}
+	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Cancel("other")
+	close(f.run.block)
+	f.svc.Wait()
+	if got := f.states(); len(got) == 0 || got[len(got)-1] != "suggestions/done" {
+		t.Fatalf("the run was disturbed: %v", got)
+	}
+}

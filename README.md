@@ -74,6 +74,8 @@ shows **Create my file** when your own file for that project is missing.
 Notted never commits these changes: deleting and creating files only changes the archive folder,
 like any edit.
 
+To delete a meeting, click **Delete meeting** on its page. Notted lists what it removes (the audio, the transcript, the summary and the suggestions) and asks first. It removes only Notted's copy and leaves the meeting's folder in the archive as it is. A recording must be stopped first.
+
 ## Update Notted
 
 Notted can update itself from your own clone of its source. If you installed with `make install`, that clone is already in use. Otherwise, in **Settings**, under **Update

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
-import { GetMeeting, GetSettings, StartRecording, emit, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
+import { DeleteMeeting, GetMeeting, GetSettings, StartRecording, emit, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
 
 vi.mock("./api/bindings", () => import("./test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("./test/codemirrorMock"));
@@ -156,5 +156,68 @@ describe("the menu bar", () => {
     act(() => emit("recording:state", { meetingId: "m9", state: "recording", warning: "No system audio was heard." }));
     expect(screen.getByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("No microphone.");
+  });
+});
+
+describe("deleting a meeting", () => {
+  const open2 = async () => {
+    ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" }), meeting({ id: "m1", title: "Older" })]);
+    GetMeeting.mockImplementation(async (id: string) => meeting({ id, title: id === "m2" ? "Newest" : "Older" }));
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "Newest" });
+  };
+  const confirmDelete = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Delete meeting" }));
+    const dialog = await screen.findByRole("dialog");
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Delete meeting" })));
+  };
+
+  test("goes to the next meeting in the list", async () => {
+    await open2();
+    ListMeetings.mockResolvedValue([meeting({ id: "m1", title: "Older" })]);
+    await confirmDelete();
+    expect(await screen.findByRole("heading", { level: 1, name: "Older" })).toBeInTheDocument();
+  });
+
+  test("goes to New recording when the list is empty", async () => {
+    await open2();
+    ListMeetings.mockResolvedValue([]);
+    await confirmDelete();
+    expect(await screen.findByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+  });
+
+  test("goes to New recording when the list cannot be read", async () => {
+    await open2();
+    ListMeetings.mockRejectedValue(new Error("db closed"));
+    await confirmDelete();
+    expect(await screen.findByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+  });
+
+  test("the sidebar drops the meeting", async () => {
+    await open2();
+    ListMeetings.mockResolvedValue([meeting({ id: "m1", title: "Older" })]);
+    await confirmDelete();
+    await act(async () => emit("meeting:deleted", { meetingId: "m2" }));
+    const nav = screen.getByRole("navigation", { name: "Meetings" });
+    expect(within(nav).queryByText("Newest")).not.toBeInTheDocument();
+    expect(within(nav).getByText("Older")).toBeInTheDocument();
+  });
+
+  test("a warning from the delete shows on the page you land on", async () => {
+    await open2();
+    const warning = "The meeting was deleted, but its audio folder could not be removed: permission denied";
+    DeleteMeeting.mockResolvedValue({ warning });
+    ListMeetings.mockResolvedValue([meeting({ id: "m1", title: "Older" })]);
+    await confirmDelete();
+    expect(await screen.findByRole("heading", { level: 1, name: "Older" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(warning);
+  });
+
+  test("a clean delete shows no alert", async () => {
+    await open2();
+    ListMeetings.mockResolvedValue([meeting({ id: "m1", title: "Older" })]);
+    await confirmDelete();
+    await screen.findByRole("heading", { level: 1, name: "Older" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

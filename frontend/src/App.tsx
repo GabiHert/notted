@@ -49,6 +49,13 @@ export function App({ initialView }: { initialView?: View }) {
     if (current.kind === "settings" && v.kind !== "settings" && dirtyPath) setPendingView(v);
     else setView(v);
   };
+  // After a delete: the newest meeting left, or New recording when none is.
+  const leaveDeleted = (warning: string) => {
+    setMenuError(warning);
+    ListMeetings()
+      .catch(() => null)
+      .then((list) => setView(list && list.length > 0 ? { kind: "meeting", id: list[0].id } : { kind: "new" }));
+  };
   return (
     <div className="nt-window">
       <TitleBar />
@@ -69,7 +76,7 @@ export function App({ initialView }: { initialView?: View }) {
                 }}
               />
             ) : view.kind === "meeting" ? (
-              <MeetingPage meetingId={view.id} />
+              <MeetingPage meetingId={view.id} onDeleted={leaveDeleted} />
             ) : (
               <SettingsView onDirtyPath={setDirtyPath} />
             )}

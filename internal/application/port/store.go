@@ -12,6 +12,8 @@ type MeetingStore interface {
 	CreateMeeting(ctx context.Context, m domain.Meeting) error
 	GetMeeting(ctx context.Context, id string) (domain.Meeting, error) // domain.ErrNotFound
 	ListMeetings(ctx context.Context) ([]domain.Meeting, error)        // started_at DESC
+	// DeleteMeeting removes the meeting with its chunks and segments in one transaction (domain.ErrNotFound when missing).
+	DeleteMeeting(ctx context.Context, id string) error
 	UpdateState(ctx context.Context, id string, s domain.MeetingState) error
 	SetEndedAt(ctx context.Context, id string, t time.Time) error
 	SetProjectKey(ctx context.Context, id, key string) error

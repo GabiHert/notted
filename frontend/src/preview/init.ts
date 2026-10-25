@@ -63,6 +63,12 @@ export function initPreview(): View {
     case "save-dialog":
     case "save-failed":
       return { kind: "meeting", id: "fx-ready" };
+    case "delete-confirm":
+      autoOpenDeleteConfirm();
+      return { kind: "meeting", id: "fx-ready" };
+    case "delete-confirm-archive":
+      autoOpenDeleteConfirm();
+      return { kind: "meeting", id: "fx-summarized" };
     case "session-closed":
     case "session-no-folder":
     case "session-error":
@@ -74,6 +80,18 @@ export function initPreview(): View {
     default:
       return { kind: "meeting", id: "fx-recording" };
   }
+}
+
+// Preview only: press "Delete meeting" once the page has rendered, so a screenshot URL shows the confirm.
+function autoOpenDeleteConfirm() {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Delete meeting" && !b.disabled);
+    if (btn) {
+      window.clearInterval(timer);
+      btn.click();
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
 }
 
 // Preview only: press "Open session" once the card has rendered, so a screenshot URL shows the terminal.

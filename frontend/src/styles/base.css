@@ -64,6 +64,15 @@ select {
   color: var(--on-accent);
   border: none;
 }
+.nt-btn--danger {
+  background: var(--rec);
+  color: var(--on-accent);
+  border: none;
+}
+.nt-btn--danger-quiet {
+  color: var(--rec);
+  border-color: var(--rec);
+}
 .nt-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

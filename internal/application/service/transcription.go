@@ -38,7 +38,8 @@ type TranscriptionService struct {
 	idle    *sync.Cond
 	items   []workItem
 	parked  map[chunkKey]domain.Chunk
-	pending int // items queued or being processed
+	pending int    // items queued or being processed
+	busy    string // the meeting whose item the worker is processing, "" when none
 	wake    chan struct{}
 	stop    chan struct{}
 	started bool
@@ -125,6 +126,40 @@ func (s *TranscriptionService) ResumeWaiting() {
 	}
 }
 
+// Forget drops a meeting's queued and parked work, then waits for the item of that meeting the worker
+// is processing, if any. After it returns nothing more is written for the meeting.
+func (s *TranscriptionService) Forget(meetingID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	kept := s.items[:0]
+	for _, it := range s.items {
+		id := it.meetingID
+		if !it.check {
+			id = it.chunk.MeetingID
+		}
+		if id == meetingID {
+			s.pending--
+			continue
+		}
+		kept = append(kept, it)
+	}
+	for i := len(kept); i < len(s.items); i++ {
+		s.items[i] = workItem{}
+	}
+	s.items = kept
+	for k := range s.parked {
+		if k.meetingID == meetingID {
+			delete(s.parked, k)
+		}
+	}
+	if s.pending == 0 {
+		s.idle.Broadcast()
+	}
+	for s.busy == meetingID {
+		s.idle.Wait()
+	}
+}
+
 // Wait blocks until every queued item is processed or parked.
 func (s *TranscriptionService) Wait() {
 	s.mu.Lock()
@@ -159,15 +194,18 @@ func (s *TranscriptionService) next() (workItem, bool) {
 	it := s.items[0]
 	s.items[0] = workItem{}
 	s.items = s.items[1:]
+	s.busy = it.meetingID
+	if !it.check {
+		s.busy = it.chunk.MeetingID
+	}
 	return it, true
 }
 
 func (s *TranscriptionService) finishItem() {
 	s.mu.Lock()
 	s.pending--
-	if s.pending == 0 {
-		s.idle.Broadcast()
-	}
+	s.busy = ""
+	s.idle.Broadcast() // Wait waits for an empty queue, Forget for the end of one item
 	s.mu.Unlock()
 }
 

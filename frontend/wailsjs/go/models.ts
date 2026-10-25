@@ -36,6 +36,32 @@ export namespace wails {
 	        this.pushed = source["pushed"];
 	    }
 	}
+	export class DeletePlanDTO {
+	    audioFiles: number;
+	    archiveFolder: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeletePlanDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.audioFiles = source["audioFiles"];
+	        this.archiveFolder = source["archiveFolder"];
+	    }
+	}
+	export class DeleteResultDTO {
+	    warning: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeleteResultDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.warning = source["warning"];
+	    }
+	}
 	export class ExportDTO {
 	    folder: string;
 	    files: string[];

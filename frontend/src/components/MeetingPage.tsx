@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EventsOn, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
+import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { ProjectCard } from "./ProjectCard";
 import { ModelBanner } from "./ModelBanner";
 import { RecordingPill } from "./RecordingPill";
@@ -11,13 +12,16 @@ import { SummaryCard } from "./SummaryCard";
 import { TranscriptCard } from "./TranscriptCard";
 import "./MeetingPage.css";
 
-export function MeetingPage({ meetingId }: { meetingId: string }) {
+// onDeleted runs once the meeting is gone; the parent then leaves the page. The warning is "" unless something (the audio folder) was left behind.
+export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDeleted?: (warning: string) => void }) {
   const [meeting, setMeeting] = useState<wails.MeetingDTO | null>(null);
   const [segments, setSegments] = useState<wails.SegmentDTO[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [stopping, setStopping] = useState(false);
   const [notCommitted, setNotCommitted] = useState(false);
+  const [plan, setPlan] = useState<wails.DeletePlanDTO | null>(null);
+  const deletedRef = useRef(false); // set once the meeting is gone: later events for it are ignored
   const loadRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
 
@@ -29,7 +33,10 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
     setError("");
     setStopping(false);
     setNotCommitted(false);
+    setPlan(null);
+    deletedRef.current = false;
     const load = () =>
+      deletedRef.current ? Promise.resolve() :
       GetMeeting(meetingId)
         .then((m) => live && setMeeting(m))
         .catch((e) => live && setError(errorMessage(e)));
@@ -42,13 +49,13 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       })
       .catch(() => {});
     const offState = EventsOn("recording:state", (e: { meetingId: string; warning?: string; error?: string }) => {
-      if (e.meetingId !== meetingId) return;
+      if (e.meetingId !== meetingId || deletedRef.current) return;
       if (e.warning) setWarnings((cur) => (cur.includes(e.warning!) ? cur : [...cur, e.warning!]));
       if (e.error) setError(e.error);
       load();
     });
     const offSeg = EventsOn("transcript:segment", (e: { meetingId: string; segment: wails.SegmentDTO }) => {
-      if (e.meetingId !== meetingId) return;
+      if (e.meetingId !== meetingId || deletedRef.current) return;
       setSegments((cur) => mergeSegments(cur, [e.segment]));
     });
     const offExport = EventsOn("export:ready", (e: { meetingId: string }) => {
@@ -74,6 +81,22 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
     });
   };
 
+  const askDelete = () => {
+    setError("");
+    GetDeletePlan(meetingId)
+      .then(setPlan)
+      .catch((e) => setError(errorMessage(e)));
+  };
+  const confirmDelete = () => {
+    setPlan(null);
+    DeleteMeeting(meetingId)
+      .then((r) => {
+        deletedRef.current = true;
+        onDeleted?.(r?.warning ?? "");
+      })
+      .catch((e) => setError(errorMessage(e)));
+  };
+
   return (
     <div className="nt-meeting">
       <header className="nt-meeting__head">
@@ -81,14 +104,24 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
           <h1>{meeting.title}</h1>
           <div className="nt-meeting__meta">{`${formatDate(meeting.startedAt)} · ${languageName(meeting.language)}`}</div>
         </div>
-        {meeting.state === "recording" && (
-          <div className="nt-meeting__live">
-            <RecordingPill startedAt={meeting.startedAt} />
-            <button className="nt-btn nt-btn--primary" onClick={stop} disabled={stopping}>
-              Stop recording
-            </button>
-          </div>
-        )}
+        <div className="nt-meeting__live">
+          {meeting.state === "recording" && (
+            <>
+              <RecordingPill startedAt={meeting.startedAt} />
+              <button className="nt-btn nt-btn--primary" onClick={stop} disabled={stopping}>
+                Stop recording
+              </button>
+            </>
+          )}
+          <button
+            className="nt-btn nt-btn--danger-quiet"
+            onClick={askDelete}
+            disabled={meeting.state === "recording"}
+            title={meeting.state === "recording" ? "Stop the recording before you delete this meeting." : undefined}
+          >
+            Delete meeting
+          </button>
+        </div>
       </header>
       {meeting.state === "transcribing" && (
         <div className="nt-meeting__busy">
@@ -118,6 +151,18 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       <SuggestionsCard suggestionsMd={meeting.suggestionsMd} />
       <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} />
       <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
+      {plan && (
+        <ConfirmDialog
+          title={`Delete “${meeting.title}”?`}
+          body={`The audio (${plan.audioFiles} ${plan.audioFiles === 1 ? "file" : "files"}), the transcript, the summary and the suggestions.`}
+          hint={"This cannot be undone." + (plan.archiveFolder ? ` The meeting's folder in the archive (${plan.archiveFolder}) is not changed.` : "")}
+          cancelLabel="Cancel"
+          confirmLabel="Delete meeting"
+          destructive
+          onCancel={() => setPlan(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   );
 }

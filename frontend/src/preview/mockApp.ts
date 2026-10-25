@@ -317,4 +317,11 @@ export async function StartRecording(title: string, language: string) {
   return { ...meetings[0], title: title || "Untitled", language };
 }
 export async function StopRecording(_id: string) {}
+export async function GetDeletePlan(id: string) {
+  const m = meetings.find((x) => x.id === id) ?? meetings[0];
+  return { audioFiles: 6, archiveFolder: m.folder };
+}
+export async function DeleteMeeting(_id: string) {
+  return { warning: "" };
+}
 export async function DownloadModels(_language: string) {}

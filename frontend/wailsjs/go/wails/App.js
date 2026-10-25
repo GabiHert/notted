@@ -34,6 +34,10 @@ export function CreateProject(arg1) {
   return window['go']['wails']['App']['CreateProject'](arg1);
 }
 
+export function DeleteMeeting(arg1) {
+  return window['go']['wails']['App']['DeleteMeeting'](arg1);
+}
+
 export function DeleteProfile(arg1, arg2) {
   return window['go']['wails']['App']['DeleteProfile'](arg1, arg2);
 }
@@ -48,6 +52,10 @@ export function ExportMeeting(arg1) {
 
 export function GenerateSummary(arg1) {
   return window['go']['wails']['App']['GenerateSummary'](arg1);
+}
+
+export function GetDeletePlan(arg1) {
+  return window['go']['wails']['App']['GetDeletePlan'](arg1);
 }
 
 export function GetMeeting(arg1) {

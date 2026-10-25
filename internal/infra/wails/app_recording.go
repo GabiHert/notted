@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/GabiHert/notted/internal/application/service"
 	"github.com/GabiHert/notted/internal/domain"
 )
 
@@ -56,4 +57,28 @@ func (a *App) GetMeeting(id string) (MeetingDTO, error) {
 		return MeetingDTO{}, userFacing(err)
 	}
 	return toMeetingDTO(m), nil
+}
+
+// DeleteMeeting removes a meeting from Notted: its audio, its transcript, summary and suggestions.
+// It refuses while the meeting records. A meeting saved to the archive keeps its folder there.
+// When the rows are gone but the audio folder stays, it resolves with a warning instead of an error.
+func (a *App) DeleteMeeting(meetingID string) (DeleteResultDTO, error) {
+	err := a.deleter.Delete(a.context(), meetingID)
+	if err != nil && !errors.Is(err, service.ErrAudioLeft) {
+		return DeleteResultDTO{}, userFacing(err)
+	}
+	a.events.Emit("meeting:deleted", map[string]any{"meetingId": meetingID})
+	if err != nil {
+		return DeleteResultDTO{Warning: err.Error()}, nil
+	}
+	return DeleteResultDTO{}, nil
+}
+
+// GetDeletePlan returns what DeleteMeeting would remove, for the confirm.
+func (a *App) GetDeletePlan(meetingID string) (DeletePlanDTO, error) {
+	p, err := a.deleter.Plan(a.context(), meetingID)
+	if err != nil {
+		return DeletePlanDTO{}, userFacing(err)
+	}
+	return DeletePlanDTO{AudioFiles: p.AudioFiles, ArchiveFolder: p.ArchiveFolder}, nil
 }

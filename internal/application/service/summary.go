@@ -27,15 +27,33 @@ type SummaryService struct {
 	newID    func() string
 
 	mu     sync.Mutex
-	active map[string]bool
+	active map[string]*summaryRun
 	wg     sync.WaitGroup
+}
+
+// summaryRun is one meeting's running summary: cancel ends it, done closes when it has ended.
+type summaryRun struct {
+	cancel context.CancelFunc
+	done   chan struct{}
 }
 
 // NewSummaryService builds the summary service.
 func NewSummaryService(store port.MeetingStore, settings port.SettingsStore, prompts port.PromptSource,
 	runner port.ClaudeRunner, export exporter, emit port.EventEmitter) *SummaryService {
 	return &SummaryService{store: store, settings: settings, prompts: prompts, runner: runner, export: export,
-		emit: emit, newID: uuid.NewString, active: map[string]bool{}}
+		emit: emit, newID: uuid.NewString, active: map[string]*summaryRun{}}
+}
+
+// Cancel ends the meeting's running summary, if any, and waits for it to stop. A cancelled run reports nothing.
+func (s *SummaryService) Cancel(meetingID string) {
+	s.mu.Lock()
+	r := s.active[meetingID]
+	s.mu.Unlock()
+	if r == nil {
+		return
+	}
+	r.cancel()
+	<-r.done
 }
 
 // Wait blocks until no run is active. It is a test helper.
@@ -98,17 +116,21 @@ func (s *SummaryService) Generate(ctx context.Context, meetingID string) error {
 		return errors.New("The transcript is empty. Nothing to summarize.")
 	}
 	s.mu.Lock()
-	if s.active[meetingID] {
+	if s.active[meetingID] != nil {
 		s.mu.Unlock()
 		return errors.New("A summary is already being written for this meeting.")
 	}
-	s.active[meetingID] = true
+	runCtx, cancel := context.WithCancel(context.Background())
+	r := &summaryRun{cancel: cancel, done: make(chan struct{})}
+	s.active[meetingID] = r
 	s.wg.Add(1)
 	s.mu.Unlock()
 	release := func() {
 		s.mu.Lock()
 		delete(s.active, meetingID)
 		s.mu.Unlock()
+		cancel()
+		close(r.done)
 		s.wg.Done()
 	}
 
@@ -121,12 +143,15 @@ func (s *SummaryService) Generate(ctx context.Context, meetingID string) error {
 
 	go func() {
 		defer release()
-		s.run(context.Background(), m, st, segs)
+		s.run(runCtx, m, st, segs)
 	}()
 	return nil
 }
 
-func (s *SummaryService) state(id, pass, state, message string) {
+func (s *SummaryService) state(ctx context.Context, id, pass, state, message string) {
+	if ctx.Err() != nil {
+		return // cancelled: the meeting may be gone
+	}
 	p := map[string]any{"meetingId": id, "pass": pass, "state": state}
 	if message != "" {
 		p["message"] = message
@@ -138,7 +163,7 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 	id := m.ID
 	prompt, err := s.prompts.Prompt(ctx, st.CheckoutPath, st.Profile, m.ProjectKey)
 	if err != nil {
-		s.state(id, "summary", "error", err.Error())
+		s.state(ctx, id, "summary", "error", err.Error())
 		return
 	}
 	sid, resume := m.ClaudeSessionID, m.ClaudeSessionID != ""
@@ -147,52 +172,52 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 	}
 	root := st.ProjectRoots[m.ProjectKey]
 
-	s.state(id, "summary", "running", "")
+	s.state(ctx, id, "summary", "running", "")
 	out, err := s.runner.Run(ctx, port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: sid, Resume: resume,
 		PromptText: prompt, ProjectRoot: root, Stdin: summaryStdin(m, segs)})
 	if err != nil {
-		s.state(id, "summary", "error", err.Error())
+		s.state(ctx, id, "summary", "error", err.Error())
 		return
 	}
 	summary, found := extractFrom(out, "# Summary:")
 	if !found {
-		s.state(id, "summary", "error", "Claude Code returned no summary. Nothing was saved.")
+		s.state(ctx, id, "summary", "error", "Claude Code returned no summary. Nothing was saved.")
 		return
 	}
 	if !resume {
 		if err := s.store.SetClaudeSessionID(ctx, id, sid); err != nil {
-			s.state(id, "summary", "error", err.Error())
+			s.state(ctx, id, "summary", "error", err.Error())
 			return
 		}
 	}
 	if err := s.store.SetSummary(ctx, id, summary); err != nil {
-		s.state(id, "summary", "error", err.Error())
+		s.state(ctx, id, "summary", "error", err.Error())
 		return
 	}
-	s.state(id, "summary", "done", "")
+	s.state(ctx, id, "summary", "done", "")
 
-	s.state(id, "suggestions", "running", "")
+	s.state(ctx, id, "suggestions", "running", "")
 	out, err = s.runner.Run(ctx, port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: sid, Resume: true,
 		ProjectRoot: root, Stdin: strings.Replace(suggestionsStdin, "<title>", m.Title, 1)})
 	if err != nil {
-		s.state(id, "suggestions", "error", err.Error())
+		s.state(ctx, id, "suggestions", "error", err.Error())
 		return
 	}
 	suggestions, found := extractFrom(out, "# Suggestions:")
 	if !found {
-		s.state(id, "suggestions", "error", "Claude Code returned no suggestions. The summary is saved; generate again to retry.")
+		s.state(ctx, id, "suggestions", "error", "Claude Code returned no suggestions. The summary is saved; generate again to retry.")
 		return
 	}
 	if err := s.store.SetSuggestions(ctx, id, suggestions); err != nil {
-		s.state(id, "suggestions", "error", err.Error())
+		s.state(ctx, id, "suggestions", "error", err.Error())
 		return
 	}
 	if err := s.store.UpdateState(ctx, id, domain.StateSummarized); err != nil {
-		s.state(id, "suggestions", "error", err.Error())
+		s.state(ctx, id, "suggestions", "error", err.Error())
 		return
 	}
-	s.state(id, "suggestions", "done", "")
+	s.state(ctx, id, "suggestions", "done", "")
 	if _, err := s.export.ExportMeeting(ctx, id); err != nil {
-		s.state(id, "suggestions", "error", "The summary is saved in Notted, but writing the files failed: "+err.Error())
+		s.state(ctx, id, "suggestions", "error", "The summary is saved in Notted, but writing the files failed: "+err.Error())
 	}
 }

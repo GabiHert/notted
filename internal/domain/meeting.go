@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"regexp"
+	"time"
+)
 
 // MeetingState is where a meeting is in its life.
 type MeetingState string
@@ -63,3 +66,8 @@ type Segment struct {
 	EndMs     int64
 	Text      string
 }
+
+var meetingIDRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+
+// ValidMeetingID reports whether id can name a meeting's audio folder: a uuid, never empty, never a path.
+func ValidMeetingID(id string) bool { return meetingIDRe.MatchString(id) }

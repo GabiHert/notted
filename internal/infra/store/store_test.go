@@ -507,3 +507,66 @@ func TestMigration3KeepsSettings(t *testing.T) {
 		t.Fatalf("schema_migrations rows = %d, %v", n, err)
 	}
 }
+
+func TestDeleteMeetingCascadesToChunksAndSegments(t *testing.T) {
+	s, _ := openTemp(t)
+	ctx := context.Background()
+	now := time.Date(2026, 10, 25, 10, 0, 0, 0, time.UTC)
+	seed(t, s, "gone", now)
+	seed(t, s, "kept", now.Add(time.Hour))
+	for _, id := range []string{"gone", "kept"} {
+		if err := s.AddChunk(ctx, domain.Chunk{MeetingID: id, Track: domain.TrackMic, Index: 1, Path: "/x/" + id}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.AddSegment(ctx, domain.Segment{MeetingID: id, Track: domain.TrackMic, Text: "hi"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.DeleteMeeting(ctx, "gone"); err != nil {
+		t.Fatalf("DeleteMeeting: %v", err)
+	}
+	if _, err := s.GetMeeting(ctx, "gone"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("GetMeeting after delete err = %v, want ErrNotFound", err)
+	}
+	for _, q := range []string{`SELECT COUNT(*) FROM chunks WHERE meeting_id='gone'`, `SELECT COUNT(*) FROM segments WHERE meeting_id='gone'`} {
+		var n int
+		if err := s.db.QueryRow(q).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("%s = %d, %v; want 0", q, n, err)
+		}
+	}
+	if cs, _ := s.ListChunks(ctx, "kept"); len(cs) != 1 {
+		t.Fatalf("kept chunks = %d, want 1", len(cs))
+	}
+	if ss, _ := s.ListSegments(ctx, "kept"); len(ss) != 1 {
+		t.Fatalf("kept segments = %d, want 1", len(ss))
+	}
+	if pend, _ := s.PendingChunks(ctx); len(pend) != 1 || pend[0].MeetingID != "kept" {
+		t.Fatalf("pending = %+v, want only the kept meeting's chunk", pend)
+	}
+}
+
+func TestDeleteMeetingMissingIsNotFound(t *testing.T) {
+	s, _ := openTemp(t)
+	if err := s.DeleteMeeting(context.Background(), "nope"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestDeleteMeetingFailureRollsBack(t *testing.T) {
+	s, _ := openTemp(t)
+	ctx := context.Background()
+	seed(t, s, "a", time.Date(2026, 10, 25, 10, 0, 0, 0, time.UTC))
+	if err := s.AddChunk(ctx, domain.Chunk{MeetingID: "a", Track: domain.TrackMic, Index: 1, Path: "/x"}); err != nil {
+		t.Fatal(err)
+	}
+	// A trigger that aborts the meeting delete after the chunks and segments went: the whole delete must roll back.
+	if _, err := s.db.Exec(`CREATE TRIGGER block_delete BEFORE DELETE ON meetings BEGIN SELECT RAISE(ABORT, 'blocked'); END;`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteMeeting(ctx, "a"); err == nil {
+		t.Fatal("DeleteMeeting must fail when the meeting row cannot be deleted")
+	}
+	if cs, _ := s.ListChunks(ctx, "a"); len(cs) != 1 {
+		t.Fatalf("chunks after a failed delete = %d, want 1 (rolled back)", len(cs))
+	}
+}

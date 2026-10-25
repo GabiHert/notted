@@ -387,3 +387,119 @@ func TestStartRecoversCrashBetweenMarkAndStateUpdate(t *testing.T) {
 		t.Fatalf("state=%s calls=%d", f.state(), f.eng.calls())
 	}
 }
+
+// blockingEngine holds the first Transcribe call until release is closed.
+type blockingEngine struct {
+	fakeEngine
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (e *blockingEngine) Transcribe(ctx context.Context, s []float32, r int, l domain.Language) (string, error) {
+	select {
+	case e.entered <- struct{}{}:
+	default:
+	}
+	<-e.release
+	return e.fakeEngine.Transcribe(ctx, s, r, l)
+}
+
+func (f *transFixture) otherMeeting(id string) {
+	f.t.Helper()
+	m := domain.Meeting{ID: id, Title: "t", StartedAt: time.Now().UTC(), Language: domain.LangEN, State: domain.StateTranscribing}
+	if err := f.st.CreateMeeting(f.ctx, m); err != nil {
+		f.t.Fatal(err)
+	}
+}
+
+func TestForgetDropsQueuedChunksAndChecksOfThatMeetingOnly(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.otherMeeting("m2")
+	kept := domain.Chunk{MeetingID: "m2", Track: domain.TrackMic, Index: 1, EndMs: 30000, Path: "/a/m2.wav"}
+	if err := f.st.AddChunk(f.ctx, kept); err != nil {
+		t.Fatal(err)
+	}
+	gone := f.addChunk(domain.TrackMic, 1)
+	f.svc.Enqueue(gone)
+	f.svc.Enqueue(kept)
+	f.svc.MeetingStopped("m1")
+	f.svc.MeetingStopped("m2")
+
+	f.svc.Forget("m1")
+	f.svc.mu.Lock()
+	left, pending := len(f.svc.items), f.svc.pending
+	f.svc.mu.Unlock()
+	if left != 2 || pending != 2 {
+		t.Fatalf("queue = %d items, pending %d; want 2 and 2", left, pending)
+	}
+
+	if err := f.st.DeleteMeeting(f.ctx, "m1"); err != nil { // as Delete does; Start re-reads the store's pending chunks
+		t.Fatal(err)
+	}
+	f.start()
+	f.svc.Wait()
+	if f.eng.calls() != 1 {
+		t.Fatalf("engine calls = %d, want 1 (only the kept meeting)", f.eng.calls())
+	}
+}
+
+func TestForgetDropsParkedChunks(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.eng.setReady(false)
+	f.start()
+	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
+	f.svc.Wait() // parked for the missing model
+
+	f.svc.Forget("m1")
+	f.eng.setReady(true)
+	f.svc.ResumeWaiting()
+	f.svc.Wait()
+	if f.eng.calls() != 0 {
+		t.Fatalf("a forgotten chunk was transcribed (%d calls)", f.eng.calls())
+	}
+}
+
+func TestForgetWaitsForTheChunkBeingTranscribed(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
+	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.start()
+	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
+	<-be.entered
+
+	returned := make(chan struct{})
+	go func() { f.svc.Forget("m1"); close(returned) }()
+	select {
+	case <-returned:
+		t.Fatal("Forget returned while the meeting's chunk was still being transcribed")
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(be.release)
+	select {
+	case <-returned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Forget did not return after the chunk finished")
+	}
+}
+
+func TestForgetDoesNotWaitForAnotherMeetingsChunk(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.otherMeeting("m2")
+	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
+	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.start()
+	c := domain.Chunk{MeetingID: "m2", Track: domain.TrackMic, Index: 1, EndMs: 30000, Path: "/a/m2.wav"}
+	if err := f.st.AddChunk(f.ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Enqueue(c)
+	<-be.entered
+	done := make(chan struct{})
+	go func() { f.svc.Forget("m1"); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Forget blocked on another meeting's chunk")
+	}
+	close(be.release)
+}

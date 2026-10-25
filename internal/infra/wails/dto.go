@@ -39,3 +39,14 @@ func toMeetingDTO(m domain.Meeting) MeetingDTO {
 	}
 	return d
 }
+
+// DeletePlanDTO is what deleting a meeting removes, for the confirm.
+type DeletePlanDTO struct {
+	AudioFiles    int    `json:"audioFiles"`
+	ArchiveFolder string `json:"archiveFolder"` // "" when the meeting was never saved to the archive
+}
+
+// DeleteResultDTO is the outcome of a delete that went through; Warning is "" when nothing is left behind.
+type DeleteResultDTO struct {
+	Warning string `json:"warning"`
+}

@@ -20,7 +20,12 @@ export function Sidebar({ view, onSelect }: Props) {
 
   useEffect(() => {
     refresh();
-    return EventsOn("recording:state", refresh);
+    const offState = EventsOn("recording:state", refresh);
+    const offDeleted = EventsOn("meeting:deleted", refresh);
+    return () => {
+      offState();
+      offDeleted();
+    };
   }, [refresh]);
 
   return (

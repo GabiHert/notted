@@ -88,6 +88,32 @@ func (s *Store) ListMeetings(ctx context.Context) ([]domain.Meeting, error) {
 	return out, rows.Err()
 }
 
+// DeleteMeeting removes a meeting with its segments and chunks in one transaction.
+func (s *Store) DeleteMeeting(ctx context.Context, id string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }() // a no-op once committed
+	for _, q := range []string{`DELETE FROM segments WHERE meeting_id = ?`, `DELETE FROM chunks WHERE meeting_id = ?`} {
+		if _, err := tx.ExecContext(ctx, q, id); err != nil {
+			return err
+		}
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM meetings WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return domain.ErrNotFound
+	}
+	return tx.Commit()
+}
+
 // updateOne runs an UPDATE for one meeting and returns ErrNotFound when no row matches.
 func (s *Store) updateOne(ctx context.Context, query string, args ...any) error {
 	res, err := s.db.ExecContext(ctx, query, args...)

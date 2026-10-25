@@ -33,3 +33,15 @@ test("Escape calls onCancel and the confirm button calls onConfirm", () => {
   fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
   expect(p.onConfirm).toHaveBeenCalledTimes(1);
 });
+
+test("destructive makes the confirm button red; without it the button is the primary one", () => {
+  setup({ destructive: true });
+  expect(screen.getByRole("button", { name: "Delete profile" })).toHaveClass("nt-btn--danger");
+});
+
+test("a confirm that is not destructive keeps the primary style", () => {
+  setup();
+  const b = screen.getByRole("button", { name: "Delete profile" });
+  expect(b).toHaveClass("nt-btn--primary");
+  expect(b).not.toHaveClass("nt-btn--danger");
+});
