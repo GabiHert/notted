@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
-import { GetMeeting, GetSettings, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
+import { GetMeeting, GetSettings, StartRecording, emit, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
 
 vi.mock("./api/bindings", () => import("./test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("./test/codemirrorMock"));
@@ -80,5 +80,81 @@ describe("leaving Settings with an unsaved instruction file", () => {
     fireEvent.click(screen.getByRole("button", { name: "New recording" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(await screen.findByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+  });
+});
+
+describe("the menu bar", () => {
+  test("a failed start shows its message as an error card on the current screen", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("menubar:error", { message: "The speech model is not installed." }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The speech model is not installed.");
+    expect(screen.getByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+  });
+
+  test("the error goes away when you open another screen", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("menubar:error", { message: "No microphone." }));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  test("a recording started from the menu opens its meeting from the New recording screen", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    GetMeeting.mockResolvedValue(meeting({ id: "m9", title: "From the menu", state: "recording" }));
+    ListMeetings.mockResolvedValue([meeting({ id: "m9", title: "From the menu", state: "recording" })]);
+    act(() => emit("recording:state", { meetingId: "m9", state: "recording" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "From the menu" })).toBeInTheDocument();
+  });
+
+  test("a recording started from the menu leaves Settings alone", async () => {
+    ListInstructionFiles.mockResolvedValue([]);
+    render(<App initialView={{ kind: "settings" }} />);
+    await screen.findByLabelText("Profile");
+    act(() => emit("recording:state", { meetingId: "m9", state: "recording" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+  });
+
+  test("a stop does not move the view", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("recording:state", { meetingId: "m9", state: "transcribing" }));
+    expect(screen.getByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+  });
+
+  test("an error is cleared by the next successful start", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("menubar:error", { message: "No microphone." }));
+    await screen.findByRole("alert");
+    GetMeeting.mockResolvedValue(meeting({ id: "m9", title: "From the menu", state: "recording" }));
+    act(() => emit("recording:state", { meetingId: "m9", state: "recording" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "From the menu" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  test("an error is cleared when a recording starts from the window", async () => {
+    StartRecording.mockResolvedValue(meeting({ id: "m8", title: "From the window", state: "recording" }));
+    GetMeeting.mockResolvedValue(meeting({ id: "m8", title: "From the window", state: "recording" }));
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("menubar:error", { message: "No microphone." }));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: /^Start recording/ }));
+    expect(await screen.findByRole("heading", { level: 1, name: "From the window" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  test("a silence warning on New recording does not navigate or clear the error", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { level: 1, name: "New recording" });
+    act(() => emit("menubar:error", { message: "No microphone." }));
+    await screen.findByRole("alert");
+    act(() => emit("recording:state", { meetingId: "m9", state: "recording", warning: "No system audio was heard." }));
+    expect(screen.getByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("No microphone.");
   });
 });

@@ -34,6 +34,10 @@ The app is not notarized, so macOS may block the first open. Open System Setting
 
 Notted asks for the microphone and for Screen & System Audio Recording when you first record. After you grant screen recording, quit and reopen Notted. If your keychain has no "Notted Local Signing" certificate, every build is signed ad hoc with a new identity, and macOS asks for both permissions again after each build. See the next section.
 
+## Menu bar
+
+Notted keeps an icon in the menu bar for as long as it runs. Its menu starts and stops a recording (with the default title and the language of your latest meeting), opens the window, and quits. Closing the window only hides it: the icon, and any recording, keep going. Click the Dock icon or choose **Open Notted** to bring the window back. Choose **Quit Notted** (or press Cmd+Q) to quit; a recording in progress is stopped and kept.
+
 ## Sign with your own certificate (once)
 
 Run `bash scripts/create-signing-identity.sh` once. It creates a self-signed code-signing

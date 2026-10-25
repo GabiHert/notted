@@ -53,6 +53,7 @@ type RecordingService struct {
 	inspect  port.AudioInspector
 	onChunk  func(domain.Chunk)
 	onStop   func(meetingID string)
+	onState  func(recording bool)
 	mu       sync.Mutex
 	active   *activeRecording
 }
@@ -75,6 +76,22 @@ func (s *RecordingService) SetStoppedListener(fn func(meetingID string)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onStop = fn
+}
+
+// SetStateListener attaches a function called when a recording starts and when it ends.
+func (s *RecordingService) SetStateListener(fn func(recording bool)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onState = fn
+}
+
+func (s *RecordingService) notifyState(recording bool) {
+	s.mu.Lock()
+	fn := s.onState
+	s.mu.Unlock()
+	if fn != nil {
+		fn(recording)
+	}
 }
 
 // Start begins a recording and returns the new meeting once the helper reported `started`.
@@ -128,6 +145,7 @@ func (s *RecordingService) Start(ctx context.Context, title string, lang domain.
 	s.mu.Unlock()
 	close(a.ready)
 	s.emit.Emit("recording:state", map[string]any{"meetingId": id, "state": "recording"})
+	s.notifyState(true)
 	go s.watch(context.WithoutCancel(ctx), a)
 	return m, nil
 }
@@ -190,10 +208,14 @@ func (s *RecordingService) finish(ctx context.Context, a *activeRecording, errMs
 			log.Printf("recording: finish %s: %v", a.meetingID, err)
 		}
 		s.mu.Lock()
-		if s.active == a {
+		cleared := s.active == a
+		if cleared {
 			s.active = nil
 		}
 		s.mu.Unlock()
+		if cleared {
+			s.notifyState(false)
+		}
 	})
 }
 
@@ -272,6 +294,16 @@ func (s *RecordingService) Recording() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.active != nil
+}
+
+// ActiveMeetingID returns the meeting being recorded, or "" when none is (or it is still starting).
+func (s *RecordingService) ActiveMeetingID() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.active == nil || !s.active.created {
+		return ""
+	}
+	return s.active.meetingID
 }
 
 // StopAll stops the active recording; the app calls it on shutdown.

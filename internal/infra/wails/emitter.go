@@ -53,3 +53,13 @@ func (e *Emitter) Quit() {
 		wruntime.Quit(ctx)
 	}
 }
+
+// Show brings the window back (and the app to the front); before startup it does nothing.
+func (e *Emitter) Show() {
+	e.mu.RLock()
+	ctx := e.ctx
+	e.mu.RUnlock()
+	if ctx != nil {
+		wruntime.WindowShow(ctx)
+	}
+}

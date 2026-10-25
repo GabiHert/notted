@@ -17,6 +17,7 @@ import (
 	"github.com/GabiHert/notted/internal/integration/claude"
 	"github.com/GabiHert/notted/internal/integration/git"
 	"github.com/GabiHert/notted/internal/integration/install"
+	"github.com/GabiHert/notted/internal/integration/menubar"
 	"github.com/GabiHert/notted/internal/integration/process"
 	"github.com/GabiHert/notted/internal/integration/speech"
 	wailsv2 "github.com/wailsapp/wails/v2"
@@ -77,6 +78,16 @@ func Run(assets embed.FS) error {
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
 	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Meetings: st, Models: models})
 
+	statusItem := menubar.New()
+	menuBar := service.NewMenuBarService(service.MenuBarDeps{
+		Recorder:   recording,
+		Meetings:   st,
+		Item:       statusItem,
+		ShowWindow: emitter.Show,
+		Emit:       emitter,
+		Context:    emitter.Context,
+	})
+
 	runErr := wailsv2.Run(&options.App{
 		Title:            "Notted",
 		Width:            1280,
@@ -85,6 +96,8 @@ func Run(assets embed.FS) error {
 		MinHeight:        600,
 		BackgroundColour: &options.RGBA{R: 251, G: 251, B: 248, A: 255},
 		Mac:              &mac.Options{TitleBar: mac.TitleBarHiddenInset()},
+		// Closing the window hides it; the menu bar icon and a running recording stay.
+		HideWindowOnClose: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -95,6 +108,8 @@ func Run(assets embed.FS) error {
 			}
 			recording.SetChunkListener(trans.Enqueue)
 			recording.SetStoppedListener(trans.MeetingStopped)
+			menuBar.Attach()
+			statusItem.Install(menubar.Handlers{Start: menuBar.Start, Stop: menuBar.Stop, Open: emitter.Show, Quit: emitter.Quit})
 			models.SetOnReady(func(domain.Language) { trans.ResumeWaiting() })
 			if err := trans.Start(ctx); err != nil {
 				log.Printf("start transcription: %v", err)

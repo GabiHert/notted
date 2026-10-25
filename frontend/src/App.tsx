@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GetSettings, ListMeetings } from "./api/bindings";
+import { EventsOn, GetSettings, ListMeetings } from "./api/bindings";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { MeetingPage } from "./components/MeetingPage";
 import { NewRecording } from "./components/NewRecording";
@@ -12,6 +12,21 @@ export function App({ initialView }: { initialView?: View }) {
   const [view, setView] = useState<View | null>(initialView ?? null);
   const [dirtyPath, setDirtyPath] = useState<string | null>(null);
   const [pendingView, setPendingView] = useState<View | null>(null);
+  const [menuError, setMenuError] = useState("");
+
+  // A start or stop from the menu bar: show its failure, and follow a start into its meeting. The sidebar refreshes the list itself.
+  useEffect(() => {
+    const offError = EventsOn("menubar:error", (e: { message: string }) => setMenuError(e.message));
+    const offState = EventsOn("recording:state", (e: { meetingId: string; state: string; warning?: string }) => {
+      if (e.state !== "recording" || e.warning) return; // a silence warning is not a start
+      setMenuError("");
+      setView((v) => (v !== null && v.kind === "new" ? { kind: "meeting", id: e.meetingId } : v));
+    });
+    return () => {
+      offError();
+      offState();
+    };
+  }, []);
 
   useEffect(() => {
     if (initialView) return;
@@ -30,6 +45,7 @@ export function App({ initialView }: { initialView?: View }) {
   const current: View = view ?? { kind: "new" };
   // Leaving Settings unmounts the Instructions tab, so ask first when the open file has unsaved changes.
   const navigate = (v: View) => {
+    setMenuError("");
     if (current.kind === "settings" && v.kind !== "settings" && dirtyPath) setPendingView(v);
     else setView(v);
   };
@@ -40,8 +56,18 @@ export function App({ initialView }: { initialView?: View }) {
         <Sidebar view={current} onSelect={navigate} />
         <main className="nt-main">
           <div className={"nt-main__col" + (current.kind === "settings" ? " nt-main__col--wide" : "")}>
+            {menuError && (
+              <div className="nt-card nt-card--error" role="alert">
+                {menuError}
+              </div>
+            )}
             {view === null ? null : view.kind === "new" ? (
-              <NewRecording onStarted={(m) => setView({ kind: "meeting", id: m.id })} />
+              <NewRecording
+                onStarted={(m) => {
+                  setMenuError("");
+                  setView({ kind: "meeting", id: m.id });
+                }}
+              />
             ) : view.kind === "meeting" ? (
               <MeetingPage meetingId={view.id} />
             ) : (

@@ -579,3 +579,68 @@ func TestRecordingReports(t *testing.T) {
 		t.Fatal("recording after Stop")
 	}
 }
+
+func TestStateListenerFollowsStartAndStop(t *testing.T) {
+	f := newFixture(t)
+	var mu sync.Mutex
+	var states []bool
+	f.svc.SetStateListener(func(r bool) {
+		mu.Lock()
+		defer mu.Unlock()
+		states = append(states, r)
+	})
+	if f.svc.ActiveMeetingID() != "" {
+		t.Fatal("no active meeting before Start")
+	}
+	m, err := f.svc.Start(context.Background(), "", domain.LangEN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.svc.ActiveMeetingID() != m.ID {
+		t.Fatalf("active = %q", f.svc.ActiveMeetingID())
+	}
+	if err := f.svc.Stop(context.Background(), m.ID); err != nil {
+		t.Fatal(err)
+	}
+	if f.svc.ActiveMeetingID() != "" {
+		t.Fatal("no active meeting after Stop")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(states) != 2 || !states[0] || states[1] {
+		t.Fatalf("states = %v", states)
+	}
+}
+
+func TestStateListenerSeesAHelperThatExitsOnItsOwn(t *testing.T) {
+	f := newFixture(t)
+	var mu sync.Mutex
+	var states []bool
+	f.svc.SetStateListener(func(r bool) {
+		mu.Lock()
+		defer mu.Unlock()
+		states = append(states, r)
+	})
+	if _, err := f.svc.Start(context.Background(), "", domain.LangEN); err != nil {
+		t.Fatal(err)
+	}
+	f.rec.rec.exited <- port.RecorderExit{Message: "helper died"}
+	eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(states) == 2 && !states[1]
+	})
+}
+
+func TestStateListenerStaysQuietWhenStartFails(t *testing.T) {
+	f := newFixture(t)
+	f.rec.err = errors.New("no mic")
+	called := false
+	f.svc.SetStateListener(func(bool) { called = true })
+	if _, err := f.svc.Start(context.Background(), "", domain.LangEN); err == nil {
+		t.Fatal("want error")
+	}
+	if called {
+		t.Fatal("a failed start must not notify")
+	}
+}
