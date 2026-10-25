@@ -6,6 +6,10 @@ export function AppName() {
   return window['go']['wails']['App']['AppName']();
 }
 
+export function AskPermissions() {
+  return window['go']['wails']['App']['AskPermissions']();
+}
+
 export function ChooseFolder(arg1, arg2) {
   return window['go']['wails']['App']['ChooseFolder'](arg1, arg2);
 }
@@ -54,6 +58,10 @@ export function GetModelStatus(arg1) {
   return window['go']['wails']['App']['GetModelStatus'](arg1);
 }
 
+export function GetPermissions() {
+  return window['go']['wails']['App']['GetPermissions']();
+}
+
 export function GetSettings() {
   return window['go']['wails']['App']['GetSettings']();
 }
@@ -92,6 +100,10 @@ export function ListProfiles() {
 
 export function ListProjects() {
   return window['go']['wails']['App']['ListProjects']();
+}
+
+export function OpenPermissionSettings(arg1) {
+  return window['go']['wails']['App']['OpenPermissionSettings'](arg1);
 }
 
 export function PrepareArchive(arg1) {

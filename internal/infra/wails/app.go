@@ -16,6 +16,7 @@ type App struct {
 	instructions *service.InstructionsService
 	setup        *service.SetupService
 	update       *service.UpdateService
+	permissions  *service.PermissionsService
 	meetings     port.MeetingStore
 	models       port.ModelManager
 	events       port.EventEmitter
@@ -31,6 +32,7 @@ type Deps struct {
 	Instructions  *service.InstructionsService
 	Setup         *service.SetupService
 	Update        *service.UpdateService
+	Permissions   *service.PermissionsService
 	Meetings      port.MeetingStore
 	Models        port.ModelManager
 	// Events overrides the event sink; it defaults to the emitter given to New.
@@ -43,7 +45,7 @@ func New(e *Emitter, d Deps) *App {
 	if events == nil {
 		events = e
 	}
-	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, meetings: d.Meetings, models: d.Models, events: events}
+	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, permissions: d.Permissions, meetings: d.Meetings, models: d.Models, events: events}
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.

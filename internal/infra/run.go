@@ -20,6 +20,7 @@ import (
 	"github.com/GabiHert/notted/internal/integration/menubar"
 	"github.com/GabiHert/notted/internal/integration/process"
 	"github.com/GabiHert/notted/internal/integration/speech"
+	"github.com/GabiHert/notted/internal/integration/system"
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -75,8 +76,9 @@ func Run(assets embed.FS) error {
 		InstallSource: paths.InstallSource,
 		Emit:          emitter,
 	})
+	permissions := service.NewPermissionsService(audio.NewPermissions(helperPath()), system.Opener{})
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, Meetings: st, Models: models})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{

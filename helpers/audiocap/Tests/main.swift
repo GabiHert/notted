@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 var failures = 0
@@ -178,6 +179,13 @@ do {
           "chunk event: \(encodeEvent(chunk))")
     check(encodeEvent(StartedEvent(t0Ms: 1700000000000)) == #"{"event":"started","t0_ms":1700000000000}"#, "started")
     check(encodeEvent(PermissionEvent(name: "microphone", granted: true)) == #"{"event":"permission","granted":true,"name":"microphone"}"#, "permission")
+    check(encodeEvent(PermissionEvent(name: "microphone", status: "not_asked")) == #"{"event":"permission","granted":false,"name":"microphone","status":"not_asked"}"#, "permission status")
+    check(encodeEvent(PermissionEvent(name: "screen", status: "allowed")) == #"{"event":"permission","granted":true,"name":"screen","status":"allowed"}"#, "permission status allowed")
+    check(micStatusName(.authorized) == "allowed", "mic authorized")
+    check(micStatusName(.notDetermined) == "not_asked", "mic not determined")
+    check(micStatusName(.denied) == "denied", "mic denied")
+    check(micStatusName(.restricted) == "denied", "mic restricted")
+    check(screenStatusName(true) == "allowed" && screenStatusName(false) == "denied", "screen status names")
     check(encodeEvent(ErrorEvent(code: "bad_args", message: "x")) == #"{"code":"bad_args","event":"error","message":"x"}"#, "error")
     check(encodeEvent(StoppedEvent()) == #"{"event":"stopped"}"#, "stopped")
 }

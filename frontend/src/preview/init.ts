@@ -37,6 +37,10 @@ export function initPreview(): View {
     case "update-running":
     case "update-failed":
     case "update-installing":
+    case "permissions-allowed":
+    case "permissions-mixed":
+    case "permissions-denied":
+    case "permissions-error":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -142,6 +146,10 @@ function autoDriveSettings(screen: string) {
     "update-running": [scrollTo(".nt-update")],
     "update-failed": [scrollTo(".nt-update")],
     "update-installing": [scrollTo(".nt-update")],
+    "permissions-allowed": [scrollTo(".nt-perms")],
+    "permissions-mixed": [scrollTo(".nt-perms")],
+    "permissions-denied": [scrollTo(".nt-perms")],
+    "permissions-error": [scrollTo(".nt-perms")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

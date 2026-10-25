@@ -102,7 +102,7 @@ export async function GetSettings() {
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
   if (screen.startsWith("setup-folder")) return { profile: "ana", checkoutPath: "/Users/ana/old-archive", projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
-  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update"))
+  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update") || screen.startsWith("permissions"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
 }
@@ -140,6 +140,19 @@ export async function GetUpdateStatus() {
 }
 export async function SetUpdateSource(_path: string) {}
 export async function StartUpdate() {}
+
+let micAsked = false;
+export async function GetPermissions() {
+  if (screen === "permissions-error") throw new Error("Notted could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Notted if this keeps happening.");
+  if (screen === "permissions-denied") return { microphone: "denied", screen: "denied" };
+  if (screen === "permissions-mixed") return { microphone: micAsked ? "allowed" : "not_asked", screen: "denied" };
+  return { microphone: "allowed", screen: "allowed" };
+}
+export async function AskPermissions() {
+  micAsked = true;
+  return GetPermissions();
+}
+export async function OpenPermissionSettings(_kind: string) {}
 
 const instructionFiles = [
   { path: "prompts/base.md", kind: "base", readOnly: true },

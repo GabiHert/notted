@@ -1,6 +1,10 @@
 package port
 
-import "github.com/GabiHert/notted/internal/domain"
+import (
+	"context"
+
+	"github.com/GabiHert/notted/internal/domain"
+)
 
 // HelperEvent is one parsed line of the audio helper's stdout.
 type HelperEvent struct {
@@ -42,4 +46,32 @@ type WavInfo struct {
 // AudioInspector reads a closed WAV chunk.
 type AudioInspector interface {
 	Inspect(path string) (WavInfo, error)
+}
+
+// PermissionState is one permission's state as the helper reports it.
+type PermissionState string
+
+const (
+	PermissionAllowed  PermissionState = "allowed"
+	PermissionNotAsked PermissionState = "not_asked"
+	PermissionDenied   PermissionState = "denied"
+)
+
+// PermissionSet is the state of the two permissions recording needs.
+type PermissionSet struct {
+	Microphone PermissionState
+	Screen     PermissionState // never PermissionNotAsked in practice: macOS cannot tell the two apart
+}
+
+// PermissionChecker reads and requests the recording permissions through the audio helper.
+type PermissionChecker interface {
+	// Status reads both permissions and never prompts.
+	Status(ctx context.Context) (PermissionSet, error)
+	// Ask lets macOS prompt for what is still open, then reads both permissions.
+	Ask(ctx context.Context) (PermissionSet, error)
+}
+
+// URLOpener opens a URL with the system's default handler.
+type URLOpener interface {
+	Open(url string) error
 }

@@ -5,6 +5,21 @@
 here="$(cd "$(dirname "$0")" && pwd)"
 [ -n "${FAKE_AUDIOCAP_ARGS:-}" ] && printf '%s\n' "$*" > "$FAKE_AUDIOCAP_ARGS"
 [ -n "${FAKE_AUDIOCAP_COUNT:-}" ] && echo start >> "$FAKE_AUDIOCAP_COUNT"
+if [ "${1:-}" = "status" ] || [ "${1:-}" = "check" ]; then
+  perm() { printf '{"event":"permission","name":"%s","granted":%s%s}\n' "$1" "$2" "${3:+,\"status\":\"$3\"}"; }
+  case "${FAKE_AUDIOCAP_MODE:-normal}" in
+    perm-allowed) perm microphone true allowed; perm screen true allowed; exit 0 ;;
+    perm-not-asked) perm microphone false not_asked; perm screen false denied; exit 0 ;;
+    perm-denied) perm microphone false denied; perm screen false denied; exit 2 ;;
+    perm-legacy) perm microphone true; perm screen false; exit 3 ;;
+    perm-empty) exit 0 ;;
+    perm-partial) perm microphone true allowed; exit 0 ;;
+    perm-garbage) echo 'not json'; echo '{"event":"permission","name":"microphone","granted":true,"status":"maybe"}'; exit 0 ;;
+    perm-crash) echo 'boom' >&2; exit 1 ;;
+    perm-hang) sleep 5; exit 0 ;;
+    *) exit 64 ;;
+  esac
+fi
 [ "${1:-}" = "record" ] || exit 64
 out=""
 while [ $# -gt 0 ]; do

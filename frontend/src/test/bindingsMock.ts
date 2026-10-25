@@ -55,10 +55,13 @@ export const StopSession = vi.fn();
 export const GetUpdateStatus = vi.fn();
 export const SetUpdateSource = vi.fn();
 export const StartUpdate = vi.fn();
+export const GetPermissions = vi.fn();
+export const AskPermissions = vi.fn();
+export const OpenPermissionSettings = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -101,6 +104,9 @@ export function resetBindings() {
   GetUpdateStatus.mockResolvedValue({ sourcePath: "", installedApp: "/Applications/Notted.app", signing: false, state: "idle", message: "", lines: [], seq: 0 });
   SetUpdateSource.mockResolvedValue(undefined);
   StartUpdate.mockResolvedValue(undefined);
+  GetPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });
+  AskPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });
+  OpenPermissionSettings.mockResolvedValue(undefined);
   GetModelStatus.mockResolvedValue({ language: "pt-BR", ready: true, missing: "", downloadBytes: 0, downloading: false });
 }
 

@@ -41,6 +41,13 @@ func runCheck() async -> Never {
     exit(0)
 }
 
+/// `audiocap status`: prints both permissions without asking for anything, exits 0.
+func runStatus() -> Never {
+    emit(PermissionEvent(name: "microphone", status: micStatusName(AVCaptureDevice.authorizationStatus(for: .audio))))
+    emit(PermissionEvent(name: "screen", status: screenStatusName(CGPreflightScreenCaptureAccess())))
+    exit(0)
+}
+
 /// The `record` pre-checks. Returns the display to capture, or exits with the contract's code.
 func recordPreflight(mic: MicCapture) async -> SCDisplay {
     guard await microphoneAllowed(asking: true) else {

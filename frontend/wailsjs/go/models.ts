@@ -118,6 +118,20 @@ export namespace wails {
 	        this.downloading = source["downloading"];
 	    }
 	}
+	export class PermissionsDTO {
+	    microphone: string;
+	    screen: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PermissionsDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.microphone = source["microphone"];
+	        this.screen = source["screen"];
+	    }
+	}
 	export class SegmentDTO {
 	    id: number;
 	    track: string;

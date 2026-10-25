@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 struct StartedEvent: Codable {
@@ -28,8 +29,22 @@ struct PermissionEvent: Codable {
     var event = "permission"
     var name: String
     var granted: Bool
+    /// "allowed", "not_asked" or "denied"; only `status` events carry it.
+    var status: String?
     init(name: String, granted: Bool) { self.name = name; self.granted = granted }
+    init(name: String, status: String) { self.name = name; self.granted = status == "allowed"; self.status = status }
 }
+
+func micStatusName(_ s: AVAuthorizationStatus) -> String {
+    switch s {
+    case .authorized: return "allowed"
+    case .notDetermined: return "not_asked"
+    default: return "denied"
+    }
+}
+
+/// Screen recording has no "not asked" answer: macOS reports only allowed or not.
+func screenStatusName(_ granted: Bool) -> String { granted ? "allowed" : "denied" }
 
 struct ErrorEvent: Codable {
     var event = "error"

@@ -1,6 +1,6 @@
 import Foundation
 
-let usageText = "usage: audiocap record --out <dir> [--chunk-seconds 30]\n       audiocap check\n"
+let usageText = "usage: audiocap record --out <dir> [--chunk-seconds 30]\n       audiocap check\n       audiocap status\n"
 
 func printUsage() {
     FileHandle.standardError.write(Data(usageText.utf8))
@@ -50,6 +50,9 @@ switch command {
 case "check":
     Task { await runCheck() }
     dispatchMain()
+case "status":
+    guard argv.count == 1 else { badArgs("status takes no arguments.") }
+    runStatus()
 case "record":
     let parsed = parseRecordArgs(Array(argv.dropFirst()))
     let dir = URL(fileURLWithPath: parsed.out, isDirectory: true).standardizedFileURL

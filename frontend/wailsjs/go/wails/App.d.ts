@@ -4,6 +4,8 @@ import {wails} from '../models';
 
 export function AppName():Promise<string>;
 
+export function AskPermissions():Promise<wails.PermissionsDTO>;
+
 export function ChooseFolder(arg1:string,arg2:string):Promise<string>;
 
 export function CloneArchive(arg1:string,arg2:string):Promise<string>;
@@ -28,6 +30,8 @@ export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
 
 export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
+export function GetPermissions():Promise<wails.PermissionsDTO>;
+
 export function GetSettings():Promise<wails.SettingsDTO>;
 
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
@@ -47,6 +51,8 @@ export function ListProfileFiles(arg1:string):Promise<Array<string>>;
 export function ListProfiles():Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<string>>;
+
+export function OpenPermissionSettings(arg1:string):Promise<void>;
 
 export function PrepareArchive(arg1:string):Promise<void>;
 
