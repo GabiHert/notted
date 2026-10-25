@@ -14,7 +14,7 @@ import (
 
 const (
 	msgMic    = "Microphone access is off for Notted. Turn it on in System Settings > Privacy & Security > Microphone, then try again."
-	msgScreen = "Screen & System Audio Recording access is off for Notted. Turn it on in System Settings > Privacy & Security > Screen & System Audio Recording, then try again."
+	msgScreen = "Screen & System Audio Recording access is off for Notted. Turn it on in System Settings > Privacy & Security > Screen & System Audio Recording, then try again. If it is already on, select Notted in that list, remove it with the minus button, then try again."
 	msgDevice = "No microphone or display is available. Connect one and try again."
 	msgOther  = "The audio recorder stopped unexpectedly. The audio recorded so far is kept and will be transcribed. Start a new recording to continue."
 )
