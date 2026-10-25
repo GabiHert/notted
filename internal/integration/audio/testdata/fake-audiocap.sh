@@ -20,6 +20,29 @@ if [ "${1:-}" = "status" ] || [ "${1:-}" = "check" ]; then
     *) exit 64 ;;
   esac
 fi
+if [ "${1:-}" = "level" ]; then
+  level() { printf '{"event":"level","rms_db":%s,"peak_db":%s}\n' "$1" "$2"; }
+  device() { printf '{"event":"device","device":"Fake Mic"}\n'; }
+  case "${FAKE_AUDIOCAP_MODE:-normal}" in
+    level-ok) device; level -35.5 -12.25; level -30 -9.5; level -40 -20; echo '{"event":"stopped"}'; exit 0 ;;
+    level-quiet) device; level -70 -52; level -66 -45.5; echo '{"event":"stopped"}'; exit 0 ;;
+    level-silent) device; level -120 -120; level -120 -120; echo '{"event":"stopped"}'; exit 0 ;;
+    level-garbage) echo 'not json'; device; level -30 -10; echo '{"event":"stopped"}'; exit 0 ;;
+    level-run)
+      stop=0
+      trap 'stop=1' INT TERM
+      device
+      while [ "$stop" -eq 0 ]; do level -30 -10; sleep 0.05; done
+      echo '{"event":"stopped"}'
+      exit 0 ;;
+    level-hang) trap '' INT TERM; device; while true; do sleep 0.05; done ;;
+    level-denied) echo '{"event":"error","code":"mic_denied","message":"microphone denied"}'; exit 2 ;;
+    level-no-device) echo '{"event":"error","code":"no_device","message":"no device"}'; exit 4 ;;
+    level-crash) device; echo '{"event":"error","code":"capture_failed","message":"engine failed"}'; exit 1 ;;
+    level-killed) device; kill -9 $$ ;;
+    *) exit 99 ;;
+  esac
+fi
 [ "${1:-}" = "record" ] || exit 64
 out=""
 while [ $# -gt 0 ]; do
@@ -64,7 +87,7 @@ case "$mode" in
   normal)
     stop=0
     trap 'stop=1' INT TERM
-    echo '{"event":"started","t0_ms":1000}'
+    echo '{"event":"started","t0_ms":1000,"device":"Fake Mic"}'
     chunk mic 1
     chunk others 1
     while [ "$stop" -eq 0 ]; do sleep 0.05; done

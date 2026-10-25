@@ -52,6 +52,18 @@ const modelsMissing = screen === "new" || screen === "new-downloading";
 if (screen === "new-downloading") {
   setTimeout(() => emit("models:progress", { language: "pt-BR", name: "whisper-small", phase: "download", bytesDone: 205_000_000, bytesTotal: 487_000_000 }), 500);
 }
+if (screen === "mic-warning") {
+  setTimeout(
+    () =>
+      emit("recording:state", {
+        meetingId: "fx-recording",
+        state: "recording",
+        warning:
+          "Your microphone recorded no sound (MacBook Air Microphone). If your MacBook's lid is closed, its built-in microphone is off: open the lid, or choose another input in System Settings > Sound > Input.",
+      }),
+    500,
+  );
+}
 if (screen === "alerts") {
   setTimeout(
     () =>
@@ -102,7 +114,7 @@ export async function GetSettings() {
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
   if (screen.startsWith("setup-folder")) return { profile: "ana", checkoutPath: "/Users/ana/old-archive", projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
-  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update") || screen.startsWith("permissions"))
+  if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update") || screen.startsWith("permissions") || screen.startsWith("mictest"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
 }
@@ -153,6 +165,37 @@ export async function AskPermissions() {
   return GetPermissions();
 }
 export async function OpenPermissionSettings(_kind: string) {}
+
+// The mic test fixtures: the preview plays the levels of each verdict, then ends the test (mictest-running never ends).
+const MIC_DEVICE = "MacBook Air Microphone";
+const LID = "If your MacBook's lid is closed, its built-in microphone is off: open the lid, or choose another input in System Settings > Sound > Input.";
+const micVerdicts: Record<string, { verdict: string; message: string; rms: number; peak: number }> = {
+  "mictest-silent": { verdict: "silent", message: `No sound from ${MIC_DEVICE}. ${LID}`, rms: -120, peak: -120 },
+  "mictest-quiet": { verdict: "quiet", message: `Very quiet. Speak closer to ${MIC_DEVICE}, or choose another input in System Settings > Sound > Input.`, rms: -58, peak: -46 },
+  "mictest-ok": { verdict: "ok", message: "The microphone works.", rms: -32, peak: -14 },
+  "mictest-running": { verdict: "ok", message: "The microphone works.", rms: -34, peak: -16 },
+};
+let micTimer: ReturnType<typeof setInterval> | undefined;
+export async function StartMicTest() {
+  if (screen === "mictest-recording") throw new Error("Stop the recording to test the microphone.");
+  const fx = micVerdicts[screen] ?? micVerdicts["mictest-ok"];
+  let ticks = 0;
+  micTimer = setInterval(() => {
+    ticks++;
+    const wobble = fx.rms <= -120 ? 0 : Math.sin(ticks / 2) * 8 - Math.random() * 4;
+    emit("mictest:level", { device: MIC_DEVICE, rmsDb: fx.rms + wobble, peakDb: Math.min(0, fx.peak + wobble) });
+    if (ticks >= 15 && screen !== "mictest-running") {
+      clearInterval(micTimer);
+      emit("mictest:done", { device: MIC_DEVICE, verdict: fx.verdict, message: fx.message, stopped: false });
+    }
+  }, 100);
+}
+export async function StopMicTest() {
+  if (micTimer === undefined) return;
+  clearInterval(micTimer);
+  micTimer = undefined;
+  emit("mictest:done", { device: MIC_DEVICE, verdict: "", message: "", stopped: true });
+}
 
 const instructionFiles = [
   { path: "prompts/base.md", kind: "base", readOnly: true },
@@ -257,6 +300,8 @@ export async function CommitAndPushMeeting(_id: string) {
 }
 
 export async function ListMeetings() {
+  // The mic test is off while a recording runs, so its screens list none except the one that shows why.
+  if (screen.startsWith("mictest") && screen !== "mictest-recording") return meetings.filter((m) => m.state !== "recording");
   return meetings;
 }
 export async function GetMeeting(id: string) {

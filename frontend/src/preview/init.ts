@@ -41,6 +41,11 @@ export function initPreview(): View {
     case "permissions-mixed":
     case "permissions-denied":
     case "permissions-error":
+    case "mictest-running":
+    case "mictest-silent":
+    case "mictest-quiet":
+    case "mictest-ok":
+    case "mictest-recording":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -150,6 +155,11 @@ function autoDriveSettings(screen: string) {
     "permissions-mixed": [scrollTo(".nt-perms")],
     "permissions-denied": [scrollTo(".nt-perms")],
     "permissions-error": [scrollTo(".nt-perms")],
+    "mictest-running": [scrollTo(".nt-perms"), open("Test microphone")],
+    "mictest-silent": [scrollTo(".nt-perms"), open("Test microphone")],
+    "mictest-quiet": [scrollTo(".nt-perms"), open("Test microphone")],
+    "mictest-ok": [scrollTo(".nt-perms"), open("Test microphone")],
+    "mictest-recording": [scrollTo(".nt-perms")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

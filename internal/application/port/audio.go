@@ -8,7 +8,7 @@ import (
 
 // HelperEvent is one parsed line of the audio helper's stdout.
 type HelperEvent struct {
-	Kind    string // "started" | "chunk" | "error" | "stopped" | "permission"
+	Kind    string // "started" | "chunk" | "error" | "stopped" | "permission" | "device" | "level"
 	T0Ms    int64
 	Track   domain.Track
 	Index   int
@@ -17,6 +17,9 @@ type HelperEvent struct {
 	EndMs   int64
 	Code    string
 	Message string
+	Device  string  // the input device's name; on "started" and "device"
+	RMSdB   float64 // "level": the last 100 ms, in dBFS; -120 for digital silence
+	PeakDB  float64 // "level": the loudest sample of the last 100 ms, in dBFS; -120 for digital silence
 }
 
 // RecorderExit is how the helper process ended.
@@ -38,9 +41,17 @@ type AudioRecorder interface {
 	Start(outDir string, onEvent func(HelperEvent)) (Recording, error)
 }
 
+// MicTester runs the helper's input level meter, which records nothing.
+type MicTester interface {
+	// Start launches `level` for the given number of seconds and returns once the process runs.
+	// Events arrive on onEvent; the run's Exited channel reports how the process ended.
+	Start(seconds int, onEvent func(HelperEvent)) (Recording, error)
+}
+
 // WavInfo is what the recording service needs to know about a closed chunk.
 type WavInfo struct {
-	Silent bool // the level is below the silence threshold
+	Silent         bool // the level is below the silence threshold
+	DigitalSilence bool // every sample is exactly 0
 }
 
 // AudioInspector reads a closed WAV chunk.

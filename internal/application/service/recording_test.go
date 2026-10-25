@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -122,7 +123,7 @@ func (e *recEmitter) named(name string) []emitted {
 	return out
 }
 
-// zeroInspector calls a chunk silent when every sample byte is zero.
+// zeroInspector calls a chunk silent, and digitally silent, when every sample byte is zero.
 type zeroInspector struct{}
 
 func (zeroInspector) Inspect(path string) (port.WavInfo, error) {
@@ -135,6 +136,13 @@ func (zeroInspector) Inspect(path string) (port.WavInfo, error) {
 			return port.WavInfo{}, nil
 		}
 	}
+	return port.WavInfo{Silent: true, DigitalSilence: true}, nil
+}
+
+// quietInspector reports a chunk that is quiet but not digitally silent.
+type quietInspector struct{}
+
+func (quietInspector) Inspect(string) (port.WavInfo, error) {
 	return port.WavInfo{Silent: true}, nil
 }
 
@@ -158,6 +166,7 @@ type fakeRecorder struct {
 	onEvent  func(port.HelperEvent)
 	rec      *fakeRecording
 	outDir   string
+	device   string            // the mic device the "started" event names
 	earlyEvt *port.HelperEvent // emitted from a goroutine right after "started"
 	entered  chan struct{}     // closed when Start is called, if set
 	gate     chan struct{}     // Start waits for it to close before printing "started", if set
@@ -176,7 +185,7 @@ func (f *fakeRecorder) Start(outDir string, onEvent func(port.HelperEvent)) (por
 	}
 	f.onEvent = onEvent
 	f.rec = &fakeRecording{exited: make(chan port.RecorderExit, 1)}
-	onEvent(port.HelperEvent{Kind: "started", T0Ms: 1})
+	onEvent(port.HelperEvent{Kind: "started", T0Ms: 1, Device: f.device})
 	if f.earlyEvt != nil {
 		go onEvent(*f.earlyEvt)
 	}
@@ -383,6 +392,107 @@ func TestSilentSystemAudioWarnsOnceAfterTwoChunks(t *testing.T) {
 	f.chunk(domain.TrackOthers, 3, 0)
 	if warnings() != 1 {
 		t.Fatalf("warnings = %d, want still 1", warnings())
+	}
+}
+
+func micWarnings(f *fixture) []string {
+	var out []string
+	for _, e := range f.emit.named("recording:state") {
+		if w, ok := e.payload["warning"].(string); ok && strings.HasPrefix(w, "Your microphone recorded no sound") {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+func TestDigitallySilentFirstMicChunkWarnsOnceWithTheDevice(t *testing.T) {
+	f := newFixture(t)
+	f.rec.device = "MacBook Air Microphone"
+	m, _ := f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackMic, 1, 0)
+	want := "Your microphone recorded no sound (MacBook Air Microphone). If your MacBook's lid is closed, its built-in microphone is off: open the lid, or choose another input in System Settings > Sound > Input."
+	got := micWarnings(f)
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("warnings = %q", got)
+	}
+	for _, e := range f.emit.named("recording:state") {
+		if _, ok := e.payload["warning"]; ok && (e.payload["state"] != "recording" || e.payload["meetingId"] != m.ID) {
+			t.Fatalf("warning payload = %+v", e.payload)
+		}
+	}
+	f.chunk(domain.TrackMic, 2, 0)
+	f.chunk(domain.TrackMic, 3, 0)
+	if n := len(micWarnings(f)); n != 1 {
+		t.Fatalf("warnings = %d, want still 1", n)
+	}
+	if f.rec.rec.stopped != 0 {
+		t.Fatal("the warning must not stop the recording")
+	}
+}
+
+func TestMicWarningWithoutADeviceNameDropsTheParenthesis(t *testing.T) {
+	f := newFixture(t)
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackMic, 1, 0)
+	got := micWarnings(f)
+	if len(got) != 1 || got[0] != "Your microphone recorded no sound. If your MacBook's lid is closed, its built-in microphone is off: open the lid, or choose another input in System Settings > Sound > Input." {
+		t.Fatalf("warnings = %q", got)
+	}
+}
+
+func TestQuietButNotZeroMicNeverWarns(t *testing.T) {
+	f := newFixture(t)
+	f.svc.inspect = quietInspector{}
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackMic, 1, 3)
+	f.chunk(domain.TrackMic, 2, 3)
+	if n := len(micWarnings(f)); n != 0 {
+		t.Fatalf("warnings = %d for a quiet microphone", n)
+	}
+}
+
+func TestOnlyTheFirstMicChunkIsChecked(t *testing.T) {
+	f := newFixture(t)
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackMic, 1, 8000)
+	f.chunk(domain.TrackMic, 2, 0)
+	if n := len(micWarnings(f)); n != 0 {
+		t.Fatalf("warnings = %d, want 0: the mic spoke in the first chunk", n)
+	}
+}
+
+func TestMicWarningNeverReactsToTheOthersTrack(t *testing.T) {
+	f := newFixture(t)
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackOthers, 1, 0)
+	if n := len(micWarnings(f)); n != 0 {
+		t.Fatalf("warnings = %d", n)
+	}
+}
+
+func TestMicAndSystemWarningsAreIndependent(t *testing.T) {
+	f := newFixture(t)
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.chunk(domain.TrackMic, 1, 0)
+	f.chunk(domain.TrackOthers, 1, 0)
+	f.chunk(domain.TrackOthers, 2, 0)
+	n := 0
+	for _, e := range f.emit.named("recording:state") {
+		if _, ok := e.payload["warning"]; ok {
+			n++
+		}
+	}
+	if n != 2 || len(micWarnings(f)) != 1 {
+		t.Fatalf("warnings = %d (mic %d), want 2 (mic 1)", n, len(micWarnings(f)))
+	}
+}
+
+func TestMicChunkThatCannotBeReadDoesNotWarn(t *testing.T) {
+	f := newFixture(t)
+	f.svc.Start(context.Background(), "a", domain.LangEN)
+	f.rec.onEvent(port.HelperEvent{Kind: "chunk", Track: domain.TrackMic, Index: 1, Path: filepath.Join(f.root, "missing.wav")})
+	if n := len(micWarnings(f)); n != 0 {
+		t.Fatalf("warnings = %d", n)
 	}
 }
 

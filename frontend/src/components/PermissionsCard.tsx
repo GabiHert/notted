@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AskPermissions, GetPermissions, OpenPermissionSettings, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
+import { MicTest } from "./MicTest";
 import "./PermissionsCard.css";
 
 const HELP = "Notted needs both to record a meeting: the microphone for your voice, and screen and system audio recording for everyone else. Checking never asks; only Ask can.";
@@ -18,26 +19,32 @@ const LABELS: Record<string, string> = { allowed: "Allowed", denied: "Not allowe
 export function PermissionsCard() {
   const [perms, setPerms] = useState<wails.PermissionsDTO | null>(null);
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
   const request = useRef(0);
   const live = useRef(true);
 
-  const run = useCallback((call: () => Promise<wails.PermissionsDTO>) => {
+  // An Ask reads the permissions after macOS prompted, so its answer is newer than any check that started meanwhile.
+  const run = useCallback((call: () => Promise<wails.PermissionsDTO>, ask = false) => {
     const id = ++request.current;
     setBusy(true);
+    if (ask) setAsking(true);
+    const current = () => live.current && (ask || request.current === id);
     call()
       .then((p) => {
-        if (request.current !== id || !live.current) return;
+        if (!current()) return;
         setPerms(p);
         setError("");
       })
       .catch((e) => {
-        if (request.current !== id || !live.current) return;
+        if (!current()) return;
         setPerms(null);
         setError(errorMessage(e));
       })
       .finally(() => {
-        if (request.current === id && live.current) setBusy(false);
+        if (!live.current) return;
+        if (ask) setAsking(false);
+        if (request.current === id) setBusy(false);
       });
   }, []);
 
@@ -74,7 +81,7 @@ export function PermissionsCard() {
                 {state && <span className={`nt-perms__status nt-perms__status--${state}`}>{LABELS[state] ?? state}</span>}
                 <span className="nt-perms__buttons">
                   {state === "not_asked" && (
-                    <button type="button" className="nt-btn" onClick={() => run(AskPermissions)} disabled={busy}>
+                    <button type="button" className="nt-btn" onClick={() => run(AskPermissions, true)} disabled={busy || asking}>
                       Ask
                     </button>
                   )}
@@ -84,6 +91,7 @@ export function PermissionsCard() {
                 </span>
               </div>
               {state === "denied" && <p className="nt-perms__hint">{HINT}</p>}
+              {kind === "microphone" && <MicTest />}
             </li>
           );
         })}

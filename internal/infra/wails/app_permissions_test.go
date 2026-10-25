@@ -51,3 +51,54 @@ func TestPermissionBindingErrorsAreUserFacing(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+type stubTester struct {
+	seconds []int
+	err     error
+}
+
+func (s *stubTester) Start(seconds int, _ func(port.HelperEvent)) (port.Recording, error) {
+	s.seconds = append(s.seconds, seconds)
+	if s.err != nil {
+		return nil, s.err
+	}
+	return stubRun{make(chan port.RecorderExit, 1)}, nil
+}
+
+type stubRun struct{ exited chan port.RecorderExit }
+
+func (r stubRun) Stop() error                      { r.exited <- port.RecorderExit{}; return nil }
+func (r stubRun) Exited() <-chan port.RecorderExit { return r.exited }
+
+func micTestApp(t *testing.T, mic port.PermissionState, recording bool, tester *stubTester) *App {
+	t.Helper()
+	perms := stubChecker{set: port.PermissionSet{Microphone: mic, Screen: port.PermissionAllowed}}
+	svc := service.NewMicTestService(tester, perms, func() bool { return recording }, nopEmitter{})
+	return New(&Emitter{}, Deps{MicTest: svc})
+}
+
+func TestMicTestBindingsStartAndStop(t *testing.T) {
+	tester := &stubTester{}
+	a := micTestApp(t, port.PermissionAllowed, false, tester)
+	if err := a.StartMicTest(); err != nil || len(tester.seconds) != 1 {
+		t.Fatalf("start = %v, %v", err, tester.seconds)
+	}
+	if err := a.StartMicTest(); err == nil || err.Error() != "The microphone test is already running." {
+		t.Fatalf("second start = %v", err)
+	}
+	if err := a.StopMicTest(); err != nil {
+		t.Fatalf("stop = %v", err)
+	}
+}
+
+func TestMicTestBindingErrorsAreUserFacing(t *testing.T) {
+	if err := micTestApp(t, port.PermissionAllowed, true, &stubTester{}).StartMicTest(); err == nil || err.Error() != "Stop the recording to test the microphone." {
+		t.Fatalf("while recording = %v", err)
+	}
+	if err := micTestApp(t, port.PermissionDenied, false, &stubTester{}).StartMicTest(); err == nil {
+		t.Fatal("a denied microphone must refuse the test")
+	}
+	if err := micTestApp(t, port.PermissionAllowed, false, &stubTester{err: errors.New("helper missing")}).StartMicTest(); err == nil || err.Error() != "helper missing" {
+		t.Fatalf("helper failure = %v", err)
+	}
+}

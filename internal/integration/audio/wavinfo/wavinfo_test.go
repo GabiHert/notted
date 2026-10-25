@@ -131,3 +131,48 @@ func TestInspectorReportsSilence(t *testing.T) {
 		t.Fatal("want error")
 	}
 }
+
+func TestDigitalSilenceMeansEverySampleIsExactlyZero(t *testing.T) {
+	cases := []struct {
+		name    string
+		samples []int16
+		digital bool
+		silent  bool
+	}{
+		{"all zero", make([]int16, 1600), true, true},
+		{"one lone sample", append(make([]int16, 1599), 1), false, true},
+		{"quiet but not zero", sine(16000, 0.1, 440, 0.0005), false, true},
+		{"audible", sine(16000, 0.1, 440, 0.5), false, false},
+		{"no samples", nil, false, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			info, err := FromBytes(buildWAV(16000, 1, c.samples))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.DigitalSilence != c.digital || info.Silent != c.silent {
+				t.Fatalf("DigitalSilence=%v Silent=%v, want %v and %v", info.DigitalSilence, info.Silent, c.digital, c.silent)
+			}
+		})
+	}
+}
+
+func TestInspectorReportsDigitalSilenceSeparately(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name string, samples []int16) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, buildWAV(16000, 1, samples), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	got, err := Inspector{}.Inspect(write("zero.wav", make([]int16, 800)))
+	if err != nil || !got.Silent || !got.DigitalSilence {
+		t.Fatalf("zero = %+v, %v", got, err)
+	}
+	got, err = Inspector{}.Inspect(write("hiss.wav", append(make([]int16, 799), 2)))
+	if err != nil || !got.Silent || got.DigitalSilence {
+		t.Fatalf("hiss = %+v, %v", got, err)
+	}
+}

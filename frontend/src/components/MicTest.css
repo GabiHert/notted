@@ -1,0 +1,52 @@
+.nt-mictest {
+  margin-top: 8px;
+}
+.nt-mictest__line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nt-mictest__device,
+.nt-mictest__note {
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-mictest__line .nt-mictest__device {
+  flex: 1;
+}
+.nt-mictest__meter {
+  margin-top: 8px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--bar);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.nt-mictest__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 80ms ease-out;
+}
+.nt-mictest__verdict {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  color: var(--fg2);
+}
+.nt-mictest__verdict--ok {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.nt-mictest__verdict--quiet,
+.nt-mictest__verdict--silent {
+  color: var(--rec);
+  background: var(--rec-bg);
+  border-color: var(--rec);
+}
+.nt-mictest__error {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}

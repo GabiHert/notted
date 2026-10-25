@@ -158,3 +158,25 @@ test("buttons are disabled while a check or ask is running", async () => {
   await act(async () => release(perms("allowed", "allowed")));
   expect(screen.getByRole("button", { name: "Check again" })).toBeEnabled();
 });
+
+test("the microphone row has the mic test, the screen row does not", async () => {
+  await loaded();
+  expect(within(row(MIC)).getByRole("button", { name: "Test microphone" })).toBeInTheDocument();
+  expect(within(row(SCREEN)).queryByRole("button", { name: "Test microphone" })).not.toBeInTheDocument();
+});
+
+test("Ask stays disabled while an Ask runs, even after a focus check finishes", async () => {
+  await loaded("not_asked", "allowed");
+  let release: (v: unknown) => void = () => {};
+  AskPermissions.mockReturnValue(new Promise((r) => (release = r)));
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  GetPermissions.mockResolvedValue(perms("not_asked", "allowed"));
+  act(() => {
+    window.dispatchEvent(new Event("focus"));
+  });
+  await waitFor(() => expect(GetPermissions).toHaveBeenCalledTimes(2));
+  await act(async () => {});
+  expect(screen.getByRole("button", { name: "Ask" })).toBeDisabled();
+  await act(async () => release(perms("allowed", "allowed")));
+  expect(within(row(MIC)).getByText("Allowed")).toBeInTheDocument();
+});

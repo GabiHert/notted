@@ -14,7 +14,7 @@ import "./MeetingPage.css";
 export function MeetingPage({ meetingId }: { meetingId: string }) {
   const [meeting, setMeeting] = useState<wails.MeetingDTO | null>(null);
   const [segments, setSegments] = useState<wails.SegmentDTO[]>([]);
-  const [warning, setWarning] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [stopping, setStopping] = useState(false);
   const [notCommitted, setNotCommitted] = useState(false);
@@ -25,7 +25,7 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
     let live = true;
     setMeeting(null);
     setSegments([]);
-    setWarning("");
+    setWarnings([]);
     setError("");
     setStopping(false);
     setNotCommitted(false);
@@ -43,7 +43,7 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
       .catch(() => {});
     const offState = EventsOn("recording:state", (e: { meetingId: string; warning?: string; error?: string }) => {
       if (e.meetingId !== meetingId) return;
-      if (e.warning) setWarning(e.warning);
+      if (e.warning) setWarnings((cur) => (cur.includes(e.warning!) ? cur : [...cur, e.warning!]));
       if (e.error) setError(e.error);
       load();
     });
@@ -99,10 +99,14 @@ export function MeetingPage({ meetingId }: { meetingId: string }) {
         </div>
       )}
       <ModelBanner language={meeting.language} />
-      {warning && (
+      {warnings.length > 0 && (
         <section className="nt-card">
-          <div className="nt-card__header">System audio</div>
-          <p className="nt-meeting__msg">{warning}</p>
+          <div className="nt-card__header">Audio</div>
+          {warnings.map((w) => (
+            <p key={w} className="nt-meeting__msg">
+              {w}
+            </p>
+          ))}
         </section>
       )}
       {error && <div className="nt-card nt-card--error" role="alert">

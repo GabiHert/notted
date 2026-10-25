@@ -39,15 +39,18 @@ func NewSupervisor(helperPath string) *Supervisor {
 }
 
 type wireEvent struct {
-	Event   string `json:"event"`
-	T0Ms    int64  `json:"t0_ms"`
-	Track   string `json:"track"`
-	Index   int    `json:"index"`
-	Path    string `json:"path"`
-	StartMs int64  `json:"start_ms"`
-	EndMs   int64  `json:"end_ms"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Event   string  `json:"event"`
+	T0Ms    int64   `json:"t0_ms"`
+	Track   string  `json:"track"`
+	Index   int     `json:"index"`
+	Path    string  `json:"path"`
+	StartMs int64   `json:"start_ms"`
+	EndMs   int64   `json:"end_ms"`
+	Code    string  `json:"code"`
+	Message string  `json:"message"`
+	Device  string  `json:"device"`
+	RMSdB   float64 `json:"rms_db"`
+	PeakDB  float64 `json:"peak_db"`
 }
 
 type running struct {
@@ -101,6 +104,7 @@ func (s *Supervisor) Start(outDir string, onEvent func(port.HelperEvent)) (port.
 			onEvent(port.HelperEvent{
 				Kind: w.Event, T0Ms: w.T0Ms, Track: domain.Track(w.Track), Index: w.Index, Path: w.Path,
 				StartMs: w.StartMs, EndMs: w.EndMs, Code: w.Code, Message: w.Message,
+				Device: w.Device, RMSdB: w.RMSdB, PeakDB: w.PeakDB,
 			})
 			if w.Event == "started" {
 				startedOnce.Do(func() { close(started) })

@@ -29,3 +29,9 @@ func TestOpenFailureIsUserFacing(t *testing.T) {
 		t.Fatal("a missing command must fail")
 	}
 }
+
+func TestOpenDefaultsToTheAbsolutePathOfOpen(t *testing.T) {
+	if systemOpen != "/usr/bin/open" {
+		t.Fatalf("systemOpen = %q", systemOpen)
+	}
+}

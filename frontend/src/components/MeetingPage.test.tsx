@@ -46,11 +46,25 @@ test("warning and error cards show the message verbatim", async () => {
   render(<MeetingPage meetingId="m1" />);
   await screen.findByRole("heading", { level: 1 });
   await act(async () => emit("recording:state", { meetingId: "m1", state: "recording", warning: "No sound from other people yet." }));
-  expect(screen.getByText("System audio")).toBeInTheDocument();
+  expect(screen.getByText("Audio")).toBeInTheDocument();
   expect(screen.getByText("No sound from other people yet.")).toBeInTheDocument();
   await act(async () => emit("recording:state", { meetingId: "m1", state: "ready", error: "The recorder stopped." }));
   expect(screen.getByText("The recorder stopped.")).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("The recorder stopped.");
+});
+
+test("a microphone warning and a system audio warning show together, each once", async () => {
+  GetMeeting.mockResolvedValue(meeting({ state: "recording" }));
+  render(<MeetingPage meetingId="m1" />);
+  await screen.findByRole("heading", { level: 1 });
+  const mic = "Your microphone recorded no sound (Studio Mic). If your MacBook's lid is closed, its built-in microphone is off.";
+  const system = "No system audio was heard in the last minute.";
+  await act(async () => emit("recording:state", { meetingId: "m1", state: "recording", warning: mic }));
+  await act(async () => emit("recording:state", { meetingId: "m1", state: "recording", warning: system }));
+  await act(async () => emit("recording:state", { meetingId: "m1", state: "recording", warning: mic }));
+  expect(screen.getByText(mic)).toBeInTheDocument();
+  expect(screen.getByText(system)).toBeInTheDocument();
+  expect(screen.getAllByText(mic)).toHaveLength(1);
 });
 
 test("ignores state events of other meetings", async () => {

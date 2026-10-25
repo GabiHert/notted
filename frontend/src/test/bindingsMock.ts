@@ -58,10 +58,12 @@ export const StartUpdate = vi.fn();
 export const GetPermissions = vi.fn();
 export const AskPermissions = vi.fn();
 export const OpenPermissionSettings = vi.fn();
+export const StartMicTest = vi.fn();
+export const StopMicTest = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -107,6 +109,8 @@ export function resetBindings() {
   GetPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });
   AskPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });
   OpenPermissionSettings.mockResolvedValue(undefined);
+  StartMicTest.mockResolvedValue(undefined);
+  StopMicTest.mockResolvedValue(undefined);
   GetModelStatus.mockResolvedValue({ language: "pt-BR", ready: true, missing: "", downloadBytes: 0, downloading: false });
 }
 

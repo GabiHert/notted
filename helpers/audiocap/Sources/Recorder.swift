@@ -62,7 +62,7 @@ final class Recorder: @unchecked Sendable {
             // Both captures are running: audio buffered so far predates t0 and would shift a track.
             micWriter?.discardBuffered()
             othersWriter?.discardBuffered()
-            emit(StartedEvent(t0Ms: Int64(Date().timeIntervalSince1970 * 1000)))
+            emit(StartedEvent(t0Ms: Int64(Date().timeIntervalSince1970 * 1000), device: mic.deviceName()))
             let timer = DispatchSource.makeTimerSource(queue: writerQueue)
             timer.schedule(deadline: .now() + .seconds(chunkSeconds), repeating: .seconds(chunkSeconds))
             timer.setEventHandler { [self] in

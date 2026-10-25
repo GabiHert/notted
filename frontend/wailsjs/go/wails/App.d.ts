@@ -68,11 +68,15 @@ export function SetSettings(arg1:wails.SettingsDTO):Promise<void>;
 
 export function SetUpdateSource(arg1:string):Promise<void>;
 
+export function StartMicTest():Promise<void>;
+
 export function StartRecording(arg1:string,arg2:string):Promise<wails.MeetingDTO>;
 
 export function StartSession(arg1:string):Promise<void>;
 
 export function StartUpdate():Promise<void>;
+
+export function StopMicTest():Promise<void>;
 
 export function StopRecording(arg1:string):Promise<void>;
 

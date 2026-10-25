@@ -76,9 +76,11 @@ func Run(assets embed.FS) error {
 		InstallSource: paths.InstallSource,
 		Emit:          emitter,
 	})
-	permissions := service.NewPermissionsService(audio.NewPermissions(helperPath()), system.Opener{})
+	permChecker := audio.NewPermissions(helperPath())
+	permissions := service.NewPermissionsService(permChecker, system.Opener{})
+	micTest := service.NewMicTestService(audio.NewMicTester(helperPath()), permChecker, recording.Recording, emitter)
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Meetings: st, Models: models})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{
@@ -119,6 +121,7 @@ func Run(assets embed.FS) error {
 		},
 		OnShutdown: func(ctx context.Context) {
 			session.StopAll()
+			_ = micTest.Stop()
 			recording.StopAll()
 			trans.Close()
 			engine.Unload()

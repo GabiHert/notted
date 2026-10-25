@@ -134,6 +134,10 @@ export function SetUpdateSource(arg1) {
   return window['go']['wails']['App']['SetUpdateSource'](arg1);
 }
 
+export function StartMicTest() {
+  return window['go']['wails']['App']['StartMicTest']();
+}
+
 export function StartRecording(arg1, arg2) {
   return window['go']['wails']['App']['StartRecording'](arg1, arg2);
 }
@@ -144,6 +148,10 @@ export function StartSession(arg1) {
 
 export function StartUpdate() {
   return window['go']['wails']['App']['StartUpdate']();
+}
+
+export function StopMicTest() {
+  return window['go']['wails']['App']['StopMicTest']();
 }
 
 export function StopRecording(arg1) {

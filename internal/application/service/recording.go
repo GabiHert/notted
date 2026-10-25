@@ -39,6 +39,8 @@ type activeRecording struct {
 	stopping  bool
 	silentRun int
 	warned    bool
+	device    string // the microphone the helper recorded from, once it reported `started`
+	micSeen   bool   // the first mic chunk was checked
 	once      sync.Once
 }
 
@@ -151,6 +153,10 @@ func (s *RecordingService) Start(ctx context.Context, title string, lang domain.
 }
 
 func (s *RecordingService) handleEvent(ctx context.Context, a *activeRecording, ev port.HelperEvent) {
+	if ev.Kind == "started" {
+		a.device = ev.Device
+		return
+	}
 	if ev.Kind != "chunk" {
 		return
 	}
@@ -168,8 +174,11 @@ func (s *RecordingService) handleEvent(ctx context.Context, a *activeRecording, 
 		return
 	}
 	s.emit.Emit("recording:chunk", map[string]any{"meetingId": a.meetingID, "track": string(ev.Track), "index": ev.Index})
-	if ev.Track == domain.TrackOthers {
+	switch ev.Track {
+	case domain.TrackOthers:
 		s.trackSilence(a, ev.Path)
+	case domain.TrackMic:
+		s.checkMic(a, ev.Path)
 	}
 	if listener != nil {
 		listener(c)
@@ -187,6 +196,26 @@ func (s *RecordingService) trackSilence(a *activeRecording, path string) {
 		a.warned = true
 		s.emit.Emit("recording:state", map[string]any{"meetingId": a.meetingID, "state": "recording", "warning": msgSilentSystem})
 	}
+}
+
+// checkMic warns, once, when the first mic chunk is digital silence: an input that is switched off, not a quiet room.
+func (s *RecordingService) checkMic(a *activeRecording, path string) {
+	if a.micSeen {
+		return
+	}
+	a.micSeen = true
+	info, err := s.inspect.Inspect(path)
+	if err != nil || !info.DigitalSilence {
+		return
+	}
+	s.emit.Emit("recording:state", map[string]any{"meetingId": a.meetingID, "state": "recording", "warning": micSilentWarning(a.device)})
+}
+
+func micSilentWarning(device string) string {
+	if device == "" {
+		return "Your microphone recorded no sound. " + msgLidClosed
+	}
+	return "Your microphone recorded no sound (" + device + "). " + msgLidClosed
 }
 
 // watch ends the recording when the helper exits without being asked to.

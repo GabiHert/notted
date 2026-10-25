@@ -11,6 +11,11 @@ final class MicCapture {
         return (f.sampleRate == 0 || f.channelCount == 0) ? nil : f
     }
 
+    /// The name macOS gives the default input ("MacBook Air Microphone"); empty when it gives none.
+    func deviceName() -> String {
+        AVCaptureDevice.default(for: .audio)?.localizedName ?? ""
+    }
+
     func start(onSamples: @escaping ([Int16]) -> Void) throws {
         let input = engine.inputNode
         input.installTap(onBus: 0, bufferSize: 4096, format: input.outputFormat(forBus: 0)) { [resampler] buffer, _ in

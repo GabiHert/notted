@@ -21,6 +21,7 @@ type Info struct {
 	DurationSeconds float64 // DataBytes / (SampleRate * Channels * BitsPerSample/8)
 	RMSdBFS         float64 // 20*log10(rms) over all samples in [-1,1]; -120 when rms == 0
 	Silent          bool    // RMSdBFS < -60
+	DigitalSilence  bool    // there are samples and every one is exactly 0, as a switched-off input records
 }
 
 // Read opens path and describes it.
@@ -52,17 +53,21 @@ func FromBytes(data []byte) (Info, error) {
 	raw := data[h.DataOffset : h.DataOffset+int(h.DataBytes)]
 	var sum float64
 	var n int
+	nonZero := false
 	switch {
 	case h.Format == wavFormatPCM && h.BitsPerSample == 16:
 		n = len(raw) / 2
 		for i := 0; i < n; i++ {
-			v := float64(int16(binary.LittleEndian.Uint16(raw[2*i:]))) / 32768
+			raw16 := int16(binary.LittleEndian.Uint16(raw[2*i:]))
+			nonZero = nonZero || raw16 != 0
+			v := float64(raw16) / 32768
 			sum += v * v
 		}
 	case h.Format == wavFormatIEEEFloat && h.BitsPerSample == 32:
 		n = len(raw) / 4
 		for i := 0; i < n; i++ {
 			v := float64(math.Float32frombits(binary.LittleEndian.Uint32(raw[4*i:])))
+			nonZero = nonZero || v != 0
 			sum += v * v
 		}
 	default:
@@ -73,6 +78,7 @@ func FromBytes(data []byte) (Info, error) {
 		info.RMSdBFS = 20 * math.Log10(math.Sqrt(sum/float64(n)))
 	}
 	info.Silent = info.RMSdBFS < silentBelowDBFS
+	info.DigitalSilence = n > 0 && !nonZero
 	return info, nil
 }
 
@@ -81,11 +87,11 @@ type Inspector struct{}
 
 var _ port.AudioInspector = Inspector{}
 
-// Inspect reads path and reports whether it is silent.
+// Inspect reads path and reports whether it is silent, and whether it is digital silence.
 func (Inspector) Inspect(path string) (port.WavInfo, error) {
 	info, err := Read(path)
 	if err != nil {
 		return port.WavInfo{}, err
 	}
-	return port.WavInfo{Silent: info.Silent}, nil
+	return port.WavInfo{Silent: info.Silent, DigitalSilence: info.DigitalSilence}, nil
 }

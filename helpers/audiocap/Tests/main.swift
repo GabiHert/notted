@@ -188,6 +188,59 @@ do {
     check(screenStatusName(true) == "allowed" && screenStatusName(false) == "denied", "screen status names")
     check(encodeEvent(ErrorEvent(code: "bad_args", message: "x")) == #"{"code":"bad_args","event":"error","message":"x"}"#, "error")
     check(encodeEvent(StoppedEvent()) == #"{"event":"stopped"}"#, "stopped")
+    check(encodeEvent(StartedEvent(t0Ms: 5, device: "MacBook Air Microphone")) == #"{"device":"MacBook Air Microphone","event":"started","t0_ms":5}"#, "started with device")
+    check(encodeEvent(StartedEvent(t0Ms: 5, device: "")) == #"{"event":"started","t0_ms":5}"#, "started with an unknown device omits it")
+    check(encodeEvent(DeviceEvent(device: "Studio Mic")) == #"{"device":"Studio Mic","event":"device"}"#, "device event: \(encodeEvent(DeviceEvent(device: "Studio Mic")))")
+    check(encodeEvent(LevelEvent(rmsDb: -30.5, peakDb: -12.0)) == #"{"event":"level","peak_db":-12,"rms_db":-30.5}"#, "level event: \(encodeEvent(LevelEvent(rmsDb: -30.5, peakDb: -12.0)))")
+}
+
+// 9. Level meter: one reading per 100 ms of 16 kHz audio, in dBFS, -120 for digital silence
+do {
+    var m = LevelMeter()
+    let silent = m.add([Int16](repeating: 0, count: 1600))
+    check(silent.count == 1 && silent[0].rmsDb == -120 && silent[0].peakDb == -120, "digital silence reads -120: \(silent)")
+
+    m = LevelMeter()
+    check(m.add([Int16](repeating: 100, count: 1000)).isEmpty, "less than 100 ms makes no reading")
+    let carried = m.add([Int16](repeating: 100, count: 1000))
+    check(carried.count == 1, "the carried samples complete a reading, got \(carried.count)")
+    let more = m.add([Int16](repeating: 100, count: 1300))
+    check(more.count == 1, "400 carried + 1300 = 1700 samples is one reading, got \(more.count)")
+
+    m = LevelMeter()
+    let many = m.add([Int16](repeating: 0, count: 3300))
+    check(many.count == 2, "3300 samples are two readings, got \(many.count)")
+
+    m = LevelMeter()
+    let half = m.add([Int16](repeating: 16384, count: 1600))
+    check(half.first?.rmsDb == -6.0 && half.first?.peakDb == -6.0, "half scale is -6 dB: \(half)")
+
+    m = LevelMeter()
+    let full = m.add([Int16](repeating: 32767, count: 1600))
+    check(full.first?.peakDb == 0.0, "full scale peaks at 0 dB: \(full)")
+    m = LevelMeter()
+    let floorSample = m.add([Int16](repeating: Int16.min, count: 1600))
+    check(floorSample.first?.peakDb == 0.0, "Int16.min does not overflow: \(floorSample)")
+
+    m = LevelMeter()
+    var spike = [Int16](repeating: 0, count: 1600)
+    spike[800] = 3277
+    let lone = m.add(spike)
+    check((lone.first?.peakDb ?? 0) > -21 && (lone.first?.peakDb ?? 0) < -19, "a lone sample sets the peak: \(lone)")
+    check((lone.first?.rmsDb ?? 0) < (lone.first?.peakDb ?? 0) - 20, "and barely moves the rms: \(lone)")
+}
+
+// 10. level arguments
+do {
+    check(parseLevelSeconds([]) == 10, "default 10 seconds")
+    check(parseLevelSeconds(["--seconds", "1"]) == 1, "1 second")
+    check(parseLevelSeconds(["--seconds", "60"]) == 60, "60 seconds")
+    check(parseLevelSeconds(["--seconds", "0"]) == nil, "0 is refused")
+    check(parseLevelSeconds(["--seconds", "61"]) == nil, "61 is refused")
+    check(parseLevelSeconds(["--seconds", "abc"]) == nil, "text is refused")
+    check(parseLevelSeconds(["--seconds"]) == nil, "a missing number is refused")
+    check(parseLevelSeconds(["--sec", "5"]) == nil, "an unknown flag is refused")
+    check(parseLevelSeconds(["--seconds", "5", "--seconds", "6"]) == nil, "two --seconds are refused")
 }
 
 // 7. Alignment: audio buffered before t0 is discarded

@@ -4,8 +4,26 @@ import Foundation
 struct StartedEvent: Codable {
     var event = "started"
     var t0Ms: Int64
-    enum CodingKeys: String, CodingKey { case event, t0Ms = "t0_ms" }
-    init(t0Ms: Int64) { self.t0Ms = t0Ms }
+    /// The microphone the recording uses; absent when macOS gave no name.
+    var device: String?
+    enum CodingKeys: String, CodingKey { case event, t0Ms = "t0_ms", device }
+    init(t0Ms: Int64, device: String = "") { self.t0Ms = t0Ms; self.device = device.isEmpty ? nil : device }
+}
+
+/// `level` prints it first: the input device the level meter listens to.
+struct DeviceEvent: Codable {
+    var event = "device"
+    var device: String
+    init(device: String) { self.device = device }
+}
+
+/// `level` prints one about every 100 ms: dBFS of that stretch, -120 for digital silence.
+struct LevelEvent: Codable {
+    var event = "level"
+    var rmsDb: Double
+    var peakDb: Double
+    enum CodingKeys: String, CodingKey { case event, rmsDb = "rms_db", peakDb = "peak_db" }
+    init(rmsDb: Double, peakDb: Double) { self.rmsDb = rmsDb; self.peakDb = peakDb }
 }
 
 struct ChunkEvent: Codable {
