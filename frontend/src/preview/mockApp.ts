@@ -112,11 +112,32 @@ export async function GetSettings() {
   if (screen === "setup-profile" || screen === "setup-new-profile") return { profile: "", checkoutPath: ARCHIVE, projectRoots: {} };
   if (screen === "setup-new-project" || screen === "setup-project-created") return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen === "settings-empty") return { profile: "", checkoutPath: "", projectRoots: {} };
+  if (screen.startsWith("setup-prompt")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("setup-folder")) return { profile: "ana", checkoutPath: "/Users/ana/old-archive", projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("setup-delete") || screen.startsWith("setup-my-file")) return { profile: "ana", checkoutPath: ARCHIVE, projectRoots: { acme: "/Users/ana/work/acme" } };
   if (screen.startsWith("settings") || screen.startsWith("instructions") || screen.startsWith("prompt") || screen.startsWith("update") || screen.startsWith("permissions") || screen.startsWith("mictest"))
     return { profile: "ana", checkoutPath: "/archive", projectRoots: { acme: "/work/acme" } };
   return { profile: "", checkoutPath: screen === "session-no-folder" ? "" : "/archive", projectRoots: {} };
+}
+export async function GetSetupPrompt() {
+  return [
+    "You are helping me finish setting up Notted, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.",
+    "",
+    "## My current state",
+    "",
+    `- Archive folder: ${ARCHIVE}`,
+    "- Profile: ana",
+    "- Projects in the archive: acme, globex",
+    "- My files in the archive: instructions/people/ana.md, instructions/people/ana/acme.md",
+    "- Projects without a file of mine: globex",
+    "",
+    "## What I need you to do",
+    "",
+    "1. Read instructions/README.md and prompts/base.md in the archive.",
+    "2. Interview me one question at a time. Wait for my answer before you ask the next.",
+    "3. Write only under instructions/ in the archive.",
+    "4. You must never commit or push without my yes.",
+  ].join("\n");
 }
 export async function SetSettings(_s: unknown) {
   if (screen === "settings-save-failed") throw new Error("The archive folder does not exist: /archive");

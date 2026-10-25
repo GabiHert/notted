@@ -1,3 +1,3 @@
 export * from "../../wailsjs/go/wails/App";
 export { wails } from "../../wailsjs/go/models";
-export { EventsOn, EventsOff } from "../../wailsjs/runtime/runtime";
+export { ClipboardSetText, EventsOn, EventsOff } from "../../wailsjs/runtime/runtime";

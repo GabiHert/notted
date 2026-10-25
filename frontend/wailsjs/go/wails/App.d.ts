@@ -38,6 +38,8 @@ export function GetPermissions():Promise<wails.PermissionsDTO>;
 
 export function GetSettings():Promise<wails.SettingsDTO>;
 
+export function GetSetupPrompt():Promise<string>;
+
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
 export function GetUpdateStatus():Promise<wails.UpdateStatusDTO>;

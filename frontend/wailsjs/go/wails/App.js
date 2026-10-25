@@ -74,6 +74,10 @@ export function GetSettings() {
   return window['go']['wails']['App']['GetSettings']();
 }
 
+export function GetSetupPrompt() {
+  return window['go']['wails']['App']['GetSetupPrompt']();
+}
+
 export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }

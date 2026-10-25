@@ -19,6 +19,7 @@ export function WelcomeCard({ saved }: { saved: wails.SettingsDTO }) {
         </li>
         <li>Add your projects and, if you like, their root folders.</li>
       </ol>
+      <p className="nt-welcome__hint">Not sure how to fill in your profile and projects? Use Set up with Claude Code below to copy a prompt that Claude Code can follow with you.</p>
     </section>
   );
 }

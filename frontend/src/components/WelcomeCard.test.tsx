@@ -36,3 +36,9 @@ test("Done follows step 2 only when the profile is set; step 3 never has a marke
   expect(within(li[1]).getByText("Done")).toBeInTheDocument();
   expect(within(li[2]).queryByText("Done")).not.toBeInTheDocument();
 });
+
+test("points at the Set up with Claude Code card and adds no step", () => {
+  render(<WelcomeCard saved={{ profile: "", checkoutPath: "", projectRoots: {} }} />);
+  expect(screen.getByText(/Use Set up with Claude Code below to copy a prompt/)).toBeInTheDocument();
+  expect(items()).toHaveLength(3);
+});

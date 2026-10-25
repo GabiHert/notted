@@ -87,3 +87,8 @@ func (a *App) ListMyProjectKeys() ([]string, error) {
 func (a *App) CreateMyProjectFile(key string) (string, error) {
 	return a.setup.CreateMyProjectFile(a.context(), key)
 }
+
+// GetSetupPrompt returns the text the person pastes into Claude Code to finish the setup.
+func (a *App) GetSetupPrompt() (string, error) {
+	return a.setup.GetSetupPrompt(a.context())
+}

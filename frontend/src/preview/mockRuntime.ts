@@ -15,3 +15,6 @@ export function EventsOff(name: string): void {
 export function emit(name: string, payload: unknown): void {
   for (const cb of [...(handlers.get(name) ?? [])]) cb(payload);
 }
+export async function ClipboardSetText(_text: string): Promise<boolean> {
+  return true;
+}

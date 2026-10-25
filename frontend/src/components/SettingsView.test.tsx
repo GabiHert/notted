@@ -19,9 +19,18 @@ test("shows the Settings heading, one selected Instructions tab and the cards in
   expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   await screen.findByLabelText("Profile");
   const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Set up Notted", "Your setup", "Instruction files", "Prompt preview", "Update Notted", "Permissions"]);
+  expect(headers).toEqual(["Set up Notted", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Update Notted", "Permissions"]);
   expect(GetUpdateStatus).toHaveBeenCalledTimes(1);
   expect(GetPermissions).toHaveBeenCalledTimes(1);
+});
+
+test("the Claude Code card is always shown, directly above the setup form, also when the first-run checklist is hidden", async () => {
+  GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
+  render(<SettingsView />);
+  await screen.findByLabelText("Profile");
+  const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
+  expect(headers.slice(0, 2)).toEqual(["Set up with Claude Code", "Your setup"]);
+  expect(screen.getByRole("button", { name: "Copy setup prompt" })).toBeInTheDocument();
 });
 
 test("the project list feeds the project-root rows and the preview select; a failure shows the message in both", async () => {

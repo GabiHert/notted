@@ -21,6 +21,8 @@ export function initPreview(): View {
     case "prompt-preview":
     case "prompt-preview-failed":
     case "first-run":
+    case "setup-prompt":
+    case "setup-prompt-shown":
     case "setup-clone-failed":
     case "setup-profile":
     case "setup-new-profile":
@@ -178,6 +180,8 @@ function autoDriveSettings(screen: string) {
     "mictest-quiet": [scrollTo(".nt-perms"), open("Test microphone")],
     "mictest-ok": [scrollTo(".nt-perms"), open("Test microphone")],
     "mictest-recording": [scrollTo(".nt-perms")],
+    "setup-prompt": [open("Copy setup prompt")],
+    "setup-prompt-shown": [open("Show prompt")],
     "prompt-preview": [choose, open("Preview prompt")],
     "prompt-preview-failed": [choose, open("Preview prompt")],
   };

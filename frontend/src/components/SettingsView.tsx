@@ -5,6 +5,7 @@ import { InstructionFiles } from "./InstructionFiles";
 import { PermissionsCard } from "./PermissionsCard";
 import { PromptPreview } from "./PromptPreview";
 import { SetupForm } from "./SetupForm";
+import { SetupPromptCard } from "./SetupPromptCard";
 import { UpdateCard } from "./UpdateCard";
 import { WelcomeCard } from "./WelcomeCard";
 import "./SettingsView.css";
@@ -119,6 +120,7 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
       </div>
       <div role="tabpanel" id="nt-panel-instructions" aria-labelledby="nt-tab-instructions">
         {saved && (saved.checkoutPath === "" || saved.profile === "") && <WelcomeCard saved={saved} />}
+        <SetupPromptCard />
         <SetupForm saved={saved} settingsError={settingsError} projects={projects} projectsError={projectsError} profiles={profiles} profilesError={profilesError} myProjects={myProjects} myProjectsError={myProjectsError} onDeleted={onDeleted} onSaved={reload} onOpen={open} />
         <InstructionFiles onDirtyPath={onDirtyPath} archivePath={saved?.checkoutPath ?? ""} openRequest={openRequest} refresh={filesRefresh} />
         <PromptPreview projects={projects} projectsError={projectsError} />
