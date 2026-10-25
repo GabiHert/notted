@@ -9,6 +9,9 @@ new=$2
 dest=$3
 open_cmd=${NOTTED_OPEN:-/usr/bin/open}
 mv_cmd=${NOTTED_MV:-/bin/mv}
+codesign_cmd=${NOTTED_CODESIGN:-/usr/bin/codesign}
+tccutil_cmd=${NOTTED_TCCUTIL:-/usr/bin/tccutil}
+plistbuddy_cmd=${NOTTED_PLISTBUDDY:-/usr/libexec/PlistBuddy}
 quit_wait=${NOTTED_QUIT_WAIT:-60}
 launch_wait=${NOTTED_LAUNCH_WAIT:-20}
 settle=${NOTTED_LAUNCH_SETTLE:-2}
@@ -52,6 +55,25 @@ put_back() {
   [ ! -e "$2" ] && [ ! -L "$2" ] || return 1
   "$mv_cmd" "$1" "$2"
 }
+# requirement <app>: the designated requirement macOS stores a permission against, or nothing.
+requirement() {
+  "$codesign_cmd" -d -r- "$1" 2>/dev/null | sed -n 's/^designated => //p'
+}
+# reset_permissions <app>: macOS keeps a permission with the signature that got it, so after a
+# signature change the stored one never matches and switching it on does nothing. A failure only
+# gets logged.
+reset_permissions() {
+  local id service out
+  log "the signature changed, so macOS will ask for the microphone and screen recording permissions again"
+  if ! id=$("$plistbuddy_cmd" -c 'Print :CFBundleIdentifier' "$1/Contents/Info.plist" 2>&1) || [ -z "$id" ]; then
+    log "could not read the bundle id: $id"
+    return 0
+  fi
+  for service in ScreenCapture Microphone; do
+    out=$("$tccutil_cmd" reset "$service" "$id" 2>&1) || log "could not reset the $service permission: $out"
+  done
+  return 0
+}
 gone() { ! kill -0 "$pid" 2>/dev/null; }
 reopen() {
   log "reopening $dest"
@@ -88,6 +110,13 @@ if ! /usr/bin/ditto "$new" "$staged"; then
   reopen
   exit 1
 fi
+# Read the old signature before the swap, while the old app is still at $dest.
+reset_needed=0
+if [ -e "$dest" ]; then
+  old_req=$(requirement "$dest") || old_req=
+  new_req=$(requirement "$new") || new_req=
+  if [ -z "$old_req" ] || [ "$old_req" != "$new_req" ]; then reset_needed=1; fi
+fi
 log "moving $dest to $old"
 if ! "$mv_cmd" "$dest" "$old"; then
   rm -rf "$staged"
@@ -103,6 +132,7 @@ if ! "$mv_cmd" "$staged" "$dest"; then
   reopen
   exit 1
 fi
+if [ "$reset_needed" -eq 1 ]; then reset_permissions "$dest"; fi
 log "opening $dest"
 before=" $(matching_pids)"
 "$open_cmd" "$dest"

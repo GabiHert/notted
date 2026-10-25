@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Proves scripts/install.sh in temp folders, with fake macOS and build tools first on PATH.
+# Proves scripts/install.sh and the Update Notted installer in temp folders, with fake macOS and
+# build tools first on PATH (or named by the NOTTED_* overrides).
 # It never touches /Applications, ~/.notted, the keychain or a running Notted.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -18,6 +19,19 @@ UNCHANGED='Install failed; your previous Notted is unchanged.'
 fake() {
   printf '#!/bin/sh\n%s\n' "$2" >"$T/bin/$1"
   chmod +x "$T/bin/$1"
+}
+
+# fake_permission_tools: codesign reads a designated requirement from <app>/Contents/req (unsigned
+# when the file is missing), PlistBuddy prints the Info.plist file as the bundle id, and tccutil only
+# records its call (and fails with "boom" when $T/tccutil-fails exists).
+fake_permission_tools() {
+  fake codesign 'for a; do app=$a; done
+if ! r=$(cat "$app/Contents/req" 2>/dev/null); then echo "$app: code object is not signed at all" >&2; exit 1; fi
+echo "Executable=$app/Contents/MacOS/Notted"
+echo "designated => $r"'
+  fake plistbuddy 'echo "plistbuddy $*" >>"$T_FAKE/calls"; cat "$3"'
+  fake tccutil 'echo "tccutil $*" >>"$T_FAKE/calls"
+if [ -e "$T_FAKE/tccutil-fails" ]; then echo boom; exit 1; fi'
 }
 
 # fresh: a temp world with a fake clone, fake tools and the default "everything present" state.
@@ -63,7 +77,10 @@ esac'
   fake make 'echo "make $*" >>"$T_FAKE/calls"
 d=$2
 mkdir -p "$d/build/bin/Notted.app/Contents/MacOS"
-echo new-build >"$d/build/bin/Notted.app/Contents/MacOS/Notted"'
+echo new-build >"$d/build/bin/Notted.app/Contents/MacOS/Notted"
+echo com.example.test >"$d/build/bin/Notted.app/Contents/Info.plist"
+if [ -e "$T_FAKE/new-req" ]; then cp "$T_FAKE/new-req" "$d/build/bin/Notted.app/Contents/req"; fi
+exit 0'
   fake shell 'if [ -e "$T_FAKE/has-claude" ]; then echo /somewhere/claude; fi'
   fake mvfake 'n=$(cat "$T_FAKE/mvcount" 2>/dev/null || echo 0)
 n=$((n + 1))
@@ -79,21 +96,25 @@ fi
 exec /bin/rm "$@"'
   fake signing-identity 'echo "signing-identity" >>"$T_FAKE/calls"; cat "$T_FAKE/identity" 2>/dev/null'
   fake create-signing 'echo "create-signing" >>"$T_FAKE/calls"; [ ! -e "$T_FAKE/create-fails" ]'
+  fake_permission_tools
   printf '#!/bin/sh\nexec "%s/bin/signing-identity" "$@"\n' "$T" >"$CLONE/scripts/signing-identity.sh"
   printf '#!/bin/sh\nexec "%s/bin/create-signing" "$@"\n' "$T" >"$CLONE/scripts/create-signing-identity.sh"
 }
 
-# existing_app <content>: an installed Notted with a marker.
+# existing_app <content> [requirement]: an installed Notted with a marker and, optionally, a requirement.
 existing_app() {
   mkdir -p "$APPS/Notted.app/Contents/MacOS"
   echo "$1" >"$APPS/Notted.app/Contents/MacOS/Notted"
+  echo com.example.test >"$APPS/Notted.app/Contents/Info.plist"
+  if [ -n "${2:-}" ]; then echo "$2" >"$APPS/Notted.app/Contents/req"; fi
 }
 
 # run_install [VAR=value ...]: runs the script under /bin/bash with only the fakes and system tools on PATH.
 run_install() {
   OUT=$(env -i HOME="$T/hdir" PATH="$T/bin:/usr/bin:/bin" SHELL="$T/bin/shell" \
     NOTTED_INSTALL_DIR="$APPS" NOTTED_HOME="$NHOME" NOTTED_SKIP_SIGNING_SETUP=1 NOTTED_NO_OPEN=1 \
-    NOTTED_QUIT_WAIT=1 T_FAKE="$T" "$@" /bin/bash "$CLONE/scripts/install.sh" 2>&1)
+    NOTTED_QUIT_WAIT=1 T_FAKE="$T" NOTTED_CODESIGN="$T/bin/codesign" NOTTED_TCCUTIL="$T/bin/tccutil" \
+    NOTTED_PLISTBUDDY="$T/bin/plistbuddy" "$@" /bin/bash "$CLONE/scripts/install.sh" 2>&1)
   RC=$?
 }
 
@@ -505,6 +526,238 @@ test_signing_skipped() {
   finish
 }
 
+SIG_CHANGED='the signature changed, so macOS will ask for the microphone and screen recording permissions again'
+RESET_SCREEN="tccutil reset ScreenCapture com.example.test"
+RESET_MIC="tccutil reset Microphone com.example.test"
+
+# call_before <first> <second>: both calls are in the log, the first one earlier.
+call_before() {
+  local log rest
+  log=$(calls)
+  has "$1" "$log" || return 1
+  rest=${log#*"$1"}
+  has "$2" "$rest"
+}
+
+# install_with <installed requirement|-> <new requirement>: make install over an app signed so.
+install_with() {
+  fresh
+  if [ "$1" = - ]; then existing_app old-build; else existing_app old-build "$1"; fi
+  echo "$2" >"$T/new-req"
+  run_install NOTTED_NO_OPEN=0
+}
+
+test_reset_equal() {
+  begin "make install, same requirement: no reset and no extra line"
+  install_with 'identifier "a" and anchor apple' 'identifier "a" and anchor apple'
+  check "exit 0" rc_is 0
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
+test_reset_different() {
+  begin "make install, another requirement: both permissions reset, one line, before open"
+  install_with 'cdhash H"1"' 'identifier "a" and certificate leaf = H"2"'
+  check "exit 0" rc_is 0
+  check "screen reset" calls_have "$RESET_SCREEN"
+  check "microphone reset" calls_have "$RESET_MIC"
+  check "bundle id read from the new Info.plist" calls_have "plistbuddy -c Print :CFBundleIdentifier $APPS/Notted.app/Contents/Info.plist"
+  check "the line, without a prefix" out_has "$SIG_CHANGED"
+  check "line printed once" test "$(printf '%s\n' "$OUT" | grep -c "$SIG_CHANGED")" = 1
+  check "screen reset before open" call_before "$RESET_SCREEN" "open $APPS/Notted.app"
+  check "microphone reset before open" call_before "$RESET_MIC" "open $APPS/Notted.app"
+  check "new build in place" file_is "$APPS/Notted.app/Contents/MacOS/Notted" new-build
+  finish
+}
+
+test_reset_unreadable() {
+  begin "make install, unreadable installed requirement: reset"
+  install_with - 'identifier "a"'
+  check "exit 0" rc_is 0
+  check "screen reset" calls_have "$RESET_SCREEN"
+  check "microphone reset" calls_have "$RESET_MIC"
+  check "the line" out_has "$SIG_CHANGED"
+  finish
+}
+
+test_reset_first_install() {
+  begin "make install, first install: nothing reset"
+  fresh
+  echo 'identifier "a"' >"$T/new-req"
+  run_install NOTTED_NO_OPEN=0
+  check "exit 0" rc_is 0
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
+test_reset_tccutil_fails() {
+  begin "make install, tccutil fails: logged, install succeeds"
+  fresh
+  existing_app old-build 'cdhash H"1"'
+  echo 'cdhash H"2"' >"$T/new-req"
+  : >"$T/tccutil-fails"
+  run_install NOTTED_NO_OPEN=0
+  check "exit 0" rc_is 0
+  check "screen failure logged" out_has "could not reset the ScreenCapture permission: boom"
+  check "microphone failure logged" out_has "could not reset the Microphone permission: boom"
+  check "both tried" calls_have "$RESET_MIC"
+  check "installed line" out_has "Installed $APPS/Notted.app."
+  check "opened" calls_have "open $APPS/Notted.app"
+  finish
+}
+
+test_reset_rollback() {
+  begin "make install, failed swap: nothing reset"
+  fresh
+  existing_app old-build 'cdhash H"1"'
+  echo 'cdhash H"2"' >"$T/new-req"
+  echo 2 >"$T/mvfail-at"
+  run_install NOTTED_MV="$T/bin/mvfake"
+  check "exit 1" rc_is 1
+  check "unchanged line" out_has "$UNCHANGED"
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
+# ---- the Update Notted installer (internal/integration/install/install.sh) ----
+
+SWAPPER="$root/internal/integration/install/install.sh"
+
+# upd_fresh: a temp world with fake open and permission tools; fake_exe is a signed copy of sleep.
+upd_fresh() {
+  T=$(mktemp -d)
+  T=$(cd "$T" && pwd -P)
+  tmps+=("$T")
+  UAPPS="$T/apps dir"
+  NEWAPP="$T/src/build/bin/Notted.app"
+  mkdir -p "$T/bin" "$UAPPS"
+  export T_FAKE=$T
+  : >"$T/calls"
+  cp /bin/sleep "$T/exe"
+  /usr/bin/codesign -f -s - "$T/exe" >/dev/null 2>&1
+  fake_permission_tools
+  # open launches the app's executable (a sleep), so the installer sees it start
+  fake open 'echo "open $*" >>"$T_FAKE/calls"
+if [ ! -e "$T_FAKE/no-launch" ]; then
+  "$1/Contents/MacOS/Notted" 30 >/dev/null 2>&1 &
+  echo $! >>"$T_FAKE/pids"
+fi'
+  fake mvfake 'n=$(cat "$T_FAKE/mvcount" 2>/dev/null || echo 0)
+n=$((n + 1))
+echo "$n" >"$T_FAKE/mvcount"
+if [ "$n" = "$(cat "$T_FAKE/mvfail-at" 2>/dev/null)" ]; then exit 1; fi
+exec /bin/mv "$@"'
+}
+
+# upd_app <dir> <marker> [requirement]
+upd_app() {
+  mkdir -p "$1/Contents/MacOS"
+  cp "$T/exe" "$1/Contents/MacOS/Notted"
+  echo "$2" >"$1/Contents/marker"
+  echo com.example.test >"$1/Contents/Info.plist"
+  if [ -n "${3:-}" ]; then echo "$3" >"$1/Contents/req"; fi
+}
+
+# run_update [VAR=value ...]: runs the installer, with an already-gone pid to wait for.
+run_update() {
+  local dir="$T/notted-install-x" gone
+  mkdir -p "$dir"
+  cp "$SWAPPER" "$dir/install.sh"
+  /bin/sleep 0 &
+  gone=$!
+  wait "$gone"
+  OUT=$(env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin T_FAKE="$T" NOTTED_OPEN="$T/bin/open" NOTTED_LAUNCH_SETTLE=0 \
+    NOTTED_QUIT_WAIT=1 NOTTED_LAUNCH_WAIT=2 NOTTED_CODESIGN="$T/bin/codesign" NOTTED_TCCUTIL="$T/bin/tccutil" \
+    NOTTED_PLISTBUDDY="$T/bin/plistbuddy" "$@" /bin/bash "$dir/install.sh" "$gone" "$NEWAPP" "$UAPPS/Notted.app" 2>&1)
+  RC=$?
+  if [ -s "$T/pids" ]; then kill -9 $(cat "$T/pids") 2>/dev/null; fi
+}
+
+# update_with <installed requirement|-> <new requirement>
+update_with() {
+  upd_fresh
+  if [ "$1" = - ]; then upd_app "$UAPPS/Notted.app" old; else upd_app "$UAPPS/Notted.app" old "$1"; fi
+  upd_app "$NEWAPP" new "$2"
+  run_update
+}
+
+test_update_reset_equal() {
+  begin "update installer, same requirement: no reset and no extra line"
+  update_with 'identifier "a" and anchor apple' 'identifier "a" and anchor apple'
+  check "exit 0" rc_is 0
+  check "swapped" file_is "$UAPPS/Notted.app/Contents/marker" new
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
+test_update_reset_different() {
+  begin "update installer, another requirement: both permissions reset, one line, before open"
+  update_with 'cdhash H"1"' 'identifier "a" and certificate leaf = H"2"'
+  check "exit 0" rc_is 0
+  check "swapped" file_is "$UAPPS/Notted.app/Contents/marker" new
+  check "screen reset" calls_have "$RESET_SCREEN"
+  check "microphone reset" calls_have "$RESET_MIC"
+  check "the line, prefixed" out_has "install: $SIG_CHANGED"
+  check "line printed once" test "$(printf '%s\n' "$OUT" | grep -c "$SIG_CHANGED")" = 1
+  check "screen reset before open" call_before "$RESET_SCREEN" "open $UAPPS/Notted.app"
+  check "microphone reset before open" call_before "$RESET_MIC" "open $UAPPS/Notted.app"
+  finish
+}
+
+test_update_reset_unreadable() {
+  begin "update installer, unreadable installed requirement: reset"
+  update_with - 'identifier "a"'
+  check "exit 0" rc_is 0
+  check "screen reset" calls_have "$RESET_SCREEN"
+  check "microphone reset" calls_have "$RESET_MIC"
+  check "the line" out_has "install: $SIG_CHANGED"
+  finish
+}
+
+test_update_reset_no_installed_app() {
+  begin "update installer, no installed app: nothing reset"
+  upd_fresh
+  upd_app "$NEWAPP" new 'identifier "a"'
+  run_update
+  check "exit 1 (nothing to swap)" rc_is 1
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
+test_update_reset_tccutil_fails() {
+  begin "update installer, tccutil fails: logged, update succeeds"
+  upd_fresh
+  upd_app "$UAPPS/Notted.app" old 'cdhash H"1"'
+  upd_app "$NEWAPP" new 'cdhash H"2"'
+  : >"$T/tccutil-fails"
+  run_update
+  check "exit 0" rc_is 0
+  check "swapped" file_is "$UAPPS/Notted.app/Contents/marker" new
+  check "screen failure logged" out_has "install: could not reset the ScreenCapture permission: boom"
+  check "microphone failure logged" out_has "install: could not reset the Microphone permission: boom"
+  check "opened" calls_have "open $UAPPS/Notted.app"
+  finish
+}
+
+test_update_reset_rollback() {
+  begin "update installer, failed swap: restored and nothing reset"
+  upd_fresh
+  upd_app "$UAPPS/Notted.app" old 'cdhash H"1"'
+  upd_app "$NEWAPP" new 'cdhash H"2"'
+  echo 2 >"$T/mvfail-at"
+  run_update NOTTED_MV="$T/bin/mvfake"
+  check "exit 1" rc_is 1
+  check "old app back" file_is "$UAPPS/Notted.app/Contents/marker" old
+  check "no tccutil" calls_lack "tccutil"
+  check "no signature line" out_lacks "$SIG_CHANGED"
+  finish
+}
+
 test_script_exists
 test_replace_existing
 test_first_install
@@ -531,6 +784,18 @@ test_signing_missing
 test_signing_present
 test_signing_fails
 test_signing_skipped
+test_reset_equal
+test_reset_different
+test_reset_unreadable
+test_reset_first_install
+test_reset_tccutil_fails
+test_reset_rollback
+test_update_reset_equal
+test_update_reset_different
+test_update_reset_unreadable
+test_update_reset_no_installed_app
+test_update_reset_tccutil_fails
+test_update_reset_rollback
 
 echo "test-install: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then exit 1; fi

@@ -88,6 +88,8 @@ Nothing runs until you click **Update Notted**. A failed pull or build leaves yo
 and shows the output. The installer copies the new app next to the old one, swaps the two with
 renames, and keeps the old copy until the new one has started. Its log is `~/.notted/update.log`.
 
+macOS asks for the microphone and screen recording permissions again only when the app's signature changes. `make install` and **Update Notted** compare the signature of the installed app with the new one, and reset the two permissions only when they differ.
+
 ## What Notted downloads
 
 On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 640 MB for Portuguese `small`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only network call Notted makes; the `claude` program talks to Anthropic on its own. **Update Notted** runs your own git pull, which talks to your clone's remote.

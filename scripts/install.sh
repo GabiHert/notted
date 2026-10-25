@@ -2,7 +2,8 @@
 # make install: checks the Mac, signs, builds and installs Notted, then opens it.
 # Environment (all optional): NOTTED_INSTALL_DIR (default /Applications), NOTTED_HOME (default
 # ~/.notted), NOTTED_SKIP_SIGNING_SETUP=1, NOTTED_NO_OPEN=1, NOTTED_QUIT_WAIT (seconds, default 15),
-# NOTTED_MV (the rename command, default mv).
+# NOTTED_MV (the rename command, default mv), NOTTED_CODESIGN, NOTTED_TCCUTIL, NOTTED_PLISTBUDDY
+# (the macOS tools that read the signature, reset permissions and read the bundle id).
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd -P)
@@ -10,6 +11,9 @@ install_dir=${NOTTED_INSTALL_DIR:-/Applications}
 notted_home=${NOTTED_HOME:-$HOME/.notted}
 quit_wait=${NOTTED_QUIT_WAIT:-15}
 mv_cmd=${NOTTED_MV:-mv}
+codesign_cmd=${NOTTED_CODESIGN:-/usr/bin/codesign}
+tccutil_cmd=${NOTTED_TCCUTIL:-/usr/bin/tccutil}
+plistbuddy_cmd=${NOTTED_PLISTBUDDY:-/usr/libexec/PlistBuddy}
 app="$install_dir/Notted.app"
 staged="$app.new"
 old="$app.old"
@@ -186,10 +190,35 @@ install_failed() {
   exit 1
 }
 
+# requirement <app>: the designated requirement macOS stores a permission against, or nothing.
+requirement() {
+  "$codesign_cmd" -d -r- "$1" 2>/dev/null | sed -n 's/^designated => //p'
+}
+# reset_permissions <app>: macOS keeps a permission with the signature that got it, so after a
+# signature change the stored one never matches and switching it on does nothing. A failure only
+# gets logged.
+reset_permissions() {
+  local id service out
+  echo "the signature changed, so macOS will ask for the microphone and screen recording permissions again"
+  if ! id=$("$plistbuddy_cmd" -c 'Print :CFBundleIdentifier' "$1/Contents/Info.plist" 2>&1) || [ -z "$id" ]; then
+    echo "could not read the bundle id: $id"
+    return 0
+  fi
+  for service in ScreenCapture Microphone; do
+    out=$("$tccutil_cmd" reset "$service" "$id" 2>&1) || echo "could not reset the $service permission: $out"
+  done
+  return 0
+}
+
 mkdir -p "$install_dir" || install_failed
 rm -rf "$staged"
 ditto "$built" "$staged" || install_failed
+reset_needed=0
 if [ -e "$app" ] || [ -L "$app" ]; then
+  # Read the old signature before the swap, while the old app is still at $app.
+  old_req=$(requirement "$app") || old_req=
+  new_req=$(requirement "$built") || new_req=
+  if [ -z "$old_req" ] || [ "$old_req" != "$new_req" ]; then reset_needed=1; fi
   rename "$app" "$old" || install_failed
   if ! rename "$staged" "$app"; then
     if ! rename "$old" "$app"; then
@@ -203,6 +232,7 @@ if [ -e "$app" ] || [ -L "$app" ]; then
 else
   rename "$staged" "$app" || install_failed
 fi
+if [ "$reset_needed" -eq 1 ]; then reset_permissions "$app"; fi
 
 # Save the clone, so Update Notted knows which folder to pull.
 source_dir=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || source_dir=$root

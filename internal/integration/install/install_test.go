@@ -53,7 +53,7 @@ func fakeApp(t *testing.T, dir, marker string) {
 }
 
 type rig struct {
-	root, apps, dest, newApp, fakeOpen, openLog, pidLog string
+	root, apps, dest, newApp, fakeOpen, fakeTccutil, openLog, pidLog string
 }
 
 func newRig(t *testing.T) *rig {
@@ -77,6 +77,10 @@ if [ "${FAKE_OPEN_LAUNCH:-1}" != "0" ]; then
   echo $! >> "$PID_LOG"
 fi
 `, 0o755)
+	// The apps are signed ad hoc, so their requirements differ; a fake tccutil keeps the real one
+	// from resetting anything.
+	r.fakeTccutil = filepath.Join(root, "bin", "tccutil")
+	writeFile(t, r.fakeTccutil, "#!/bin/bash\nexit 0\n", 0o755)
 	t.Cleanup(func() {
 		raw, err := os.ReadFile(r.pidLog)
 		if err != nil {
@@ -92,7 +96,7 @@ fi
 }
 
 func (r *rig) env() []string {
-	return []string{"NOTTED_OPEN=" + r.fakeOpen, "NOTTED_LAUNCH_SETTLE=0", "OPEN_LOG=" + r.openLog, "PID_LOG=" + r.pidLog}
+	return []string{"NOTTED_OPEN=" + r.fakeOpen, "NOTTED_TCCUTIL=" + r.fakeTccutil, "NOTTED_LAUNCH_SETTLE=0", "OPEN_LOG=" + r.openLog, "PID_LOG=" + r.pidLog}
 }
 
 func (r *rig) marker(t *testing.T, app string) string {
