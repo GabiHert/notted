@@ -25,13 +25,13 @@ Notted records a meeting on your Mac (your microphone and the system audio), tra
 5. You accept or reject each suggestion, in the meeting's own Claude Code session.
 
 ```mermaid
-flowchart LR
-    A[Record<br>mic + system audio] --> B[Transcribe<br>locally on your Mac]
-    B --> C[Claude Code<br>summary + suggestions]
-    C --> D{Save to the<br>archive?}
-    D -- you say yes --> E[Commit and push<br>meetings archive]
-    D -- not now --> F[Files stay in the<br>archive folder, uncommitted]
-    E --> G[Accept suggestions<br>in the meeting session]
+flowchart TD
+    A["Record your mic and the system audio"] --> B["Transcribe locally on your Mac"]
+    B --> C["Claude Code writes a summary and suggestions"]
+    C --> D{"Save to the archive?"}
+    D -->|"Yes"| E["Commit and push to the archive"]
+    D -->|"Not now"| F["Files stay in the archive folder, not committed"]
+    E --> G["Accept suggestions in the meeting session"]
     F --> G
 ```
 
