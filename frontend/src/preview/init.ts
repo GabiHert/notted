@@ -69,7 +69,23 @@ export function initPreview(): View {
     case "form-confirm":
     case "form-permission":
     case "form-waiting":
+    case "review-idle":
+    case "review-running":
+    case "review-done":
+      scrollToSuggestions();
       return { kind: "meeting", id: "fx-summarized" };
+    case "session-review-running":
+      return { kind: "meeting", id: "fx-summarized" };
+    case "review-session-open":
+      scrollToSuggestions();
+      autoOpenSession();
+      return { kind: "meeting", id: "fx-summarized" };
+    case "review-error":
+      scrollToSuggestions();
+      autoClickButton("Review suggestions");
+      return { kind: "meeting", id: "fx-summarized" };
+    case "waiting-dot":
+      return { kind: "meeting", id: "fx-ready" };
     case "save-dialog":
     case "save-failed":
       return { kind: "meeting", id: "fx-ready" };
@@ -109,6 +125,30 @@ function autoOpenSession() {
   let tries = 0;
   const timer = window.setInterval(() => {
     const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Open session" && !b.disabled);
+    if (btn) {
+      window.clearInterval(timer);
+      btn.click();
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
+}
+
+// Preview only: bring the Suggestions card to the top of the window so the screenshot shows the review button.
+function scrollToSuggestions() {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const header = Array.from(document.querySelectorAll(".nt-card__header")).find((h) => h.textContent === "Suggestions");
+    if (header) {
+      window.clearInterval(timer);
+      header.scrollIntoView({ block: "start" });
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
+}
+
+// Preview only: press a named button once it is enabled, so a screenshot URL shows what follows.
+function autoClickButton(label: string) {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === label && !b.disabled);
     if (btn) {
       window.clearInterval(timer);
       btn.click();

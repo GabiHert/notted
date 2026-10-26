@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
 import { useOpenForms } from "../forms";
+import { useReview } from "../review";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FormCard } from "./FormCard";
 import { ProjectCard } from "./ProjectCard";
@@ -27,6 +28,8 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
   const loadRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
   const form = useOpenForms().get(meetingId);
+  const review = useReview(meetingId);
+  const [sessionOpen, setSessionOpen] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -37,6 +40,7 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
     setStopping(false);
     setNotCommitted(false);
     setPlan(null);
+    setSessionOpen(false);
     deletedRef.current = false;
     const load = () =>
       deletedRef.current ? Promise.resolve() :
@@ -71,6 +75,11 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
       offExport();
     };
   }, [meetingId]);
+
+  // The review rewrote the suggestions: load them once when it ends done.
+  useEffect(() => {
+    if (review.phase === "done") refresh();
+  }, [review.phase, refresh]);
 
   if (!meeting) return error ? <div className="nt-card nt-card--error" role="alert">
       {error}
@@ -152,8 +161,8 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
       <TranscriptCard segments={segments} follow={meeting.state === "recording"} />
       <ProjectCard meetingId={meetingId} projectKey={meeting.projectKey} hasSession={meeting.hasSession} onChanged={refresh} />
       <SummaryCard meeting={meeting} notCommitted={notCommitted} onRefresh={refresh} />
-      <SuggestionsCard suggestionsMd={meeting.suggestionsMd} />
-      <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} />
+      <SuggestionsCard suggestionsMd={meeting.suggestionsMd} phase={review.phase} message={review.message} sessionOpen={sessionOpen} onReview={review.start} />
+      <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} reviewRunning={review.phase === "running"} onOpenChange={setSessionOpen} />
       <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
       {plan && (
         <ConfirmDialog

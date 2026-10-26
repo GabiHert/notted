@@ -23,3 +23,15 @@
 .nt-summary__note--bare {
   margin: 0;
 }
+
+.nt-review {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.nt-review__reply {
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}

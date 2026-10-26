@@ -77,3 +77,13 @@
   font-size: 13px;
   color: var(--fg2);
 }
+
+.nt-row__ask {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 6px;
+  vertical-align: middle;
+}

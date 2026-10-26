@@ -16,7 +16,7 @@ function Harness({ notCommitted = false }: { notCommitted?: boolean }) {
   return (
     <>
       <SummaryCard meeting={m} notCommitted={notCommitted} onRefresh={refresh} />
-      <SuggestionsCard suggestionsMd={m.suggestionsMd} />
+      <SuggestionsCard suggestionsMd={m.suggestionsMd} phase="idle" message="" sessionOpen={false} onReview={() => {}} />
     </>
   );
 }

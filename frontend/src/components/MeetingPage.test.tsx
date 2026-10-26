@@ -1,8 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MeetingPage } from "./MeetingPage";
-import { GetMeeting, GetTranscript, ListOpenForms, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
+import { GetMeeting, GetReviewState, GetTranscript, ListOpenForms, ReviewSuggestions, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
+vi.mock("@xterm/xterm", () => ({ Terminal: class { cols = 80; rows = 24; open() {} loadAddon() {} attachCustomKeyEventHandler() {} focus() {} write() {} onData() { return { dispose() {} }; } onResize() { return { dispose() {} }; } dispose() {} } }));
+vi.mock("@xterm/addon-fit", () => ({ FitAddon: class { fit() {} } }));
+beforeAll(() => { vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} }); });
 
 beforeEach(() => {
   resetBindings();
@@ -116,4 +119,65 @@ test("an open form shows the card under the header and leaves when the list empt
   ListOpenForms.mockResolvedValue([]);
   await act(async () => emit("ask:changed", { meetingId: "m1" }));
   expect(screen.queryByRole("region", { name: "Waiting for you" })).not.toBeInTheDocument();
+});
+
+describe("review suggestions", () => {
+  const withSuggestions = (over: Record<string, unknown> = {}) => meeting({ state: "summarized", hasSession: true, suggestionsMd: "# Suggestions\n\n- [ ] Send the draft", ...over });
+
+  test("a review already running at load disables the button", async () => {
+    GetReviewState.mockResolvedValue({ running: true });
+    GetMeeting.mockResolvedValue(withSuggestions());
+    render(<MeetingPage meetingId="m1" />);
+    expect(await screen.findByText("Reviewing suggestions… Claude Code asks here when it needs you.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
+    expect(GetReviewState).toHaveBeenCalledWith("m1");
+  });
+
+  test("a done event reloads the meeting once and shows the reply", async () => {
+    GetMeeting.mockResolvedValue(withSuggestions());
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("button", { name: "Review suggestions" });
+    const before = GetMeeting.mock.calls.length;
+    await act(async () => emit("review:state", { meetingId: "m1", state: "done", message: "S-01 accepted" }));
+    expect(await screen.findByText("Review finished.")).toBeInTheDocument();
+    expect(screen.getByText("S-01 accepted")).toBeInTheDocument();
+    expect(GetMeeting.mock.calls.length).toBe(before + 1);
+  });
+
+  test("an event for another meeting is ignored", async () => {
+    GetMeeting.mockResolvedValue(withSuggestions());
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("button", { name: "Review suggestions" });
+    await act(async () => emit("review:state", { meetingId: "other", state: "running" }));
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+  });
+
+  test("clicking runs the review; a refusal shows its message", async () => {
+    GetMeeting.mockResolvedValue(withSuggestions());
+    ReviewSuggestions.mockRejectedValue(new Error("Close the Claude Code session on this page first."));
+    render(<MeetingPage meetingId="m1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Review suggestions" }));
+    expect(ReviewSuggestions).toHaveBeenCalledWith("m1");
+    expect(await screen.findByText("Close the Claude Code session on this page first.")).toBeInTheDocument();
+  });
+
+  test("an open session disables the button, and closing it frees the button", async () => {
+    GetMeeting.mockResolvedValue(withSuggestions());
+    render(<MeetingPage meetingId="m1" />);
+    const open = await screen.findByRole("button", { name: "Open session" });
+    await waitFor(() => expect(open).toBeEnabled());
+    fireEvent.click(open);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled());
+    expect(screen.getByText("Close the Claude Code session below first. The review and the session use the same conversation.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close session" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled());
+  });
+
+  test("a running review disables Open session with its reason", async () => {
+    GetReviewState.mockResolvedValue({ running: true });
+    GetMeeting.mockResolvedValue(withSuggestions());
+    render(<MeetingPage meetingId="m1" />);
+    expect(await screen.findByText("Suggestions are being reviewed for this meeting. Open the session when the review finishes.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open session" })).toBeDisabled();
+  });
 });

@@ -1,0 +1,66 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { SuggestionsCard } from "./SuggestionsCard";
+
+type Props = Parameters<typeof SuggestionsCard>[0];
+const base: Props = { suggestionsMd: "# Suggestions\n\n- [ ] Send the draft", phase: "idle", message: "", sessionOpen: false, onReview: () => {} };
+const show = (over: Partial<Props> = {}) => render(<SuggestionsCard {...base} {...over} />);
+
+test("no suggestions: the old text and no button", () => {
+  show({ suggestionsMd: "" });
+  expect(screen.getByText("No suggestions yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Review suggestions" })).not.toBeInTheDocument();
+});
+
+test("idle: enabled button with the helper note", () => {
+  show();
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+  expect(screen.getByText("Claude Code shows the suggestions here as a form. Nothing changes until you answer.")).toBeInTheDocument();
+});
+
+test("clicking calls onReview", () => {
+  const onReview = vi.fn();
+  show({ onReview });
+  fireEvent.click(screen.getByRole("button", { name: "Review suggestions" }));
+  expect(onReview).toHaveBeenCalledTimes(1);
+});
+
+test("running: disabled with the running note", () => {
+  show({ phase: "running" });
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
+  expect(screen.getByText("Reviewing suggestions… Claude Code asks here when it needs you.")).toBeInTheDocument();
+});
+
+test("session open: disabled with the close-first note", () => {
+  show({ sessionOpen: true });
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
+  expect(screen.getByText("Close the Claude Code session below first. The review and the session use the same conversation.")).toBeInTheDocument();
+});
+
+test("running wins over session open", () => {
+  show({ phase: "running", sessionOpen: true });
+  expect(screen.getByText(/^Reviewing suggestions…/)).toBeInTheDocument();
+  expect(screen.queryByText(/^Close the Claude Code session below first/)).not.toBeInTheDocument();
+});
+
+test("done: finished note and the reply, rendered untrusted", () => {
+  const { container } = show({ phase: "done", message: "S-01 accepted\n\n<script>x</script> [a link](other.md)" });
+  expect(screen.getByText("Review finished.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+  const reply = container.querySelector(".nt-review__reply")!;
+  expect(reply).toHaveTextContent("S-01 accepted");
+  expect(reply.querySelector("script")).toBeNull();
+  expect(reply.querySelector("a")).toBeNull();
+});
+
+test("done with an empty reply: no reply block", () => {
+  const { container } = show({ phase: "done", message: "" });
+  expect(screen.getByText("Review finished.")).toBeInTheDocument();
+  expect(container.querySelector(".nt-review__reply")).toBeNull();
+});
+
+test("error: alert with the message and no note", () => {
+  show({ phase: "error", message: "Close the Claude Code session on this page first." });
+  expect(screen.getByRole("alert")).toHaveTextContent("Close the Claude Code session on this page first.");
+  expect(screen.queryByText(/^Claude Code shows the suggestions here/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+});

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { EventsOn, ListMeetings, type wails } from "../api/bindings";
+import { useOpenForms } from "../forms";
 import { formatDate, languageName, stateName } from "../format";
 import "./Sidebar.css";
 
@@ -10,6 +11,7 @@ type Props = { view: View; onSelect: (v: View) => void };
 export function Sidebar({ view, onSelect }: Props) {
   const [meetings, setMeetings] = useState<wails.MeetingDTO[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const forms = useOpenForms();
 
   const refresh = useCallback(() => {
     ListMeetings()
@@ -44,7 +46,10 @@ export function Sidebar({ view, onSelect }: Props) {
               aria-current={selected ? "true" : undefined}
               onClick={() => onSelect({ kind: "meeting", id: m.id })}
             >
-              <span className="nt-row__title">{m.title}</span>
+              <span className="nt-row__title">
+                {m.title}
+                {forms.has(m.id) && <span className="nt-row__ask" role="img" aria-label="Waiting for you" title="Waiting for you" />}
+              </span>
               <span className="nt-row__meta">
                 <span className={"nt-dot" + (m.state === "recording" ? " nt-dot--rec" : "")} aria-hidden="true" />
                 <span>{`${formatDate(m.startedAt)} · ${languageName(m.language)} · ${stateName(m.state)}`}</span>
