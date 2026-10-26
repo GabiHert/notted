@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MeetingPage } from "./MeetingPage";
-import { GetMeeting, GetTranscript, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
+import { GetMeeting, GetTranscript, ListOpenForms, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -103,4 +103,17 @@ test("shows the model banner when the language's models are missing", async () =
   GetMeeting.mockResolvedValue(meeting({ state: "transcribing" }));
   render(<MeetingPage meetingId="m1" />);
   expect(await screen.findByText("Speech models")).toBeInTheDocument();
+});
+
+test("an open form shows the card under the header and leaves when the list empties", async () => {
+  GetMeeting.mockResolvedValue(meeting());
+  const f = { id: "f1", meetingId: "m1", kind: "ask", title: "Where next?", queued: 0, pieces: [{ kind: "text", id: "t", markdown: "hi", html: "", question: "", options: [], placeholder: "", multiline: false, required: false, yesLabel: "Yes", noLabel: "No" }] };
+  ListOpenForms.mockResolvedValue([f] as any);
+  const { container } = render(<MeetingPage meetingId="m1" />);
+  expect(await screen.findByRole("region", { name: "Waiting for you" })).toBeInTheDocument();
+  const head = container.querySelector("header")!;
+  expect(head.nextElementSibling).toBe(screen.getByRole("region", { name: "Waiting for you" }));
+  ListOpenForms.mockResolvedValue([]);
+  await act(async () => emit("ask:changed", { meetingId: "m1" }));
+  expect(screen.queryByRole("region", { name: "Waiting for you" })).not.toBeInTheDocument();
 });

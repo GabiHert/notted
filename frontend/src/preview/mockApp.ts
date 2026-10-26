@@ -1,5 +1,6 @@
 // Preview-mode stand-in for wailsjs/go/wails/App: fixture data only, generic names.
 import { emit } from "./mockRuntime";
+import { fixtureFor } from "./formFixtures";
 import { readScreen } from "./params";
 
 const screen = readScreen();
@@ -351,7 +352,8 @@ export async function DeleteMeeting(_id: string) {
 }
 export async function DownloadModels(_language: string) {}
 export async function ListOpenForms() {
-  return [];
+  const f = fixtureFor(screen);
+  return f ? [f] : [];
 }
 export async function AnswerForm(_formId: string, _answers: Record<string, unknown>, _note: string) {}
 export async function DismissForm(_formId: string, _note: string) {}

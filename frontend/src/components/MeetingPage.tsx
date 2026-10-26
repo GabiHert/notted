@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
+import { useOpenForms } from "../forms";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { FormCard } from "./FormCard";
 import { ProjectCard } from "./ProjectCard";
 import { ModelBanner } from "./ModelBanner";
 import { RecordingPill } from "./RecordingPill";
@@ -24,6 +26,7 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
   const deletedRef = useRef(false); // set once the meeting is gone: later events for it are ignored
   const loadRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
+  const form = useOpenForms().get(meetingId);
 
   useEffect(() => {
     let live = true;
@@ -123,6 +126,7 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
           </button>
         </div>
       </header>
+      {form && <FormCard key={form.id} form={form} />}
       {meeting.state === "transcribing" && (
         <div className="nt-meeting__busy">
           <span>Transcribing…</span>

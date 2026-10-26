@@ -56,3 +56,7 @@
   border: 1px solid var(--border);
   padding: 4px 8px;
 }
+
+.nt-md__link {
+  text-decoration: underline dotted;
+}

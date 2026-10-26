@@ -61,6 +61,14 @@ export function initPreview(): View {
       return { kind: "meeting", id: "fx-ready" };
     case "summarized":
     case "project-locked":
+    case "form-text":
+    case "form-html":
+    case "form-choice":
+    case "form-multi":
+    case "form-input":
+    case "form-confirm":
+    case "form-permission":
+    case "form-waiting":
       return { kind: "meeting", id: "fx-summarized" };
     case "save-dialog":
     case "save-failed":
