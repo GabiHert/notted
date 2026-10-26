@@ -58,9 +58,10 @@ export function App({ initialView }: { initialView?: View }) {
     else setView(v);
   };
   // A click on a form notification: the backend has shown the window; open that meeting like a sidebar click.
+  const revealSeq = useRef(0);
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
-  useEffect(() => EventsOn("ask:open", (e: { meetingId: string }) => navigateRef.current({ kind: "meeting", id: e.meetingId })), []);
+  useEffect(() => EventsOn("ask:open", (e: { meetingId: string }) => navigateRef.current({ kind: "meeting", id: e.meetingId, reveal: ++revealSeq.current })), []);
   // After a delete: the newest meeting left, or New recording when none is.
   const leaveDeleted = (warning: string) => {
     setMenuError(warning);
@@ -88,7 +89,7 @@ export function App({ initialView }: { initialView?: View }) {
                 }}
               />
             ) : view.kind === "meeting" ? (
-              <MeetingPage meetingId={view.id} onDeleted={leaveDeleted} />
+              <MeetingPage meetingId={view.id} revealSeq={view.reveal} onDeleted={leaveDeleted} />
             ) : (
               <SettingsView onDirtyPath={setDirtyPath} />
             )}

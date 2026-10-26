@@ -86,12 +86,20 @@ function afterOpen(fn: () => void) {
 if (screen === "summarizing") {
   afterOpen(() => emit("summary:state", { meetingId: "fx-ready", pass: "suggestions", state: "running" }));
 }
-if (screen === "review-done") {
+const longReply =
+  "S-01 accepted: wrote meetings/2026-10-25-weekly-sync/tasks/export-the-monthly-report-as-csv-for-the-finance-team-before-the-quarterly-close.md\n\nS-02 accepted: committed. The hook printed:\n\n```\npre-commit-hook: checking meetings/2026-10-25-weekly-sync/suggestions.md and meetings/2026-10-25-weekly-sync/summary.md ............................................. Passed\n```\n\nS-03 rejected";
+let formArrived = false;
+if (screen === "review-form-arrives")
+  setTimeout(() => {
+    formArrived = true;
+    emit("ask:changed", { meetingId: "fx-summarized" });
+  }, 1500);
+if (screen === "review-done" || screen === "review-done-long") {
   afterOpen(() =>
     emit("review:state", {
       meetingId: "fx-summarized",
       state: "done",
-      message: "S-01 accepted: wrote tasks/export.md\nS-02 accepted: added a line to tasks/login.md\nS-03 rejected",
+      message: screen === "review-done-long" ? longReply : "S-01 accepted: wrote tasks/export.md\nS-02 accepted: added a line to tasks/login.md\nS-03 rejected",
     }),
   );
 }
@@ -329,7 +337,7 @@ export async function ReviewSuggestions(_id: string) {
   if (screen === "review-error") throw new Error("Close the Claude Code session on this page first. The review and the session use the same conversation.");
 }
 export async function GetReviewState(_id: string) {
-  return { running: screen === "review-running" || screen === "session-review-running" };
+  return { running: screen === "review-running" || screen === "review-form-arrives" || screen === "session-review-running" };
 }
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
@@ -363,6 +371,7 @@ export async function DeleteMeeting(_id: string) {
 }
 export async function DownloadModels(_language: string) {}
 export async function ListOpenForms() {
+  if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];
   const f = fixtureFor(screen === "waiting-dot" ? "form-choice" : screen);
   return f ? [f] : [];
 }

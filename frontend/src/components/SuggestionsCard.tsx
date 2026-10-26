@@ -16,7 +16,7 @@ export function SuggestionsCard({ suggestionsMd, phase, message, sessionOpen, on
               Review suggestions
             </button>
             {running ? (
-              <p className="nt-session__note">Reviewing suggestions… Claude Code asks here when it needs you.</p>
+              <p className="nt-session__note">Reviewing suggestions… When Claude Code needs you, a form appears at the top of this page.</p>
             ) : sessionOpen ? (
               <p className="nt-session__note">Close the Claude Code session below first. The review and the session use the same conversation.</p>
             ) : phase === "done" ? (
@@ -33,7 +33,7 @@ export function SuggestionsCard({ suggestionsMd, phase, message, sessionOpen, on
                 {message}
               </div>
             ) : (
-              <p className="nt-session__note">Claude Code shows the suggestions here as a form. Nothing changes until you answer.</p>
+              <p className="nt-session__note">Claude Code shows the suggestions as a form at the top of this page. Nothing changes until you answer.</p>
             )}
           </div>
           <MarkdownView content={suggestionsMd} />

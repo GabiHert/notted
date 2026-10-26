@@ -191,7 +191,7 @@ You can also do it in the terminal: the **Claude Code session** card continues t
 
 ### Forms
 
-Claude Code can ask you something through Notted with its `ask` tool, in any session Notted starts. The form shows at the top of the meeting's page under **Waiting for you**, and the meeting gets a dot in the list. If the Notted window is hidden, a notification appears; click it to open the meeting. A form can hold text, a static HTML view (no scripts, no network), one choice, several choices, a text field and a yes-or-no question, plus a **Note**. **Not now** answers that you did not decide, and Claude does not act on it. One form per meeting is open at a time; the next one waits. Quitting Notted answers every open form with **Not now**.
+Claude Code can ask you something through Notted with its `ask` tool, in any session Notted starts. The form shows at the top of the meeting's page under **Waiting for you**, and the meeting gets a dot in the list. If you are on that meeting's page, Notted scrolls up to the form and puts the keyboard focus on it, unless you are typing in the session's terminal. If the Notted window is hidden, a notification appears; click it to open the meeting with the form in view. A form can hold text, a static HTML view (no scripts, no network), one choice, several choices, a text field and a yes-or-no question, plus a **Note**. **Not now** answers that you did not decide, and Claude does not act on it. One form per meeting is open at a time; the next one waits. Quitting Notted answers every open form with **Not now**.
 
 ### Delete a meeting
 

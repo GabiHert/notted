@@ -32,6 +32,14 @@
   margin-bottom: 12px;
 }
 .nt-review__reply {
+  align-self: stretch;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   border-left: 2px solid var(--border);
   padding-left: 10px;
+}
+.nt-review__reply .nt-md pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { AnswerForm, DismissForm, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
 import { FormPiece, type Answer } from "./FormPiece";
@@ -6,7 +6,7 @@ import "./FormCard.css";
 
 const answerable = (p: wails.FormPieceDTO) => p.kind === "choice" || p.kind === "multi" || p.kind === "input" || p.kind === "confirm";
 
-export function FormCard({ form }: { form: wails.OpenFormDTO }) {
+export function FormCard({ form, sectionRef }: { form: wails.OpenFormDTO; sectionRef?: Ref<HTMLElement> }) {
   const [values, setValues] = useState<Record<string, Answer>>({});
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
@@ -42,7 +42,7 @@ export function FormCard({ form }: { form: wails.OpenFormDTO }) {
   };
 
   return (
-    <section className="nt-card nt-formcard" aria-label="Waiting for you">
+    <section className="nt-card nt-formcard" aria-label="Waiting for you" tabIndex={-1} ref={sectionRef}>
       <div className="nt-card__header">{form.kind === "permission" ? "Waiting for you · Permission" : "Waiting for you"}</div>
       <h2 className="nt-form__title">{form.title}</h2>
       {form.queued > 0 && (

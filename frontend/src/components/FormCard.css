@@ -21,3 +21,7 @@
 }
 .nt-form__frame { width: 100%; height: 320px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--card); }
 .nt-formcard .nt-md pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.nt-formcard {
+  scroll-margin: 16px 0;
+}

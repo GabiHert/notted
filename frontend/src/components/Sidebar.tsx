@@ -4,7 +4,7 @@ import { useOpenForms } from "../forms";
 import { formatDate, languageName, stateName } from "../format";
 import "./Sidebar.css";
 
-export type View = { kind: "new" } | { kind: "meeting"; id: string } | { kind: "settings" };
+export type View = { kind: "new" } | { kind: "meeting"; id: string; reveal?: number } | { kind: "settings" };
 
 type Props = { view: View; onSelect: (v: View) => void };
 

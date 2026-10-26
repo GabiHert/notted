@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { FormCard } from "./FormCard";
 import { AnswerForm, DismissForm, resetBindings } from "../test/bindingsMock";
@@ -136,4 +137,12 @@ test("a failed call shows an alert and re-enables", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("The session already ended.");
   expect(screen.getByRole("button", { name: "Send" })).toBeEnabled();
   expect(screen.getByRole("button", { name: "Not now" })).toBeEnabled();
+});
+
+test("the section is focusable by script, named, and receives the sectionRef", () => {
+  const ref = createRef<HTMLElement>();
+  render(<FormCard form={form([choice])} sectionRef={ref} />);
+  const region = screen.getByRole("region", { name: "Waiting for you" });
+  expect(region).toHaveAttribute("tabindex", "-1");
+  expect(ref.current).toBe(region);
 });

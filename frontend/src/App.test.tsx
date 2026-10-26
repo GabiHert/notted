@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
-import { DeleteMeeting, GetMeeting, GetSettings, SetWindowVisible, StartRecording, emit, ListInstructionFiles, ListMeetings, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
+import { DeleteMeeting, GetMeeting, GetSettings, SetWindowVisible, StartRecording, emit, ListInstructionFiles, ListMeetings, ListOpenForms, ReadInstructionFile, meeting, resetBindings } from "./test/bindingsMock";
 
 vi.mock("./api/bindings", () => import("./test/bindingsMock"));
 vi.mock("@uiw/react-codemirror", () => import("./test/codemirrorMock"));
@@ -266,5 +266,66 @@ describe("window visibility and notification clicks", () => {
     expect(within(screen.getByRole("dialog")).getByRole("heading", { name: "Discard unsaved changes?" })).toBeInTheDocument();
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Discard" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Newest" })).toBeInTheDocument();
+  });
+
+  describe("bringing a waiting form into view", () => {
+    let scrolled: Element[];
+    const form = (meetingId: string) => ({ id: "f-" + meetingId, meetingId, kind: "ask", title: "Q", queued: 0, pieces: [] }) as any;
+    beforeEach(() => {
+      scrolled = [];
+      Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
+        scrolled.push(this);
+      });
+    });
+    afterEach(() => {
+      delete (Element.prototype as any).scrollIntoView;
+    });
+
+    test("a notification click scrolls to the card of that meeting", async () => {
+      ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" }), meeting({ id: "m1", title: "Older" })]);
+      GetMeeting.mockImplementation(async (id: string) => meeting({ id, title: id === "m2" ? "Newest" : "Older" }));
+      ListOpenForms.mockResolvedValue([form("m1")] as any);
+      render(<App />);
+      await screen.findByRole("heading", { level: 1, name: "Newest" });
+      await act(async () => emit("ask:open", { meetingId: "m1" }));
+      await screen.findByRole("heading", { level: 1, name: "Older" });
+      await screen.findByRole("region", { name: "Waiting for you" });
+      await act(async () => {});
+      expect(scrolled).toHaveLength(1);
+      expect(scrolled[0]).toBe(screen.getByRole("region", { name: "Waiting for you" }));
+      await act(async () => emit("ask:open", { meetingId: "m1" }));
+      await act(async () => {});
+      expect(scrolled).toHaveLength(2);
+    });
+
+    test("a sidebar click on a meeting with a waiting form does not scroll", async () => {
+      ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" }), meeting({ id: "m1", title: "Older" })]);
+      GetMeeting.mockImplementation(async (id: string) => meeting({ id, title: id === "m2" ? "Newest" : "Older" }));
+      ListOpenForms.mockResolvedValue([form("m1")] as any);
+      render(<App />);
+      await screen.findByRole("heading", { level: 1, name: "Newest" });
+      fireEvent.click(await screen.findByText("Older"));
+      await screen.findByRole("heading", { level: 1, name: "Older" });
+      await screen.findByRole("region", { name: "Waiting for you" });
+      await act(async () => {});
+      expect(scrolled).toHaveLength(0);
+    });
+
+    test("after Discard, the card of the meeting is scrolled into view once", async () => {
+      ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" })]);
+      GetMeeting.mockResolvedValue(meeting({ id: "m2", title: "Newest" }));
+      ListOpenForms.mockResolvedValue([form("m2")] as any);
+      ListInstructionFiles.mockResolvedValue([{ path: "instructions/projects/acme.md", kind: "project", readOnly: false }]);
+      ReadInstructionFile.mockResolvedValue("# Acme");
+      render(<App initialView={{ kind: "settings" }} />);
+      fireEvent.click(await screen.findByRole("button", { name: /^acme\.md/ }));
+      fireEvent.change(await screen.findByLabelText("File contents"), { target: { value: "edited" } });
+      await screen.findByText("Unsaved changes");
+      await act(async () => emit("ask:open", { meetingId: "m2" }));
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Discard" }));
+      await screen.findByRole("region", { name: "Waiting for you" });
+      await act(async () => {});
+      expect(scrolled).toHaveLength(1);
+    });
   });
 });

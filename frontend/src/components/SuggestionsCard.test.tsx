@@ -14,7 +14,7 @@ test("no suggestions: the old text and no button", () => {
 test("idle: enabled button with the helper note", () => {
   show();
   expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
-  expect(screen.getByText("Claude Code shows the suggestions here as a form. Nothing changes until you answer.")).toBeInTheDocument();
+  expect(screen.getByText("Claude Code shows the suggestions as a form at the top of this page. Nothing changes until you answer.")).toBeInTheDocument();
 });
 
 test("clicking calls onReview", () => {
@@ -27,7 +27,7 @@ test("clicking calls onReview", () => {
 test("running: disabled with the running note", () => {
   show({ phase: "running" });
   expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
-  expect(screen.getByText("Reviewing suggestions… Claude Code asks here when it needs you.")).toBeInTheDocument();
+  expect(screen.getByText("Reviewing suggestions… When Claude Code needs you, a form appears at the top of this page.")).toBeInTheDocument();
 });
 
 test("session open: disabled with the close-first note", () => {
@@ -63,4 +63,11 @@ test("error: alert with the message and no note", () => {
   expect(screen.getByRole("alert")).toHaveTextContent("Close the Claude Code session on this page first.");
   expect(screen.queryByText(/^Claude Code shows the suggestions here/)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+});
+
+test("done: the reply's Markdown sits inside the reply block", () => {
+  const { container } = show({ phase: "done", message: "Done:\n\n```\nhook output\n```" });
+  const reply = container.querySelector(".nt-review__reply")!;
+  expect(reply.parentElement).toBe(container.querySelector(".nt-review"));
+  expect(reply.querySelector(".nt-md pre")).not.toBeNull();
 });

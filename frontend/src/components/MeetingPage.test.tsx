@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MeetingPage } from "./MeetingPage";
-import { GetMeeting, GetReviewState, GetTranscript, ListOpenForms, ReviewSuggestions, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
+import { GetDeletePlan, GetMeeting, GetReviewState, GetTranscript, ListOpenForms, ReviewSuggestions, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 vi.mock("@xterm/xterm", () => ({ Terminal: class { cols = 80; rows = 24; open() {} loadAddon() {} attachCustomKeyEventHandler() {} focus() {} write() {} onData() { return { dispose() {} }; } onResize() { return { dispose() {} }; } dispose() {} } }));
@@ -116,7 +116,7 @@ test("an open form shows the card under the header and leaves when the list empt
   expect(await screen.findByRole("region", { name: "Waiting for you" })).toBeInTheDocument();
   const head = container.querySelector("header")!;
   expect(head.nextElementSibling).toBe(screen.getByRole("region", { name: "Waiting for you" }));
-  ListOpenForms.mockResolvedValue([]);
+  ListOpenForms.mockResolvedValue([] as any);
   await act(async () => emit("ask:changed", { meetingId: "m1" }));
   expect(screen.queryByRole("region", { name: "Waiting for you" })).not.toBeInTheDocument();
 });
@@ -128,7 +128,7 @@ describe("review suggestions", () => {
     GetReviewState.mockResolvedValue({ running: true });
     GetMeeting.mockResolvedValue(withSuggestions());
     render(<MeetingPage meetingId="m1" />);
-    expect(await screen.findByText("Reviewing suggestions… Claude Code asks here when it needs you.")).toBeInTheDocument();
+    expect(await screen.findByText("Reviewing suggestions… When Claude Code needs you, a form appears at the top of this page.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
     expect(GetReviewState).toHaveBeenCalledWith("m1");
   });
@@ -179,5 +179,198 @@ describe("review suggestions", () => {
     render(<MeetingPage meetingId="m1" />);
     expect(await screen.findByText("Suggestions are being reviewed for this meeting. Open the session when the review finishes.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open session" })).toBeDisabled();
+  });
+});
+
+describe("bringing a new form into view", () => {
+  let scrolled: Element[];
+  let calls: unknown[];
+  let reduce: boolean;
+  const mkForm = (id: string, meetingId = "m1") => ({ id, meetingId, kind: "ask", title: "Where next?", queued: 0, pieces: [{ kind: "text", id: "t", markdown: "hi", html: "", question: "", options: [], placeholder: "", multiline: false, required: false, yesLabel: "Yes", noLabel: "No" }] }) as any;
+  const region = () => screen.getByRole("region", { name: "Waiting for you" });
+  const arrive = async (...forms: unknown[]) => {
+    ListOpenForms.mockResolvedValue(forms as any);
+    await act(async () => emit("ask:changed", { meetingId: "m1" }));
+  };
+
+  beforeEach(() => {
+    scrolled = [];
+    calls = [];
+    reduce = false;
+    (window as any).matchMedia = (q: string) => ({ matches: reduce && q === "(prefers-reduced-motion: reduce)", media: q });
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element, arg?: unknown) {
+      scrolled.push(this);
+      calls.push(arg);
+    });
+    GetMeeting.mockImplementation(async (id: string) => meeting({ id }));
+  });
+  afterEach(() => {
+    delete (window as any).matchMedia;
+    delete (Element.prototype as any).scrollIntoView;
+  });
+
+  test("1. a form already open at load: no scroll, no focus", async () => {
+    ListOpenForms.mockResolvedValue([mkForm("f1")] as any);
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(0);
+    expect(region()).not.toHaveFocus();
+  });
+
+  test("1b. the first list that arrives after the meeting rendered is not news", async () => {
+    let release: (v: unknown[]) => void = () => {};
+    ListOpenForms.mockReturnValue(new Promise((r) => (release = r)) as any);
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    await act(async () => release([mkForm("f1")]));
+    await screen.findByRole("region", { name: "Waiting for you" });
+    expect(scrolled).toHaveLength(0);
+    expect(region()).not.toHaveFocus();
+  });
+
+  test("2. a new form while viewing scrolls smoothly to the card and focuses it", async () => {
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    const focusSpy = vi.spyOn(HTMLElement.prototype, "focus");
+    try {
+      await arrive(mkForm("f1"));
+      expect(scrolled).toHaveLength(1);
+      expect(scrolled[0]).toBe(region());
+      expect(calls[0]).toEqual({ behavior: "smooth", block: "nearest" });
+      expect(region()).toHaveFocus();
+      const i = focusSpy.mock.contexts.indexOf(region());
+      expect(i).toBeGreaterThanOrEqual(0);
+      expect(focusSpy.mock.calls[i][0]).toEqual({ preventScroll: true });
+    } finally {
+      focusSpy.mockRestore();
+    }
+  });
+
+  test("3. reduced motion scrolls at once", async () => {
+    reduce = true;
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    await arrive(mkForm("f1"));
+    expect(calls).toEqual([{ behavior: "auto", block: "nearest" }]);
+  });
+
+  test("4. the next queued form is brought into view too", async () => {
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    await arrive(mkForm("f1"));
+    await arrive(mkForm("f2"));
+    expect(scrolled).toHaveLength(2);
+    expect(scrolled[1]).toBe(region());
+    expect(region()).toHaveFocus();
+  });
+
+  test("5. a reload or re-render with the same form does not scroll again", async () => {
+    render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    await arrive(mkForm("f1"));
+    await arrive(mkForm("f1"));
+    await act(async () => emit("recording:state", { meetingId: "m1", state: "ready" }));
+    await act(async () => emit("review:state", { meetingId: "m1", state: "done", message: "" }));
+    expect(scrolled).toHaveLength(1);
+  });
+
+  test("6. navigating to a meeting whose form is already open does not scroll", async () => {
+    const { rerender } = render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2")] as any);
+    await act(async () => emit("ask:changed", { meetingId: "m2" }));
+    rerender(<MeetingPage meetingId="m2" />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(0);
+    expect(region()).not.toHaveFocus();
+  });
+
+  test("7. focus stays in the terminal, the page still scrolls", async () => {
+    GetMeeting.mockImplementation(async (id: string) => meeting({ id, state: "summarized", hasSession: true, suggestionsMd: "# S" }));
+    render(<MeetingPage meetingId="m1" />);
+    const open = await screen.findByRole("button", { name: "Open session" });
+    await waitFor(() => expect(open).toBeEnabled());
+    fireEvent.click(open);
+    const term = await screen.findByTestId("terminal");
+    const ta = document.createElement("textarea");
+    term.appendChild(ta);
+    ta.focus();
+    await arrive(mkForm("f1"));
+    expect(scrolled).toHaveLength(1);
+    expect(ta).toHaveFocus();
+  });
+
+  test("8. focus stays in a dialog, the page still scrolls", async () => {
+    GetDeletePlan.mockResolvedValue({ audioFiles: 1, archiveFolder: "" });
+    render(<MeetingPage meetingId="m1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete meeting" }));
+    await screen.findByRole("dialog");
+    await arrive(mkForm("f1"));
+    expect(scrolled).toHaveLength(1);
+    expect(document.activeElement!.closest('[role="dialog"]')).not.toBeNull();
+  });
+
+  test("9. a notification click reveals the card of a form already open, once", async () => {
+    const { rerender } = render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2")] as any);
+    await act(async () => emit("ask:changed", { meetingId: "m2" }));
+    rerender(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(1);
+    expect(scrolled[0]).toBe(region());
+    expect(region()).toHaveFocus();
+    rerender(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await act(async () => emit("ask:changed", { meetingId: "m2" }));
+    expect(scrolled).toHaveLength(1);
+  });
+
+  test("9b. a handled reveal number is not used for a later meeting", async () => {
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2"), mkForm("f5", "m5")] as any);
+    const { rerender } = render(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(1);
+    rerender(<MeetingPage meetingId="m5" revealSeq={1} />);
+    await act(async () => {});
+    await screen.findByRole("region", { name: "Waiting for you" });
+    expect(scrolled).toHaveLength(1);
+  });
+
+  test("10. a second notification click for the meeting on screen reveals again", async () => {
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2")] as any);
+    const { rerender } = render(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(1);
+    rerender(<MeetingPage meetingId="m2" revealSeq={2} />);
+    await act(async () => {});
+    expect(scrolled).toHaveLength(2);
+  });
+
+  test("10b. dropping the reveal number while the same form stays open does not scroll again", async () => {
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2")] as any);
+    const { rerender } = render(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await screen.findByRole("region", { name: "Waiting for you" });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(1);
+    rerender(<MeetingPage meetingId="m2" />);
+    await act(async () => {});
+    expect(scrolled).toHaveLength(1);
+  });
+
+  test("11. a notification click with no open form does nothing, and is not kept for later", async () => {
+    const { rerender } = render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("heading", { level: 1 });
+    rerender(<MeetingPage meetingId="m2" revealSeq={1} />);
+    await screen.findByRole("heading", { level: 1 });
+    await act(async () => {});
+    expect(scrolled).toHaveLength(0);
+    ListOpenForms.mockResolvedValue([mkForm("f3", "m2")] as any);
+    await act(async () => emit("ask:changed", { meetingId: "m2" }));
+    expect(scrolled).toHaveLength(1);
   });
 });

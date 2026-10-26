@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
-import { useOpenForms } from "../forms";
+import { useOpenFormsState } from "../forms";
 import { useReview } from "../review";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FormCard } from "./FormCard";
@@ -16,7 +16,7 @@ import { TranscriptCard } from "./TranscriptCard";
 import "./MeetingPage.css";
 
 // onDeleted runs once the meeting is gone; the parent then leaves the page. The warning is "" unless something (the audio folder) was left behind.
-export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDeleted?: (warning: string) => void }) {
+export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: string; revealSeq?: number; onDeleted?: (warning: string) => void }) {
   const [meeting, setMeeting] = useState<wails.MeetingDTO | null>(null);
   const [segments, setSegments] = useState<wails.SegmentDTO[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -27,7 +27,16 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
   const deletedRef = useRef(false); // set once the meeting is gone: later events for it are ignored
   const loadRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
-  const form = useOpenForms().get(meetingId);
+  const { forms, loaded: formsLoaded } = useOpenFormsState();
+  const form = forms.get(meetingId);
+  const formId = form?.id ?? "";
+  const cardRef = useRef<HTMLElement>(null);
+  // The open form id last seen for the meeting on screen; null until the page has shown a meeting.
+  const seenForm = useRef<{ meetingId: string; formId: string } | null>(null);
+  // The notification click (App's reveal number) already handled; a new number asks once more.
+  const handledReveal = useRef<number | undefined>(undefined);
+  // The meeting on screen is this meetingId's, not the previous meeting's object during the switch.
+  const shown = meeting !== null && meeting.id === meetingId;
   const review = useReview(meetingId);
   const [sessionOpen, setSessionOpen] = useState(false);
 
@@ -80,6 +89,25 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
   useEffect(() => {
     if (review.phase === "done") refresh();
   }, [review.phase, refresh]);
+
+  // A form that becomes open while this meeting is on screen is brought into view and focused.
+  // The form already open when the page first shows a meeting is the baseline, not news,
+  // unless the page shows it because of a notification click.
+  useEffect(() => {
+    if (!formsLoaded || !shown) return;
+    const prev = seenForm.current;
+    seenForm.current = { meetingId, formId };
+    if (revealSeq !== undefined && revealSeq !== handledReveal.current) {
+      handledReveal.current = revealSeq;
+      if (formId !== "") {
+        revealCard(cardRef.current);
+        return;
+      }
+    }
+    if (prev === null || prev.meetingId !== meetingId) return;
+    if (formId === "" || formId === prev.formId) return;
+    revealCard(cardRef.current);
+  }, [formsLoaded, shown, meetingId, formId, revealSeq]);
 
   if (!meeting) return error ? <div className="nt-card nt-card--error" role="alert">
       {error}
@@ -135,7 +163,7 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
           </button>
         </div>
       </header>
-      {form && <FormCard key={form.id} form={form} />}
+      {form && <FormCard key={form.id} form={form} sectionRef={cardRef} />}
       {meeting.state === "transcribing" && (
         <div className="nt-meeting__busy">
           <span>Transcribing…</span>
@@ -178,6 +206,17 @@ export function MeetingPage({ meetingId, onDeleted }: { meetingId: string; onDel
       )}
     </div>
   );
+}
+
+// Scrolls the card into view (at once when the person asked for reduced motion), then focuses it,
+// unless the person is typing in the terminal or working in a dialog: the keyboard stays there.
+function revealCard(card: HTMLElement | null) {
+  if (!card) return;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  card.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  const active = document.activeElement;
+  if (active instanceof Element && active.closest('.nt-terminal, [role="dialog"]')) return;
+  card.focus({ preventScroll: true });
 }
 
 function mergeSegments(a: wails.SegmentDTO[], b: wails.SegmentDTO[]): wails.SegmentDTO[] {
