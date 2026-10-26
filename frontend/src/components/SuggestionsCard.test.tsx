@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { SuggestionsCard } from "./SuggestionsCard";
 
 type Props = Parameters<typeof SuggestionsCard>[0];
-const base: Props = { suggestionsMd: "# Suggestions\n\n- [ ] Send the draft", phase: "idle", message: "", sessionOpen: false, onReview: () => {} };
+const base: Props = { suggestionsMd: "# Suggestions\n\n- [ ] Send the draft", phase: "idle", message: "", sessionOpen: false, summaryRunning: false, onReview: () => {} };
 const show = (over: Partial<Props> = {}) => render(<SuggestionsCard {...base} {...over} />);
 
 test("no suggestions: the old text and no button", () => {
@@ -70,4 +70,30 @@ test("done: the reply's Markdown sits inside the reply block", () => {
   const reply = container.querySelector(".nt-review__reply")!;
   expect(reply.parentElement).toBe(container.querySelector(".nt-review"));
   expect(reply.querySelector(".nt-md pre")).not.toBeNull();
+});
+
+const REASON = "A summary is being written for this meeting. Review suggestions when it finishes.";
+
+test("summary running: disabled with the summary reason", () => {
+  show({ summaryRunning: true });
+  expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
+  expect(screen.getByText(REASON)).toBeInTheDocument();
+});
+
+test("review running wins over summary running", () => {
+  show({ phase: "running", summaryRunning: true });
+  expect(screen.getByText(/^Reviewing suggestions…/)).toBeInTheDocument();
+  expect(screen.queryByText(REASON)).not.toBeInTheDocument();
+});
+
+test("summary running wins over session open, done and error", () => {
+  const cases: Partial<Props>[] = [{ sessionOpen: true }, { phase: "done", message: "S-01 accepted" }, { phase: "error", message: "nope" }];
+  for (const c of cases) {
+    const { unmount } = show({ summaryRunning: true, ...c });
+    expect(screen.getByText(REASON)).toBeInTheDocument();
+    expect(screen.queryByText(/^Close the Claude Code session below first/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Review finished.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    unmount();
+  }
 });

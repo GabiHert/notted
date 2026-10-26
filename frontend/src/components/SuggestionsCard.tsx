@@ -2,9 +2,9 @@ import type { ReviewPhase } from "../review";
 import { MarkdownView } from "./MarkdownView";
 import "./SummaryCard.css";
 
-type Props = { suggestionsMd: string; phase: ReviewPhase; message: string; sessionOpen: boolean; onReview: () => void };
+type Props = { suggestionsMd: string; phase: ReviewPhase; message: string; sessionOpen: boolean; summaryRunning: boolean; onReview: () => void };
 
-export function SuggestionsCard({ suggestionsMd, phase, message, sessionOpen, onReview }: Props) {
+export function SuggestionsCard({ suggestionsMd, phase, message, sessionOpen, summaryRunning, onReview }: Props) {
   const running = phase === "running";
   return (
     <section className="nt-card">
@@ -12,11 +12,13 @@ export function SuggestionsCard({ suggestionsMd, phase, message, sessionOpen, on
       {suggestionsMd ? (
         <>
           <div className="nt-review">
-            <button className="nt-btn nt-btn--primary" disabled={sessionOpen || running} onClick={onReview}>
+            <button className="nt-btn nt-btn--primary" disabled={sessionOpen || running || summaryRunning} onClick={onReview}>
               Review suggestions
             </button>
             {running ? (
               <p className="nt-session__note">Reviewing suggestions… When Claude Code needs you, a form appears at the top of this page.</p>
+            ) : summaryRunning ? (
+              <p className="nt-session__note">A summary is being written for this meeting. Review suggestions when it finishes.</p>
             ) : sessionOpen ? (
               <p className="nt-session__note">Close the Claude Code session below first. The review and the session use the same conversation.</p>
             ) : phase === "done" ? (

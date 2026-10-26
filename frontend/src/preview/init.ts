@@ -77,6 +77,7 @@ export function initPreview(): View {
     case "review-done":
     case "review-done-long":
     case "review-form-arrives":
+    case "review-summary-running":
       scrollToSuggestions();
       return { kind: "meeting", id: "fx-summarized" };
     case "session-review-running":

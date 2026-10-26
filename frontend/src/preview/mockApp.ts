@@ -86,6 +86,7 @@ function afterOpen(fn: () => void) {
 if (screen === "summarizing") {
   afterOpen(() => emit("summary:state", { meetingId: "fx-ready", pass: "suggestions", state: "running" }));
 }
+if (screen === "review-summary-running") afterOpen(() => emit("summary:state", { meetingId: "fx-summarized", pass: "summary", state: "running" }));
 const longReply =
   "S-01 accepted: wrote meetings/2026-10-25-weekly-sync/tasks/export-the-monthly-report-as-csv-for-the-finance-team-before-the-quarterly-close.md\n\nS-02 accepted: committed. The hook printed:\n\n```\npre-commit-hook: checking meetings/2026-10-25-weekly-sync/suggestions.md and meetings/2026-10-25-weekly-sync/summary.md ............................................. Passed\n```\n\nS-03 rejected";
 let formArrived = false;

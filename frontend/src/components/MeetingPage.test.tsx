@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MeetingPage } from "./MeetingPage";
-import { GetDeletePlan, GetMeeting, GetReviewState, GetTranscript, ListOpenForms, ReviewSuggestions, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
+import { EventsOn, GetDeletePlan, GetMeeting, GetReviewState, GetTranscript, ListOpenForms, ReviewSuggestions, StopRecording, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 vi.mock("@xterm/xterm", () => ({ Terminal: class { cols = 80; rows = 24; open() {} loadAddon() {} attachCustomKeyEventHandler() {} focus() {} write() {} onData() { return { dispose() {} }; } onResize() { return { dispose() {} }; } dispose() {} } }));
@@ -179,6 +179,67 @@ describe("review suggestions", () => {
     render(<MeetingPage meetingId="m1" />);
     expect(await screen.findByText("Suggestions are being reviewed for this meeting. Open the session when the review finishes.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open session" })).toBeDisabled();
+  });
+});
+
+describe("a summary pass blocks Review suggestions", () => {
+  const REASON = "A summary is being written for this meeting. Review suggestions when it finishes.";
+  const mk = (id: string) => meeting({ id, state: "summarized", summaryMd: "# Summary: Sync", suggestionsMd: "# Suggestions\n\n- [ ] Send the draft" });
+  const sum = (meetingId: string, state: string, message?: string) => emit("summary:state", { meetingId, pass: "summary", state, message });
+  const open = async () => {
+    GetMeeting.mockImplementation(async (id: string) => mk(id));
+    const r = render(<MeetingPage meetingId="m1" />);
+    await screen.findByRole("button", { name: "Review suggestions" });
+    return r;
+  };
+
+  test("1: running disables the button, shows the reason and the Summary busy line", async () => {
+    await open();
+    await act(async () => sum("m1", "running"));
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeDisabled();
+    expect(screen.getByText(REASON)).toBeInTheDocument();
+    expect(screen.getByText("Claude Code is writing the summary…")).toBeInTheDocument();
+  });
+
+  test("2: another meeting's running changes nothing", async () => {
+    await open();
+    await act(async () => sum("m2", "running"));
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+    expect(screen.queryByText(REASON)).not.toBeInTheDocument();
+  });
+
+  test("3: done re-enables and reloads the meeting", async () => {
+    await open();
+    await act(async () => sum("m1", "running"));
+    const before = GetMeeting.mock.calls.length;
+    await act(async () => sum("m1", "done"));
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+    expect(screen.queryByText(REASON)).not.toBeInTheDocument();
+    expect(GetMeeting.mock.calls.length).toBeGreaterThan(before);
+  });
+
+  test("4: error re-enables and the Summary card shows the message", async () => {
+    await open();
+    await act(async () => sum("m1", "running"));
+    await act(async () => sum("m1", "error", "claude stopped"));
+    expect(screen.getByRole("button", { name: "Review suggestions" })).toBeEnabled();
+    expect(screen.queryByText(REASON)).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("claude stopped");
+  });
+
+  test("5: switching meetings resets the state", async () => {
+    const { rerender } = await open();
+    await act(async () => sum("m1", "running"));
+    expect(screen.getByText(REASON)).toBeInTheDocument();
+    rerender(<MeetingPage meetingId="m2" />);
+    await waitFor(() => expect(GetMeeting).toHaveBeenCalledWith("m2"));
+    expect(await screen.findByRole("button", { name: "Review suggestions" })).toBeEnabled();
+    expect(screen.queryByText(REASON)).not.toBeInTheDocument();
+  });
+
+  test("6: the page holds one summary:state listener", async () => {
+    await open();
+    expect(EventsOn.mock.calls.filter(([n]) => n === "summary:state")).toHaveLength(1);
   });
 });
 

@@ -3,6 +3,7 @@ import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, Stop
 import { errorMessage, formatDate, languageName } from "../format";
 import { useOpenFormsState } from "../forms";
 import { useReview } from "../review";
+import { useSummaryRun } from "../summary";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FormCard } from "./FormCard";
 import { ProjectCard } from "./ProjectCard";
@@ -38,6 +39,7 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
   // The meeting on screen is this meetingId's, not the previous meeting's object during the switch.
   const shown = meeting !== null && meeting.id === meetingId;
   const review = useReview(meetingId);
+  const summaryRun = useSummaryRun(meetingId, refresh);
   const [sessionOpen, setSessionOpen] = useState(false);
 
   useEffect(() => {
@@ -188,8 +190,8 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
     </div>}
       <TranscriptCard segments={segments} follow={meeting.state === "recording"} />
       <ProjectCard meetingId={meetingId} projectKey={meeting.projectKey} hasSession={meeting.hasSession} onChanged={refresh} />
-      <SummaryCard meeting={meeting} notCommitted={notCommitted} onRefresh={refresh} />
-      <SuggestionsCard suggestionsMd={meeting.suggestionsMd} phase={review.phase} message={review.message} sessionOpen={sessionOpen} onReview={review.start} />
+      <SummaryCard meeting={meeting} notCommitted={notCommitted} run={summaryRun} />
+      <SuggestionsCard suggestionsMd={meeting.suggestionsMd} phase={review.phase} message={review.message} sessionOpen={sessionOpen} summaryRunning={summaryRun.pass !== null} onReview={review.start} />
       <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} reviewRunning={review.phase === "running"} onOpenChange={setSessionOpen} />
       <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
       {plan && (

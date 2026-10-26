@@ -1,34 +1,14 @@
-import { useEffect, useState } from "react";
-import { EventsOn, GenerateSummary, type wails } from "../api/bindings";
+import { GenerateSummary, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
+import type { SummaryRun } from "../summary";
 import { MarkdownView } from "./MarkdownView";
 import "./SummaryCard.css";
 
-type Props = { meeting: wails.MeetingDTO; notCommitted: boolean; onRefresh: () => void };
-type SummaryState = { meetingId: string; pass: "summary" | "suggestions"; state: "running" | "done" | "error"; message?: string };
+type Props = { meeting: wails.MeetingDTO; notCommitted: boolean; run: SummaryRun };
 
-export function SummaryCard({ meeting, notCommitted, onRefresh }: Props) {
-  const [pass, setPass] = useState<"summary" | "suggestions" | null>(null);
-  const [error, setError] = useState("");
+export function SummaryCard({ meeting, notCommitted, run }: Props) {
+  const { pass, error, setError } = run;
   const id = meeting.id;
-
-  useEffect(() => {
-    setPass(null);
-    setError("");
-    return EventsOn("summary:state", (e: SummaryState) => {
-      if (e.meetingId !== id) return;
-      if (e.state === "running") {
-        setError("");
-        setPass(e.pass);
-      } else if (e.state === "error") {
-        setPass(null);
-        setError(e.message ?? "");
-      } else {
-        setPass(null);
-        onRefresh();
-      }
-    });
-  }, [id, onRefresh]);
 
   const finished = meeting.state === "ready" || meeting.state === "summarized";
   const hasProject = meeting.projectKey !== "";
