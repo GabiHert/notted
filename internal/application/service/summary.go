@@ -26,6 +26,9 @@ type SummaryService struct {
 	emit     port.EventEmitter
 	newID    func() string
 
+	mcpConfig func(meetingID string) (string, error) // nil = no Notted tools
+	busy      func(meetingID string) string          // nil = never busy; "" = free
+
 	mu     sync.Mutex
 	active map[string]*summaryRun
 	wg     sync.WaitGroup
@@ -42,6 +45,19 @@ func NewSummaryService(store port.MeetingStore, settings port.SettingsStore, pro
 	runner port.ClaudeRunner, export exporter, emit port.EventEmitter) *SummaryService {
 	return &SummaryService{store: store, settings: settings, prompts: prompts, runner: runner, export: export,
 		emit: emit, newID: uuid.NewString, active: map[string]*summaryRun{}}
+}
+
+// SetMCPConfig sets the function that writes a meeting's tool server file. nil turns the tools off.
+func (s *SummaryService) SetMCPConfig(fn func(meetingID string) (string, error)) { s.mcpConfig = fn }
+
+// SetBusyCheck sets the check that refuses Generate while another run uses the conversation: "" = free, else the refusal.
+func (s *SummaryService) SetBusyCheck(fn func(meetingID string) string) { s.busy = fn }
+
+// Running reports whether a summary is being written for the meeting.
+func (s *SummaryService) Running(meetingID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.active[meetingID] != nil
 }
 
 // Cancel ends the meeting's running summary, if any, and waits for it to stop. A cancelled run reports nothing.
@@ -115,6 +131,11 @@ func (s *SummaryService) Generate(ctx context.Context, meetingID string) error {
 	if len(segs) == 0 {
 		return errors.New("The transcript is empty. Nothing to summarize.")
 	}
+	if s.busy != nil {
+		if msg := s.busy(meetingID); msg != "" {
+			return errors.New(msg)
+		}
+	}
 	s.mu.Lock()
 	if s.active[meetingID] != nil {
 		s.mu.Unlock()
@@ -166,6 +187,14 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 		s.state(ctx, id, "summary", "error", err.Error())
 		return
 	}
+	mcpFile := ""
+	if s.mcpConfig != nil {
+		mcpFile, err = s.mcpConfig(id)
+		if err != nil {
+			s.state(ctx, id, "summary", "error", "Notted could not prepare the session's tools: "+err.Error())
+			return
+		}
+	}
 	sid, resume := m.ClaudeSessionID, m.ClaudeSessionID != ""
 	if !resume {
 		sid = s.newID()
@@ -174,7 +203,7 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 
 	s.state(ctx, id, "summary", "running", "")
 	out, err := s.runner.Run(ctx, port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: sid, Resume: resume,
-		PromptText: prompt, ProjectRoot: root, Stdin: summaryStdin(m, segs)})
+		PromptText: prompt, ProjectRoot: root, MCPConfig: mcpFile, Stdin: summaryStdin(m, segs)})
 	if err != nil {
 		s.state(ctx, id, "summary", "error", err.Error())
 		return
@@ -198,7 +227,7 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 
 	s.state(ctx, id, "suggestions", "running", "")
 	out, err = s.runner.Run(ctx, port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: sid, Resume: true,
-		ProjectRoot: root, Stdin: strings.Replace(suggestionsStdin, "<title>", m.Title, 1)})
+		ProjectRoot: root, MCPConfig: mcpFile, Stdin: strings.Replace(suggestionsStdin, "<title>", m.Title, 1)})
 	if err != nil {
 		s.state(ctx, id, "suggestions", "error", err.Error())
 		return

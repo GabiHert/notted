@@ -48,6 +48,9 @@ export function initPreview(): View {
     case "mictest-quiet":
     case "mictest-ok":
     case "mictest-recording":
+    case "review-mode-off":
+    case "review-mode-on":
+    case "review-mode-save-failed":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -61,7 +64,34 @@ export function initPreview(): View {
       return { kind: "meeting", id: "fx-ready" };
     case "summarized":
     case "project-locked":
+    case "form-text":
+    case "form-html":
+    case "form-choice":
+    case "form-multi":
+    case "form-input":
+    case "form-confirm":
+    case "form-permission":
+    case "form-waiting":
+    case "review-idle":
+    case "review-running":
+    case "review-done":
+    case "review-done-long":
+    case "review-form-arrives":
+    case "review-summary-running":
+      scrollToSuggestions();
       return { kind: "meeting", id: "fx-summarized" };
+    case "session-review-running":
+      return { kind: "meeting", id: "fx-summarized" };
+    case "review-session-open":
+      scrollToSuggestions();
+      autoOpenSession();
+      return { kind: "meeting", id: "fx-summarized" };
+    case "review-error":
+      scrollToSuggestions();
+      autoClickButton("Review suggestions");
+      return { kind: "meeting", id: "fx-summarized" };
+    case "waiting-dot":
+      return { kind: "meeting", id: "fx-ready" };
     case "save-dialog":
     case "save-failed":
       return { kind: "meeting", id: "fx-ready" };
@@ -108,6 +138,30 @@ function autoOpenSession() {
   }, 100);
 }
 
+// Preview only: bring the Suggestions card to the top of the window so the screenshot shows the review button.
+function scrollToSuggestions() {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const header = Array.from(document.querySelectorAll(".nt-card__header")).find((h) => h.textContent === "Suggestions");
+    if (header) {
+      window.clearInterval(timer);
+      header.scrollIntoView({ block: "start" });
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
+}
+
+// Preview only: press a named button once it is enabled, so a screenshot URL shows what follows.
+function autoClickButton(label: string) {
+  let tries = 0;
+  const timer = window.setInterval(() => {
+    const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === label && !b.disabled);
+    if (btn) {
+      window.clearInterval(timer);
+      btn.click();
+    } else if (++tries > 40) window.clearInterval(timer);
+  }, 100);
+}
+
 // Preview only: drive the Settings view into the state a screenshot URL names.
 function autoDriveSettings(screen: string) {
   const click = (match: (b: HTMLButtonElement) => boolean) => {
@@ -136,6 +190,12 @@ function autoDriveSettings(screen: string) {
     const el = document.querySelector(selector);
     el?.scrollIntoView({ block: "start" });
     return Boolean(el);
+  };
+  const check = (selector: string) => () => {
+    const el = document.querySelector<HTMLInputElement>(selector);
+    if (!el || el.disabled) return false;
+    el.click();
+    return true;
   };
   const typeInto = (selector: string, value: string) => () => {
     const input = document.querySelector<HTMLInputElement>(selector);
@@ -166,6 +226,9 @@ function autoDriveSettings(screen: string) {
     "setup-my-file-created": [byLabel("Create your file for globex")],
     "setup-folder-new": [byLabel("Choose the meetings archive folder")],
     "setup-folder-in-repo": [byLabel("Choose the meetings archive folder")],
+    "review-mode-off": [scrollTo(".nt-reviewmode")],
+    "review-mode-on": [scrollTo(".nt-reviewmode")],
+    "review-mode-save-failed": [scrollTo(".nt-reviewmode"), check("#nt-reviewmode")],
     "update-idle": [scrollTo(".nt-update")],
     "update-no-source": [scrollTo(".nt-update")],
     "update-running": [scrollTo(".nt-update")],

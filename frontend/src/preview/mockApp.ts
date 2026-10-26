@@ -1,5 +1,6 @@
 // Preview-mode stand-in for wailsjs/go/wails/App: fixture data only, generic names.
 import { emit } from "./mockRuntime";
+import { fixtureFor } from "./formFixtures";
 import { readScreen } from "./params";
 
 const screen = readScreen();
@@ -18,7 +19,7 @@ const meetings = [
     language: "en",
     projectKey: "acme",
     state: "summarized",
-    hasSession: screen === "project-locked",
+    hasSession: screen === "project-locked" || screen.startsWith("review-") || screen === "session-review-running",
     folder: "meetings/acme/2026/2026-10-19-budget-review",
     summaryMd:
       "# Summary: Budget review\n\nThe team went through the quarter's spending and agreed on the next steps.\n\n## Decisions\n\n- Keep the current vendor until March\n- Move the review to **Fridays**\n\n## Open questions\n\n1. Who owns the `forecast.xlsx` update?\n2. Is the second invoice already paid?\n",
@@ -84,6 +85,24 @@ function afterOpen(fn: () => void) {
 }
 if (screen === "summarizing") {
   afterOpen(() => emit("summary:state", { meetingId: "fx-ready", pass: "suggestions", state: "running" }));
+}
+if (screen === "review-summary-running") afterOpen(() => emit("summary:state", { meetingId: "fx-summarized", pass: "summary", state: "running" }));
+const longReply =
+  "S-01 accepted: wrote meetings/2026-10-25-weekly-sync/tasks/export-the-monthly-report-as-csv-for-the-finance-team-before-the-quarterly-close.md\n\nS-02 accepted: committed. The hook printed:\n\n```\npre-commit-hook: checking meetings/2026-10-25-weekly-sync/suggestions.md and meetings/2026-10-25-weekly-sync/summary.md ............................................. Passed\n```\n\nS-03 rejected";
+let formArrived = false;
+if (screen === "review-form-arrives")
+  setTimeout(() => {
+    formArrived = true;
+    emit("ask:changed", { meetingId: "fx-summarized" });
+  }, 1500);
+if (screen === "review-done" || screen === "review-done-long") {
+  afterOpen(() =>
+    emit("review:state", {
+      meetingId: "fx-summarized",
+      state: "done",
+      message: screen === "review-done-long" ? longReply : "S-01 accepted: wrote tasks/export.md\nS-02 accepted: added a line to tasks/login.md\nS-03 rejected",
+    }),
+  );
 }
 if (screen === "summary-error") {
   afterOpen(() =>
@@ -315,6 +334,18 @@ export async function ListProjects() {
 }
 export async function SetMeetingProject(_id: string, _key: string) {}
 export async function GenerateSummary(_id: string) {}
+export async function ReviewSuggestions(_id: string) {
+  if (screen === "review-error") throw new Error("Close the Claude Code session on this page first. The review and the session use the same conversation.");
+}
+export async function GetReviewState(_id: string) {
+  return { running: screen === "review-running" || screen === "review-form-arrives" || screen === "session-review-running" };
+}
+export async function GetReviewActWithoutAsking() {
+  return screen === "review-mode-on";
+}
+export async function SetReviewActWithoutAsking(_on: boolean) {
+  if (screen === "review-mode-save-failed") throw new Error("Notted could not save the review setting: database is locked");
+}
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
   return { sha: "abc1234", pushed: true };
@@ -346,3 +377,11 @@ export async function DeleteMeeting(_id: string) {
   return { warning: "" };
 }
 export async function DownloadModels(_language: string) {}
+export async function ListOpenForms() {
+  if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];
+  const f = fixtureFor(screen === "waiting-dot" ? "form-choice" : screen);
+  return f ? [f] : [];
+}
+export async function AnswerForm(_formId: string, _answers: Record<string, unknown>, _note: string) {}
+export async function DismissForm(_formId: string, _note: string) {}
+export async function SetWindowVisible(_visible: boolean) {}

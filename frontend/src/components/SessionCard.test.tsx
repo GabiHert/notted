@@ -331,3 +331,32 @@ test("a start that is closed before its turn never reaches the backend", async (
   expect(StartSession).toHaveBeenCalledTimes(1);
   expect(screen.getByRole("button", { name: "Open session" })).toBeInTheDocument();
 });
+
+const REVIEW_REASON = "Suggestions are being reviewed for this meeting. Open the session when the review finishes.";
+
+test("a running review disables Open session with the review reason", async () => {
+  render(<SessionCard meetingId="m1" hasSession reviewRunning />);
+  expect(await screen.findByText(REVIEW_REASON)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open session" })).toBeDisabled();
+});
+
+test("the no-session reason wins over the review reason", async () => {
+  render(<SessionCard meetingId="m1" hasSession={false} reviewRunning />);
+  expect(await screen.findByText("This meeting has no Claude Code session yet. Generate the summary first.")).toBeInTheDocument();
+  expect(screen.queryByText(REVIEW_REASON)).toBeNull();
+});
+
+test("onOpenChange reports open, closed and unmount", async () => {
+  const onOpenChange = vi.fn();
+  const { unmount } = render(<SessionCard meetingId="m1" hasSession onOpenChange={onOpenChange} />);
+  await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false));
+  fireEvent.click(await screen.findByRole("button", { name: "Open session" }));
+  await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(true));
+  await waitFor(() => expect(fake.state.terms.length).toBe(1));
+  fireEvent.click(screen.getByRole("button", { name: "Close session" }));
+  await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false));
+  fireEvent.click(await screen.findByRole("button", { name: "Open session" }));
+  await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(true));
+  unmount();
+  expect(onOpenChange).toHaveBeenLastCalledWith(false);
+});

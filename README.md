@@ -22,7 +22,7 @@ Notted records a meeting on your Mac (your microphone and the system audio), tra
 2. Notted transcribes the audio on your Mac. The audio never leaves it.
 3. Claude Code reads the transcript and writes a summary and suggested tasks, using the instructions in your archive.
 4. Notted saves the meeting to your archive only after you say yes.
-5. You accept or reject each suggestion, in the meeting's own Claude Code session.
+5. You accept or reject each suggestion with **Review suggestions**, or in the meeting's own Claude Code session.
 
 ```mermaid
 flowchart TD
@@ -31,7 +31,7 @@ flowchart TD
     C --> D{"Save to the archive?"}
     D -->|"Yes"| E["Commit and push to the archive"]
     D -->|"Not now"| F["Files stay in the archive folder, not committed"]
-    E --> G["Accept suggestions in the meeting session"]
+    E --> G["Accept suggestions in a form or the session"]
     F --> G
 ```
 
@@ -185,7 +185,13 @@ Notted keeps its icon, the Notted N, in the menu bar for as long as it runs; a d
 
 ### Accept suggestions
 
-The **Claude Code session** card on a meeting continues that meeting's Claude Code conversation in the app. Claude asks before it changes anything, and your answer is the yes. Tell it which suggestions to accept and which to reject, for example "accept S-01, reject S-02". What accepting does is up to your instructions: with no instructions, it prints the task and does nothing else.
+On a summarized meeting, click **Review suggestions** on the **Suggestions** card. Claude Code shows the suggestions as a form under **Waiting for you**: check the ones to accept and click **Send**. The unchecked ones are rejected. Claude Code then follows your accept instructions and asks you, in the same place, before it writes, commits or pushes anything. Each file edit and command comes to you as an **Allow** or **Deny** card. To skip those cards, switch on **Let Claude act without asking during reviews** in **Settings**, under **Suggestion reviews**. It is off by default. When it is on, Claude Code edits files and runs commands, git included, without asking you; the suggestions form, and any question your accept instructions ask, still come to you. With no instructions, accepting prints the task and does nothing else.
+
+You can also do it in the terminal: the **Claude Code session** card continues the meeting's conversation in the app. Claude asks before it changes anything, and your answer is the yes. The review and the terminal session use the same conversation, so only one of them runs at a time.
+
+### Forms
+
+Claude Code can ask you something through Notted with its `ask` tool, in any session Notted starts. The form shows at the top of the meeting's page under **Waiting for you**, and the meeting gets a dot in the list. If you are on that meeting's page, Notted scrolls up to the form and puts the keyboard focus on it, unless you are typing in the session's terminal. If the Notted window is hidden, a notification appears; click it to open the meeting with the form in view. A form can hold text, a static HTML view (no scripts, no network), one choice, several choices, a text field and a yes-or-no question, plus a **Note**. **Not now** answers that you did not decide, and Claude does not act on it. One form per meeting is open at a time; the next one waits. Quitting Notted answers every open form with **Not now**.
 
 ### Delete a meeting
 
@@ -216,7 +222,7 @@ The base's non-negotiables win over every layer. Otherwise the more specific lay
 
 ### Claude Code
 
-Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed before `claude` runs. The summary runs read-only (`Read Grep Glob`). In the embedded session, Claude Code's permission prompts stay on and wait for you.
+Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed before `claude` runs. The summary runs read-only (`Read Grep Glob`). Every `claude` Notted starts also gets Notted's own tool server (`--mcp-config`): the Notted app itself in `mcp` mode, which talks to the open app over a private socket in `~/.notted/run/`. In headless turns, such as the summary and **Review suggestions**, Claude Code's permission requests come to Notted as cards (**Allow** or **Deny**). With **Let Claude act without asking during reviews** on, Notted starts each **Review suggestions** turn in Claude Code's bypass-permissions mode, so it asks for no permission; only an ask rule in your own Claude Code settings still comes as a card. The summary and the embedded session never use that mode. In the embedded session, Claude Code's permission prompts stay in the terminal and wait for you.
 
 ### What Notted downloads
 
@@ -244,7 +250,7 @@ macOS asks for the microphone and screen recording permissions again only when t
 
 ## Your data
 
-Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/`, `models/` and `update.log`. Audio never leaves the Mac and is never committed. The first time you choose a folder, Notted adds what the archive needs (bin/meeting, prompts/, instructions/, the meetings skill, a commit hook and the recording rules in .gitignore) and changes nothing already there. A folder that is not in a git repository gets git init; with no remote, meetings are committed on this Mac only. A meeting's files (`meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`) go in only after you say yes.
+Everything is under `~/.notted`: `meetings.sqlite`, `audio/<meeting-id>/`, `models/`, `run/` (the socket of Notted's tool server), `sessions/<meeting-id>/mcp.json` (how Claude Code starts that server for a meeting) and `update.log`. Audio never leaves the Mac and is never committed. The first time you choose a folder, Notted adds what the archive needs (bin/meeting, prompts/, instructions/, the meetings skill, a commit hook and the recording rules in .gitignore) and changes nothing already there. A folder that is not in a git repository gets git init; with no remote, meetings are committed on this Mac only. A meeting's files (`meeting.md`, `transcript.md`, `summary.md` and `suggestions.md`) go in only after you say yes.
 
 ## Troubleshooting
 

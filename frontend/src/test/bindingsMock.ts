@@ -28,8 +28,16 @@ export const StopRecording = vi.fn();
 export const GetModelStatus = vi.fn();
 export const DownloadModels = vi.fn();
 export const ListProjects = vi.fn();
+export const ListOpenForms = vi.fn(async () => []);
+export const AnswerForm = vi.fn(async () => {});
+export const DismissForm = vi.fn(async () => {});
+export const SetWindowVisible = vi.fn(async () => {});
 export const SetMeetingProject = vi.fn();
 export const GenerateSummary = vi.fn();
+export const ReviewSuggestions = vi.fn(async () => {});
+export const GetReviewState = vi.fn(async () => ({ running: false }));
+export const GetReviewActWithoutAsking = vi.fn(async () => false);
+export const SetReviewActWithoutAsking = vi.fn(async (_on: boolean) => {});
 export const CommitAndPushMeeting = vi.fn();
 export const GetSettings = vi.fn();
 export const SetSettings = vi.fn();
@@ -67,7 +75,7 @@ export const ClipboardSetText = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, DeleteMeeting, GetSetupPrompt, ClipboardSetText, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -79,12 +87,20 @@ export function resetBindings() {
     handlers.delete(name);
   });
   ListMeetings.mockResolvedValue([]);
+  ListOpenForms.mockResolvedValue([]);
+  AnswerForm.mockResolvedValue(undefined);
+  DismissForm.mockResolvedValue(undefined);
+  SetWindowVisible.mockResolvedValue(undefined);
   GetTranscript.mockResolvedValue([]);
   DownloadModels.mockResolvedValue(undefined);
   StopRecording.mockResolvedValue(undefined);
   ListProjects.mockResolvedValue(["acme", "globex"]);
   SetMeetingProject.mockResolvedValue(undefined);
   GenerateSummary.mockResolvedValue(undefined);
+  ReviewSuggestions.mockResolvedValue(undefined);
+  GetReviewState.mockResolvedValue({ running: false });
+  GetReviewActWithoutAsking.mockResolvedValue(false);
+  SetReviewActWithoutAsking.mockResolvedValue(undefined);
   CommitAndPushMeeting.mockResolvedValue({ sha: "abc1234", pushed: true });
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
   SetSettings.mockResolvedValue(undefined);

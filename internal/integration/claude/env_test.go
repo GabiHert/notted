@@ -301,3 +301,33 @@ func TestShellTimeoutKillsGrandchildHoldingThePipe(t *testing.T) {
 		t.Fatal("expected os.Environ fallback")
 	}
 }
+
+func TestWithToolTimeout(t *testing.T) {
+	got := WithToolTimeout([]string{"A=1", "MCP_TOOL_TIMEOUT=5", "B=2", "MCP_TOOL_TIMEOUT=9"})
+	want := []string{"A=1", "B=2", "MCP_TOOL_TIMEOUT=86400000"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %v", got)
+	}
+	if got := WithToolTimeout(nil); len(got) != 1 || got[0] != "MCP_TOOL_TIMEOUT=86400000" {
+		t.Fatalf("got %v", got)
+	}
+}
+
+func TestSessionEnv(t *testing.T) {
+	got := SessionEnv([]string{"A=1", "ANTHROPIC_API_KEY=k", "ANTHROPIC_AUTH_TOKEN=t", "MCP_TOOL_TIMEOUT=5"})
+	n := 0
+	for _, e := range got {
+		if strings.HasPrefix(e, "ANTHROPIC_") {
+			t.Fatalf("credential left: %s", e)
+		}
+		if strings.HasPrefix(e, "MCP_TOOL_TIMEOUT=") {
+			n++
+			if e != "MCP_TOOL_TIMEOUT=86400000" {
+				t.Fatalf("got %s", e)
+			}
+		}
+	}
+	if n != 1 || got[0] != "A=1" {
+		t.Fatalf("got %v", got)
+	}
+}

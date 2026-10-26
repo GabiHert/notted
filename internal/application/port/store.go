@@ -41,3 +41,9 @@ type SourceStore interface {
 	GetSourcePath(ctx context.Context) (string, error)
 	SetSourcePath(ctx context.Context, path string) error
 }
+
+// ReviewModeStore persists whether review turns run without permission prompts.
+type ReviewModeStore interface {
+	GetReviewActWithoutAsking(ctx context.Context) (bool, error) // false when never saved
+	SetReviewActWithoutAsking(ctx context.Context, on bool) error
+}

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Sidebar } from "./Sidebar";
-import { ListMeetings, emit, meeting, resetBindings } from "../test/bindingsMock";
+import { ListMeetings, ListOpenForms, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -63,4 +63,22 @@ test("Settings carries aria-current only while selected", async () => {
   expect(screen.getByRole("button", { name: "Settings" })).not.toHaveAttribute("aria-current");
   rerender(<Sidebar view={{ kind: "settings" }} onSelect={vi.fn()} />);
   expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "true");
+});
+
+describe("the Waiting for you dot", () => {
+  const openForm = (meetingId: string) => ({ id: "f1", meetingId, kind: "choice", title: "Where should the task go?", pieces: [], queued: 0 });
+
+  test("shows on exactly the meeting with an open form, and goes when the list is empty", async () => {
+    ListMeetings.mockResolvedValue(two());
+    ListOpenForms.mockResolvedValue([openForm("m1")] as any);
+    render(<Sidebar view={{ kind: "new" }} onSelect={() => {}} />);
+    const dot = await screen.findByRole("img", { name: "Waiting for you" });
+    expect(screen.getAllByRole("img", { name: "Waiting for you" })).toHaveLength(1);
+    expect(dot).toHaveAttribute("title", "Waiting for you");
+    expect(screen.getByText("Weekly sync").contains(dot)).toBe(true);
+    expect(screen.getByText("Planning review").querySelector(".nt-row__ask")).toBeNull();
+    ListOpenForms.mockResolvedValue([]);
+    await act(async () => emit("ask:changed", { meetingId: "m1" }));
+    expect(screen.queryByRole("img", { name: "Waiting for you" })).toBeNull();
+  });
 });

@@ -1,0 +1,21 @@
+.nt-reviewmode__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: center;
+}
+.nt-reviewmode__label {
+  font-weight: 500;
+  cursor: pointer;
+}
+.nt-reviewmode__desc {
+  grid-column: 2;
+  margin: 0;
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-reviewmode__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}

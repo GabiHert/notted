@@ -19,7 +19,7 @@ test("shows the Settings heading, one selected Instructions tab and the cards in
   expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   await screen.findByLabelText("Profile");
   const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Set up Notted", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Update Notted", "Permissions"]);
+  expect(headers).toEqual(["Set up Notted", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Suggestion reviews", "Update Notted", "Permissions"]);
   expect(GetUpdateStatus).toHaveBeenCalledTimes(1);
   expect(GetPermissions).toHaveBeenCalledTimes(1);
 });

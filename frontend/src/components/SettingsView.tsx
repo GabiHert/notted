@@ -4,6 +4,7 @@ import { errorMessage } from "../format";
 import { InstructionFiles } from "./InstructionFiles";
 import { PermissionsCard } from "./PermissionsCard";
 import { PromptPreview } from "./PromptPreview";
+import { ReviewModeCard } from "./ReviewModeCard";
 import { SetupForm } from "./SetupForm";
 import { SetupPromptCard } from "./SetupPromptCard";
 import { UpdateCard } from "./UpdateCard";
@@ -124,6 +125,7 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         <SetupForm saved={saved} settingsError={settingsError} projects={projects} projectsError={projectsError} profiles={profiles} profilesError={profilesError} myProjects={myProjects} myProjectsError={myProjectsError} onDeleted={onDeleted} onSaved={reload} onOpen={open} />
         <InstructionFiles onDirtyPath={onDirtyPath} archivePath={saved?.checkoutPath ?? ""} openRequest={openRequest} refresh={filesRefresh} />
         <PromptPreview projects={projects} projectsError={projectsError} />
+        <ReviewModeCard />
         <UpdateCard />
         <PermissionsCard />
       </div>

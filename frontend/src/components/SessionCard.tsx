@@ -27,7 +27,7 @@ function inOrder(meetingId: string, op: () => Promise<void>): Promise<void> {
 
 const stopSession = (meetingId: string) => void inOrder(meetingId, () => StopSession(meetingId)).catch(() => {});
 
-export function SessionCard({ meetingId, hasSession }: { meetingId: string; hasSession: boolean }) {
+export function SessionCard({ meetingId, hasSession, reviewRunning, onOpenChange }: { meetingId: string; hasSession: boolean; reviewRunning?: boolean; onOpenChange?: (open: boolean) => void }) {
   const [checkoutPath, setCheckoutPath] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("closed");
   const [error, setError] = useState("");
@@ -81,6 +81,13 @@ export function SessionCard({ meetingId, hasSession }: { meetingId: string; hasS
     [],
   );
 
+  const openChange = useRef(onOpenChange);
+  openChange.current = onOpenChange;
+  useEffect(() => {
+    openChange.current?.(phase !== "closed");
+  }, [phase]);
+  useEffect(() => () => openChange.current?.(false), []);
+
   const start = () => {
     setError("");
     setSynced(0);
@@ -96,7 +103,8 @@ export function SessionCard({ meetingId, hasSession }: { meetingId: string; hasS
 
   const reason = !hasSession
     ? "This meeting has no Claude Code session yet. Generate the summary first."
-    : checkoutPath === "" ? "Set the meetings archive folder in Settings > Instructions first." : "";
+    : checkoutPath === "" ? "Set the meetings archive folder in Settings > Instructions first."
+    : reviewRunning ? "Suggestions are being reviewed for this meeting. Open the session when the review finishes." : "";
   const disabled = reason !== "" || checkoutPath === null;
   const showTerminal = phase !== "closed";
 

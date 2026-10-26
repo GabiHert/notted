@@ -10,6 +10,7 @@ import (
 
 	"github.com/GabiHert/notted/internal/domain"
 	"github.com/GabiHert/notted/internal/infra/store"
+	"github.com/GabiHert/notted/internal/integration/claude"
 )
 
 type startCall struct {
@@ -182,5 +183,93 @@ func TestSessionResizeOutOfRangeIsSilentNoop(t *testing.T) {
 	}
 	if f.term.resizes != 0 {
 		t.Fatalf("resizes = %d", f.term.resizes)
+	}
+}
+
+func TestSessionStartWithTools(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "acme", "sid-1")
+	f.svc.SetMCPConfig(func(id string) (string, error) { return "/s/" + id + "/mcp.json", nil })
+	if err := f.svc.Start(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/s/m1/mcp.json", "--allowedTools", "mcp__notted__ask", "--add-dir", "/work/acme"}
+	if got := f.term.calls[0].argv; !eq(got, want) {
+		t.Fatalf("argv = %v", got)
+	}
+	for _, a := range f.term.calls[0].argv {
+		if strings.Contains(a, "permission-prompt-tool") {
+			t.Fatal("the pty session must not take the permission tool")
+		}
+	}
+}
+
+func TestSessionStartWithToolsNoRoot(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "globex", "sid-1")
+	f.svc.SetMCPConfig(func(string) (string, error) { return "/c.json", nil })
+	if err := f.svc.Start(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/c.json", "--allowedTools", "mcp__notted__ask"}
+	if got := f.term.calls[0].argv; !eq(got, want) {
+		t.Fatalf("argv = %v", got)
+	}
+}
+
+func TestSessionStartConfigError(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "acme", "sid-1")
+	f.svc.SetMCPConfig(func(string) (string, error) { return "", errors.New("disk full") })
+	wantErr(t, f.svc.Start(f.ctx, "m1"), "Notted could not prepare the session's tools: disk full")
+	if len(f.term.calls) != 0 {
+		t.Fatal("a refused start reached the terminal")
+	}
+}
+
+func TestSessionStartBusy(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "acme", "sid-1")
+	f.svc.SetBusyCheck(func(id string) string { return "busy " + id })
+	wantErr(t, f.svc.Start(f.ctx, "m1"), "busy m1")
+	f.svc.SetBusyCheck(func(string) string { return "" })
+	if err := f.svc.Start(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	// The busy check runs after the "no session yet" check.
+	f.meeting(t, "m2", "acme", "")
+	f.svc.SetBusyCheck(func(string) string { return "busy" })
+	wantErr(t, f.svc.Start(f.ctx, "m2"), "This meeting has no Claude Code session yet. Generate the summary first.")
+}
+
+func TestSessionStartBusyMessages(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "acme", "sid-1")
+	review, sum := &fakeRunning{}, &fakeRunning{}
+	f.svc.SetBusyCheck(SessionBusyCheck(review, sum))
+	sum.set("m1", true)
+	wantErr(t, f.svc.Start(f.ctx, "m1"), "A summary is being written for this meeting. Open the session when it finishes.")
+	review.set("m1", true)
+	wantErr(t, f.svc.Start(f.ctx, "m1"), "Suggestions are being reviewed for this meeting. Open the session when the review finishes.")
+}
+
+func TestSessionEnvCarriesToolTimeoutAndNoCredentials(t *testing.T) {
+	f := newSessFixture(t)
+	f.meeting(t, "m1", "acme", "sid-1")
+	f.svc.cleanEnv = claude.SessionEnv
+	if err := f.svc.Start(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, e := range f.term.calls[0].env {
+		if strings.HasPrefix(e, "ANTHROPIC_") {
+			t.Fatalf("credential left: %s", e)
+		}
+		if e == "MCP_TOOL_TIMEOUT=86400000" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("MCP_TOOL_TIMEOUT count = %d", n)
 	}
 }

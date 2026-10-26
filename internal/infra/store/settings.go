@@ -14,6 +14,8 @@ const (
 	keyCheckoutPath = "checkout_path"
 	keyProjectRoots = "project_roots"
 	keySourcePath   = "source_path"
+
+	keyReviewActWithoutAsking = "review_act_without_asking"
 )
 
 func (s *Store) GetSettings(ctx context.Context) (domain.Settings, error) {
@@ -81,5 +83,25 @@ func (s *Store) GetSourcePath(ctx context.Context) (string, error) {
 // SetSourcePath saves the Notted source folder.
 func (s *Store) SetSourcePath(ctx context.Context, path string) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, keySourcePath, path)
+	return err
+}
+
+// GetReviewActWithoutAsking says whether review turns run without permission prompts; false when never saved.
+func (s *Store) GetReviewActWithoutAsking(ctx context.Context) (bool, error) {
+	var v string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = ?`, keyReviewActWithoutAsking).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return v == "1", err
+}
+
+// SetReviewActWithoutAsking saves the review switch.
+func (s *Store) SetReviewActWithoutAsking(ctx context.Context, on bool) error {
+	v := "0"
+	if on {
+		v = "1"
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, keyReviewActWithoutAsking, v)
 	return err
 }

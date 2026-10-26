@@ -47,3 +47,17 @@ func TestInstallSourceUnderHome(t *testing.T) {
 		t.Fatalf("InstallSource() = %q, want %q", got, want)
 	}
 }
+
+func TestAskPathsUnderHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("NOTTED_HOME", dir)
+	if got, want := RunDir(), filepath.Join(dir, "run"); got != want {
+		t.Fatalf("RunDir() = %q, want %q", got, want)
+	}
+	if got, want := AskSocket(), filepath.Join(dir, "run", "ask.sock"); got != want {
+		t.Fatalf("AskSocket() = %q, want %q", got, want)
+	}
+	if got, want := SessionsDir(), filepath.Join(dir, "sessions"); got != want {
+		t.Fatalf("SessionsDir() = %q, want %q", got, want)
+	}
+}

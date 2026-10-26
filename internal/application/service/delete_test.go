@@ -336,3 +336,16 @@ func TestPlanUnknownOrInvalidMeeting(t *testing.T) {
 	_, err = f.svc.Plan(f.ctx, "../x")
 	wantErr(t, err, "Meeting not found.")
 }
+
+func TestDeleteCancelsTheReview(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateReady)
+	review := &fakeStopper{order: &f.order}
+	f.svc.review = review
+	if err := f.svc.Delete(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	if len(review.cancelled) != 1 || review.cancelled[0] != "m1" {
+		t.Fatalf("review cancelled = %v", review.cancelled)
+	}
+}

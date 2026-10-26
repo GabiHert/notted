@@ -76,6 +76,72 @@ export namespace wails {
 	        this.files = source["files"];
 	    }
 	}
+	export class FormOptionDTO {
+	    label: string;
+	    description: string;
+	    recommended: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FormOptionDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.description = source["description"];
+	        this.recommended = source["recommended"];
+	    }
+	}
+	export class FormPieceDTO {
+	    kind: string;
+	    id: string;
+	    markdown: string;
+	    html: string;
+	    question: string;
+	    options: FormOptionDTO[];
+	    placeholder: string;
+	    multiline: boolean;
+	    required: boolean;
+	    yesLabel: string;
+	    noLabel: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FormPieceDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.id = source["id"];
+	        this.markdown = source["markdown"];
+	        this.html = source["html"];
+	        this.question = source["question"];
+	        this.options = this.convertValues(source["options"], FormOptionDTO);
+	        this.placeholder = source["placeholder"];
+	        this.multiline = source["multiline"];
+	        this.required = source["required"];
+	        this.yesLabel = source["yesLabel"];
+	        this.noLabel = source["noLabel"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class InstructionFileDTO {
 	    path: string;
 	    kind: string;
@@ -144,6 +210,46 @@ export namespace wails {
 	        this.downloading = source["downloading"];
 	    }
 	}
+	export class OpenFormDTO {
+	    id: string;
+	    meetingId: string;
+	    kind: string;
+	    title: string;
+	    pieces: FormPieceDTO[];
+	    queued: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenFormDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.meetingId = source["meetingId"];
+	        this.kind = source["kind"];
+	        this.title = source["title"];
+	        this.pieces = this.convertValues(source["pieces"], FormPieceDTO);
+	        this.queued = source["queued"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PermissionsDTO {
 	    microphone: string;
 	    screen: string;
@@ -156,6 +262,18 @@ export namespace wails {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.microphone = source["microphone"];
 	        this.screen = source["screen"];
+	    }
+	}
+	export class ReviewStateDTO {
+	    running: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReviewStateDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.running = source["running"];
 	    }
 	}
 	export class SegmentDTO {

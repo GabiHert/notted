@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { EventsOn, GetSettings, ListMeetings } from "./api/bindings";
+import { useEffect, useRef, useState } from "react";
+import { EventsOn, GetSettings, ListMeetings, SetWindowVisible } from "./api/bindings";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { MeetingPage } from "./components/MeetingPage";
 import { NewRecording } from "./components/NewRecording";
@@ -28,6 +28,14 @@ export function App({ initialView }: { initialView?: View }) {
     };
   }, []);
 
+  // Tell the backend whether the window is visible, so it notifies only when the person is away.
+  useEffect(() => {
+    const report = () => void SetWindowVisible(document.visibilityState === "visible").catch(() => {});
+    report();
+    document.addEventListener("visibilitychange", report);
+    return () => document.removeEventListener("visibilitychange", report);
+  }, []);
+
   useEffect(() => {
     if (initialView) return;
     let live = true;
@@ -49,6 +57,11 @@ export function App({ initialView }: { initialView?: View }) {
     if (current.kind === "settings" && v.kind !== "settings" && dirtyPath) setPendingView(v);
     else setView(v);
   };
+  // A click on a form notification: the backend has shown the window; open that meeting like a sidebar click.
+  const revealSeq = useRef(0);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  useEffect(() => EventsOn("ask:open", (e: { meetingId: string }) => navigateRef.current({ kind: "meeting", id: e.meetingId, reveal: ++revealSeq.current })), []);
   // After a delete: the newest meeting left, or New recording when none is.
   const leaveDeleted = (warning: string) => {
     setMenuError(warning);
@@ -76,7 +89,7 @@ export function App({ initialView }: { initialView?: View }) {
                 }}
               />
             ) : view.kind === "meeting" ? (
-              <MeetingPage meetingId={view.id} onDeleted={leaveDeleted} />
+              <MeetingPage meetingId={view.id} revealSeq={view.reveal} onDeleted={leaveDeleted} />
             ) : (
               <SettingsView onDirtyPath={setDirtyPath} />
             )}

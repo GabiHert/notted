@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useCallback, useEffect, useState } from "react";
 import { SummaryCard } from "./SummaryCard";
 import { SuggestionsCard } from "./SuggestionsCard";
+import { useSummaryRun } from "../summary";
 import { GenerateSummary, GetMeeting, emit, meeting, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
@@ -12,11 +13,12 @@ function Harness({ notCommitted = false }: { notCommitted?: boolean }) {
   const [m, setM] = useState<any>(null);
   const refresh = useCallback(() => void GetMeeting("m1").then(setM), []);
   useEffect(refresh, [refresh]);
+  const run = useSummaryRun("m1", refresh);
   if (!m) return null;
   return (
     <>
-      <SummaryCard meeting={m} notCommitted={notCommitted} onRefresh={refresh} />
-      <SuggestionsCard suggestionsMd={m.suggestionsMd} />
+      <SummaryCard meeting={m} notCommitted={notCommitted} run={run} />
+      <SuggestionsCard suggestionsMd={m.suggestionsMd} phase="idle" message="" sessionOpen={false} summaryRunning={run.pass !== null} onReview={() => {}} />
     </>
   );
 }

@@ -43,3 +43,12 @@ func UpdateLog() string { return filepath.Join(Home(), "update.log") }
 
 // InstallSource returns the file make install writes with the path of the clone it ran in.
 func InstallSource() string { return filepath.Join(Home(), "install-source") }
+
+// RunDir returns the directory holding runtime files such as the ask socket.
+func RunDir() string { return filepath.Join(Home(), "run") }
+
+// AskSocket returns the Unix socket the running app listens on for forms.
+func AskSocket() string { return filepath.Join(RunDir(), "ask.sock") }
+
+// SessionsDir returns the directory holding one folder of session files per meeting.
+func SessionsDir() string { return filepath.Join(Home(), "sessions") }

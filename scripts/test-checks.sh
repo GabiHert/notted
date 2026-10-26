@@ -4,7 +4,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 root=$(pwd)
 pass=0
-total=9
+total=11
 tmps=()
 cleanup() { for t in "${tmps[@]:-}"; do [ -n "$t" ] && rm -rf "$t"; done; }
 trap cleanup EXIT
@@ -54,6 +54,12 @@ expect "knowledge" check-invariants.sh knowledge
 
 fresh; mkdir -p "$tmp/internal"; flag="--dangerously-skip-""permissions"; echo "// $flag" > "$tmp/internal/f.go"
 expect "permission-flag" check-invariants.sh permission-flag
+
+fresh; mkdir -p "$tmp/internal"; echo "// bypass""Permissions" > "$tmp/internal/b.go"
+expect "bypass-mode-elsewhere" check-invariants.sh permission-flag
+
+fresh; flag="--dangerously-skip-""permissions"; echo "// $flag" >> "$tmp/internal/domain/permission_mode.go"
+expect "skip-flag-in-allowed-file" check-invariants.sh permission-flag
 
 fresh; mkdir -p "$tmp/internal"; printf '// \xff\xfe acme planner\n' > "$tmp/internal/bin.go"
 expect "knowledge-non-utf8" check-invariants.sh knowledge
