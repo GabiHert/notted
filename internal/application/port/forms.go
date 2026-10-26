@@ -23,3 +23,18 @@ type FormHandler interface {
 type FormAsker interface {
 	Ask(ctx context.Context, kind domain.FormKind, form domain.Form) (domain.FormAnswer, error)
 }
+
+// Notification is one macOS notification about an open form.
+type Notification struct {
+	ID        string // "ask-<form id>"
+	Title     string
+	Subtitle  string
+	Body      string
+	MeetingID string
+}
+
+// Notifier shows and removes notifications.
+type Notifier interface {
+	Notify(n Notification) error
+	Remove(id string)
+}

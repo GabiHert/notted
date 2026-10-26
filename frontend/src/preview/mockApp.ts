@@ -346,3 +346,9 @@ export async function DeleteMeeting(_id: string) {
   return { warning: "" };
 }
 export async function DownloadModels(_language: string) {}
+export async function ListOpenForms() {
+  return [];
+}
+export async function AnswerForm(_formId: string, _answers: Record<string, unknown>, _note: string) {}
+export async function DismissForm(_formId: string, _note: string) {}
+export async function SetWindowVisible(_visible: boolean) {}

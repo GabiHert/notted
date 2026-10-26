@@ -12,6 +12,7 @@ import (
 	"github.com/GabiHert/notted/internal/infra/paths"
 	"github.com/GabiHert/notted/internal/infra/store"
 	"github.com/GabiHert/notted/internal/infra/wails"
+	"github.com/GabiHert/notted/internal/integration/askipc"
 	"github.com/GabiHert/notted/internal/integration/audio"
 	"github.com/GabiHert/notted/internal/integration/audio/wavinfo"
 	"github.com/GabiHert/notted/internal/integration/claude"
@@ -46,6 +47,19 @@ func Run(assets embed.FS) error {
 		return err
 	}
 	emitter := &wails.Emitter{}
+	vis := &wails.Visibility{}
+	notifier := wails.NewNotifier(emitter)
+	exe, err := os.Executable()
+	if err != nil {
+		log.Printf("executable: %v", err)
+		exe = ""
+	}
+	forms := service.NewFormService(service.FormDeps{Meetings: st, Emit: emitter, Notify: notifier, Visible: vis.Visible,
+		SessionsDir: paths.SessionsDir(), Executable: exe, Socket: paths.AskSocket()})
+	askServer, err := askipc.Listen(paths.AskSocket(), forms)
+	if err != nil {
+		log.Printf("forms: %v", err) // the app runs on; ask then reports "Notted is not running"
+	}
 	recording := service.NewRecordingService(st, audio.NewSupervisor(helperPath()), emitter, paths.AudioDir, wavinfo.Inspector{})
 	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
 	detector := speech.NewDetector(paths.ModelsDir())
@@ -81,7 +95,7 @@ func Run(assets embed.FS) error {
 	micTest := service.NewMicTestService(audio.NewMicTester(helperPath()), permChecker, recording.Recording, emitter)
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
 	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Session: session, AudioDir: paths.AudioDir})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Meetings: st, Models: models})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Meetings: st, Models: models, Forms: forms, Visibility: vis})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{
@@ -108,6 +122,7 @@ func Run(assets embed.FS) error {
 		},
 		OnStartup: func(ctx context.Context) {
 			emitter.SetContext(ctx)
+			notifier.Start()
 			if err := recording.RecoverOnStartup(ctx); err != nil {
 				log.Printf("recover recordings: %v", err)
 			}
@@ -121,6 +136,10 @@ func Run(assets embed.FS) error {
 			}
 		},
 		OnShutdown: func(ctx context.Context) {
+			forms.CloseAll()
+			if askServer != nil {
+				_ = askServer.Close()
+			}
 			session.StopAll()
 			_ = micTest.Stop()
 			recording.StopAll()

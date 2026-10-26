@@ -28,6 +28,10 @@ export const StopRecording = vi.fn();
 export const GetModelStatus = vi.fn();
 export const DownloadModels = vi.fn();
 export const ListProjects = vi.fn();
+export const ListOpenForms = vi.fn(async () => []);
+export const AnswerForm = vi.fn(async () => {});
+export const DismissForm = vi.fn(async () => {});
+export const SetWindowVisible = vi.fn(async () => {});
 export const SetMeetingProject = vi.fn();
 export const GenerateSummary = vi.fn();
 export const CommitAndPushMeeting = vi.fn();
@@ -67,7 +71,7 @@ export const ClipboardSetText = vi.fn();
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, DeleteMeeting, GetSetupPrompt, ClipboardSetText, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -79,6 +83,10 @@ export function resetBindings() {
     handlers.delete(name);
   });
   ListMeetings.mockResolvedValue([]);
+  ListOpenForms.mockResolvedValue([]);
+  AnswerForm.mockResolvedValue(undefined);
+  DismissForm.mockResolvedValue(undefined);
+  SetWindowVisible.mockResolvedValue(undefined);
   GetTranscript.mockResolvedValue([]);
   DownloadModels.mockResolvedValue(undefined);
   StopRecording.mockResolvedValue(undefined);
