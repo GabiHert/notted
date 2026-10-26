@@ -29,6 +29,7 @@ type DeleteDeps struct {
 	Recorder      activeMeeting
 	Transcription transcriptionForgetter
 	Summary       summaryCanceller
+	Review        summaryCanceller
 	Session       sessionStopper
 	AudioDir      func(meetingID string) string
 }
@@ -39,13 +40,14 @@ type DeleteService struct {
 	recorder      activeMeeting
 	transcription transcriptionForgetter
 	summary       summaryCanceller
+	review        summaryCanceller
 	session       sessionStopper
 	audioDir      func(meetingID string) string
 }
 
 // NewDeleteService builds the delete service.
 func NewDeleteService(d DeleteDeps) *DeleteService {
-	return &DeleteService{store: d.Store, recorder: d.Recorder, transcription: d.Transcription, summary: d.Summary, session: d.Session, audioDir: d.AudioDir}
+	return &DeleteService{store: d.Store, recorder: d.Recorder, transcription: d.Transcription, summary: d.Summary, review: d.Review, session: d.Session, audioDir: d.AudioDir}
 }
 
 // Delete removes meetingID. It refuses while the meeting records. Otherwise it stops the meeting's
@@ -72,6 +74,9 @@ func (s *DeleteService) Delete(ctx context.Context, meetingID string) error {
 
 	s.transcription.Forget(meetingID)
 	s.summary.Cancel(meetingID)
+	if s.review != nil {
+		s.review.Cancel(meetingID)
+	}
 	if err := s.session.Stop(meetingID); err != nil {
 		log.Printf("delete: stop session %s: %v", meetingID, err)
 	}

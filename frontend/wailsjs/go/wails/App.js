@@ -78,6 +78,10 @@ export function GetPermissions() {
   return window['go']['wails']['App']['GetPermissions']();
 }
 
+export function GetReviewState(arg1) {
+  return window['go']['wails']['App']['GetReviewState'](arg1);
+}
+
 export function GetSettings() {
   return window['go']['wails']['App']['GetSettings']();
 }
@@ -144,6 +148,10 @@ export function ReadInstructionFile(arg1) {
 
 export function ResizeSession(arg1, arg2, arg3) {
   return window['go']['wails']['App']['ResizeSession'](arg1, arg2, arg3);
+}
+
+export function ReviewSuggestions(arg1) {
+  return window['go']['wails']['App']['ReviewSuggestions'](arg1);
 }
 
 export function SetMeetingProject(arg1, arg2) {

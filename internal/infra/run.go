@@ -93,9 +93,15 @@ func Run(assets embed.FS) error {
 	permChecker := audio.NewPermissions(helperPath())
 	permissions := service.NewPermissionsService(permChecker, system.Opener{})
 	micTest := service.NewMicTestService(audio.NewMicTester(helperPath()), permChecker, recording.Recording, emitter)
-	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.CleanEnv, claude.LookPath)
-	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Session: session, AudioDir: paths.AudioDir})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Meetings: st, Models: models, Forms: forms, Visibility: vis})
+	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.SessionEnv, claude.LookPath)
+	review := service.NewReviewService(service.ReviewDeps{Store: st, Settings: st, Runner: claude.Runner{EnvFn: claude.LoginShellEnv},
+		Terminal: term, Summary: summary, MCPConfig: forms.SessionConfig, Emit: emitter})
+	session.SetMCPConfig(forms.SessionConfig)
+	session.SetBusyCheck(service.SessionBusyCheck(review, summary))
+	summary.SetMCPConfig(forms.SessionConfig)
+	summary.SetBusyCheck(service.SummaryBusyCheck(review))
+	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Review: review, Session: session, AudioDir: paths.AudioDir})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{
@@ -140,6 +146,7 @@ func Run(assets embed.FS) error {
 			if askServer != nil {
 				_ = askServer.Close()
 			}
+			review.StopAll()
 			session.StopAll()
 			_ = micTest.Stop()
 			recording.StopAll()

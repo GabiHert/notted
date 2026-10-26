@@ -471,3 +471,75 @@ func TestCancelLeavesAnotherMeetingsRunAlone(t *testing.T) {
 		t.Fatalf("the run was disturbed: %v", got)
 	}
 }
+
+func TestSummaryPassesCarryMCPConfig(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	f.svc.SetMCPConfig(func(id string) (string, error) { return "/s/" + id + "/mcp.json", nil })
+	f.run.reply = []func() (string, error){ok("# Summary: X"), ok("# Suggestions: X")}
+	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	if len(f.run.runs) != 2 {
+		t.Fatalf("runs = %d", len(f.run.runs))
+	}
+	for i, r := range f.run.runs {
+		if r.MCPConfig != "/s/m1/mcp.json" {
+			t.Fatalf("run %d MCPConfig = %q", i, r.MCPConfig)
+		}
+		if r.Timeout != 0 {
+			t.Fatalf("run %d Timeout = %v", i, r.Timeout)
+		}
+	}
+}
+
+func TestSummaryConfigErrorEmitsError(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	f.svc.SetMCPConfig(func(string) (string, error) { return "", errors.New("no space") })
+	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	got := f.states()
+	if len(got) != 1 || got[0] != "summary/error:Notted could not prepare the session's tools: no space" {
+		t.Fatalf("states = %v", got)
+	}
+	if len(f.run.runs) != 0 {
+		t.Fatal("the runner was called")
+	}
+}
+
+func TestSummaryRunningAndBusy(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	if f.svc.Running("m1") {
+		t.Fatal("running before Generate")
+	}
+	f.svc.SetBusyCheck(func(id string) string { return "wait " + id })
+	wantErr(t, f.svc.Generate(f.ctx, "m1"), "wait m1")
+	f.svc.SetBusyCheck(func(string) string { return "" })
+	f.run.block = make(chan struct{})
+	f.run.reply = []func() (string, error){ok("# Summary: X"), ok("# Suggestions: X")}
+	if err := f.svc.Generate(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	if !f.svc.Running("m1") || f.svc.Running("other") {
+		t.Fatal("Running is wrong while a run is active")
+	}
+	close(f.run.block)
+	f.svc.Wait()
+	if f.svc.Running("m1") {
+		t.Fatal("still running")
+	}
+}
+
+func TestSummaryBusyMessageWhileReviewRuns(t *testing.T) {
+	f := newSumFixture(t)
+	f.meeting(t, "m1", domain.StateReady, "acme", true)
+	review := &fakeRunning{}
+	f.svc.SetBusyCheck(SummaryBusyCheck(review))
+	review.set("m1", true)
+	wantErr(t, f.svc.Generate(f.ctx, "m1"), "Suggestions are being reviewed for this meeting. Wait until the review finishes.")
+}

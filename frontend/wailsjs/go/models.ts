@@ -264,6 +264,18 @@ export namespace wails {
 	        this.screen = source["screen"];
 	    }
 	}
+	export class ReviewStateDTO {
+	    running: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReviewStateDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.running = source["running"];
+	    }
+	}
 	export class SegmentDTO {
 	    id: number;
 	    track: string;

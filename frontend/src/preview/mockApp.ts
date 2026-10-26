@@ -315,6 +315,10 @@ export async function ListProjects() {
 }
 export async function SetMeetingProject(_id: string, _key: string) {}
 export async function GenerateSummary(_id: string) {}
+export async function ReviewSuggestions(_id: string) {}
+export async function GetReviewState(_id: string) {
+  return { running: false };
+}
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
   return { sha: "abc1234", pushed: true };

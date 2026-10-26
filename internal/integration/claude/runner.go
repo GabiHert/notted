@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 const (
@@ -38,14 +39,33 @@ func buildArgs(r port.ClaudeRun, promptFile string) []string {
 	} else {
 		args = append(args, "--session-id", r.SessionID)
 	}
+	tools := readOnlyTools
+	if r.MCPConfig != "" {
+		args = append(args, "--mcp-config", r.MCPConfig, "--permission-prompt-tool", domain.PermissionToolName)
+		tools += " " + domain.AskToolName
+	}
 	if promptFile != "" {
 		args = append(args, "--append-system-prompt-file", promptFile)
 	}
-	args = append(args, "--allowedTools", readOnlyTools)
+	args = append(args, "--allowedTools", tools)
 	if r.ProjectRoot != "" {
 		args = append(args, "--add-dir", r.ProjectRoot)
 	}
 	return args
+}
+
+// humanDuration words a timeout: whole hours, else whole minutes.
+func humanDuration(d time.Duration) string {
+	plural := func(n int, unit string) string {
+		if n == 1 {
+			return "1 " + unit
+		}
+		return fmt.Sprintf("%d %ss", n, unit)
+	}
+	if d >= time.Hour && d%time.Hour == 0 {
+		return plural(int(d/time.Hour), "hour")
+	}
+	return plural(int(d/time.Minute), "minute")
 }
 
 // Run executes claude in the checkout, feeding r.Stdin whole, and returns its stdout.
@@ -56,9 +76,16 @@ func (rn Runner) Run(ctx context.Context, r port.ClaudeRun) (string, error) {
 	}
 	timeout := rn.Timeout
 	if timeout <= 0 {
+		timeout = r.Timeout
+	}
+	if timeout <= 0 {
 		timeout = defaultTimeout
 	}
-	env := CleanEnv(envFn())
+	limit := "15 minutes"
+	if r.Timeout > 0 {
+		limit = humanDuration(r.Timeout)
+	}
+	env := WithToolTimeout(CleanEnv(envFn()))
 	path, err := LookPath(env, "claude")
 	if err != nil {
 		return "", errors.New("Claude Code was not found. Install it and make sure the claude command runs in your terminal.")
@@ -109,7 +136,7 @@ func (rn Runner) Run(ctx context.Context, r port.ClaudeRun) (string, error) {
 		return "", fmt.Errorf("claude run cancelled: %w", context.Canceled)
 	}
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
-		return "", errors.New("Claude Code did not finish within 15 minutes.")
+		return "", fmt.Errorf("Claude Code did not finish within %s.", limit)
 	}
 	if err == nil {
 		return stdout.String(), nil

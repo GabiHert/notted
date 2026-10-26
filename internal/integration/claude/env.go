@@ -12,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 const envMarker = "__NOTTED_ENV_BEGIN__"
@@ -144,6 +146,21 @@ func CleanEnv(env []string) []string {
 	}
 	return out
 }
+
+// WithToolTimeout sets MCP_TOOL_TIMEOUT to 24 hours, once, so a pending form never times out in Claude Code.
+func WithToolTimeout(env []string) []string {
+	out := make([]string, 0, len(env)+1)
+	for _, e := range env {
+		if strings.HasPrefix(e, "MCP_TOOL_TIMEOUT=") {
+			continue
+		}
+		out = append(out, e)
+	}
+	return append(out, domain.ToolTimeoutEnv)
+}
+
+// SessionEnv is the environment of a terminal session: no API credentials, and the 24-hour tool timeout.
+func SessionEnv(env []string) []string { return WithToolTimeout(CleanEnv(env)) }
 
 // LookPath searches the PATH entry of env (not the app's own) for an executable file.
 func LookPath(env []string, name string) (string, error) {

@@ -47,6 +47,15 @@ func TestArgumentLists(t *testing.T) {
 			[]string{"-p", "--resume", "id1", "--allowedTools", tools}},
 		{"suggestions root", port.ClaudeRun{SessionID: "id1", Resume: true, ProjectRoot: "/r"},
 			[]string{"-p", "--resume", "id1", "--allowedTools", tools, "--add-dir", "/r"}},
+		{"summary new with tools", port.ClaudeRun{SessionID: "id1", PromptText: "P", MCPConfig: "/m.json"},
+			[]string{"-p", "--session-id", "id1", "--mcp-config", "/m.json", "--permission-prompt-tool", "mcp__notted__permission",
+				"--append-system-prompt-file", "<file>", "--allowedTools", tools + " mcp__notted__ask"}},
+		{"suggestions with tools", port.ClaudeRun{SessionID: "id1", Resume: true, ProjectRoot: "/r", MCPConfig: "/m.json"},
+			[]string{"-p", "--resume", "id1", "--mcp-config", "/m.json", "--permission-prompt-tool", "mcp__notted__permission",
+				"--allowedTools", tools + " mcp__notted__ask", "--add-dir", "/r"}},
+		{"review", port.ClaudeRun{SessionID: "id1", Resume: true, ProjectRoot: "/r", MCPConfig: "/m.json", Timeout: 24 * time.Hour},
+			[]string{"-p", "--resume", "id1", "--mcp-config", "/m.json", "--permission-prompt-tool", "mcp__notted__permission",
+				"--allowedTools", tools + " mcp__notted__ask", "--add-dir", "/r"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -75,6 +84,40 @@ func TestArgumentLists(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestToolTimeoutOnceAndNoCredentials(t *testing.T) {
+	checkout, binDir, out := fixture(t)
+	r := &Runner{EnvFn: runnerEnv(binDir, out, "MCP_TOOL_TIMEOUT=5")}
+	if _, err := r.Run(context.Background(), port.ClaudeRun{Checkout: checkout, SessionID: "i", Resume: true}); err != nil {
+		t.Fatal(err)
+	}
+	env := read(t, filepath.Join(out, "env"))
+	if n := strings.Count(env, "MCP_TOOL_TIMEOUT="); n != 1 || !strings.Contains(env, "MCP_TOOL_TIMEOUT=86400000\n") {
+		t.Fatalf("MCP_TOOL_TIMEOUT count %d in %q", n, env)
+	}
+	if strings.Contains(env, "ANTHROPIC_API_KEY") || strings.Contains(env, "ANTHROPIC_AUTH_TOKEN") {
+		t.Fatal("credentials reached the child")
+	}
+}
+
+func TestRunTimeoutMessageUsesRunTimeout(t *testing.T) {
+	checkout, binDir, out := fixture(t)
+	r := &Runner{EnvFn: runnerEnv(binDir, out, "STUB_SLEEP=2"), Timeout: 100 * time.Millisecond}
+	_, err := r.Run(context.Background(), port.ClaudeRun{Checkout: checkout, SessionID: "i", Resume: true, Timeout: 24 * time.Hour})
+	if err == nil || err.Error() != "Claude Code did not finish within 24 hours." {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestHumanDuration(t *testing.T) {
+	for d, want := range map[time.Duration]string{
+		time.Hour: "1 hour", 24 * time.Hour: "24 hours", time.Minute: "1 minute", 15 * time.Minute: "15 minutes", 90 * time.Minute: "90 minutes",
+	} {
+		if got := humanDuration(d); got != want {
+			t.Fatalf("%v: got %q want %q", d, got, want)
+		}
 	}
 }
 
@@ -213,4 +256,17 @@ func TestCancelReturnsCanceledAndKillsGroup(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 	waitGone(t, child)
+}
+
+func TestRunUsesClaudeRunTimeoutAsDeadline(t *testing.T) {
+	checkout, binDir, out := fixture(t)
+	r := &Runner{EnvFn: runnerEnv(binDir, out, "STUB_SLEEP=5")}
+	start := time.Now()
+	_, err := r.Run(context.Background(), port.ClaudeRun{Checkout: checkout, SessionID: "i", Resume: true, Timeout: 300 * time.Millisecond})
+	if err == nil || !strings.HasPrefix(err.Error(), "Claude Code did not finish within") {
+		t.Fatalf("got %v", err)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Fatal("ClaudeRun.Timeout was not the deadline")
+	}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/GabiHert/notted/internal/application/port"
 	"github.com/GabiHert/notted/internal/domain"
@@ -16,7 +17,16 @@ type SessionService struct {
 	envFn    func() []string
 	cleanEnv func(env []string) []string
 	lookPath func(env []string, name string) (string, error)
+
+	mcpConfig func(meetingID string) (string, error) // nil = no Notted tools
+	busy      func(meetingID string) string          // nil = never busy; "" = free
 }
+
+// SetMCPConfig sets the function that writes a meeting's tool server file. nil turns the tools off.
+func (s *SessionService) SetMCPConfig(fn func(meetingID string) (string, error)) { s.mcpConfig = fn }
+
+// SetBusyCheck sets the check that refuses a start while another run uses the conversation: "" = free, else the refusal.
+func (s *SessionService) SetBusyCheck(fn func(meetingID string) string) { s.busy = fn }
 
 // NewSessionService builds the session service. cleanEnv removes the API credentials from the environment.
 func NewSessionService(store port.MeetingStore, settings port.SettingsStore, term port.TerminalManager,
@@ -39,6 +49,11 @@ func (s *SessionService) Start(ctx context.Context, meetingID string) error {
 	if m.ClaudeSessionID == "" {
 		return errors.New("This meeting has no Claude Code session yet. Generate the summary first.")
 	}
+	if s.busy != nil {
+		if msg := s.busy(meetingID); msg != "" {
+			return errors.New(msg)
+		}
+	}
 	st, err := s.settings.GetSettings(ctx)
 	if err != nil {
 		return err
@@ -52,6 +67,13 @@ func (s *SessionService) Start(ctx context.Context, meetingID string) error {
 		return errors.New("Claude Code was not found. Install it and make sure the claude command runs in your terminal.")
 	}
 	args := []string{claudePath, "--resume", m.ClaudeSessionID}
+	if s.mcpConfig != nil {
+		file, err := s.mcpConfig(meetingID)
+		if err != nil {
+			return fmt.Errorf("Notted could not prepare the session's tools: %w", err)
+		}
+		args = append(args, "--mcp-config", file, "--allowedTools", domain.AskToolName)
+	}
 	if root := st.ProjectRoots[m.ProjectKey]; root != "" {
 		args = append(args, "--add-dir", root)
 	}
