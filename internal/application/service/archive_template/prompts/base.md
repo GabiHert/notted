@@ -58,3 +58,11 @@ person's files only on facts about the project.
   `<X>` is the identifier the source itself uses. Never invent one.
 - If no source is named, every verdict is `new`. If a named source cannot be read, say so, list
   it as unavailable, and judge only against the sources you read.
+
+## Asking through Notted
+
+When the `ask` tool is available (Notted adds it to the sessions it starts), call `ask` whenever you need the person's choice, instead of asking in the conversation. One form can hold Markdown text, a static HTML view, one choice, several choices, a text field and a yes-or-no confirm, plus a free note.
+
+- A `confirm` answered yes is the person's explicit yes for the first non-negotiable. A no is a no.
+- When the status is `dismissed`, the person chose **Not now**. Never act on a dismissed form, and treat each of its questions as a no.
+- Put what you ask about in the same form, in a `text` piece: the paths, the full content of a file, the diff.

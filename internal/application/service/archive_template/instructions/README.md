@@ -86,6 +86,19 @@ Draft a new file in `tasks/` and show it before saving.
 
 Your profile names your person file (for example `ana`). Choose it in Notted's settings. It never falls back to another person's file.
 
+## Forms in Notted
+
+When a session runs inside Notted, Claude has an `ask` tool. It shows a form at the top of the meeting's page, under **Waiting for you**, and waits for your answer. A form can hold:
+
+- `text`: Markdown, rendered;
+- `html`: a static HTML view, with no scripts and no network;
+- `choice`: one option out of several, one of them marked recommended;
+- `multi`: any number of options, for example the suggestions to accept;
+- `input`: a text field;
+- `confirm`: a yes and a no button.
+
+Every form also has a **Note** for free text and a **Not now** button. **Not now** means no: Claude does not act on a dismissed form. In the turns Notted runs without a terminal, such as **Review suggestions**, Claude Code's permission requests arrive as cards too: **Allow** lets the action run, **Deny** refuses it. Your instructions can ask for a form, for example "ask me with a `choice` which folder to use".
+
 ## Limits
 
 An instruction cannot widen the base's non-negotiables. Nothing is created, sent or committed without the person's yes, and a message to another session is a trigger for its reader, never an approval.

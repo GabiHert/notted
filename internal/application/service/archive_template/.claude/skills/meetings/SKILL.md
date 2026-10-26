@@ -21,6 +21,9 @@ then lines `[hh:mm:ss] (mic|others) text`). This skill adds `summary.md` and `su
   open another project's folder under `meetings/`.
 - A **yes** is the person's next reply to your question, and it says yes (`yes`, `y`, `sim`, `s`,
   or an unmistakable equivalent). Anything else is a no. Ask one yes/no question at a time.
+- When the `ask` tool is available, ask each yes-or-no question as an `ask` form with one `confirm`
+  piece, and put what you show (the diff, the path and full content of a file) in a `text` piece of
+  the same form. A `confirm` answered yes is a yes; a no or a dismissed form is a no.
 - Never create an issue in any tracker, never send a message to another session or person, and
   never push to a branch other than the current one.
 
@@ -98,13 +101,17 @@ Used by process and accept.
    Number the ids `S-01`, `S-02`, … in order. Every suggestion has at least one quoted transcript
    line. Writing this file needs no yes, because it commits nothing.
 6. List the suggestions to the person (id, title, verdict) and ask which to accept and which to
-   reject, for example "accept S-01, reject S-02".
+   reject, for example "accept S-01, reject S-02". When the `ask` tool is available, ask with one
+   `ask` form instead: one `multi` piece with id `accept`, one option per undecided suggestion,
+   label `<id>: <title>` and description `<verdict>. <why>`. Checked means accept, unchecked means
+   reject. A dismissed form records nothing.
 
 ## accept <folder>
 
 1. For each suggestion the person named, set **Decision** to `accepted` or `rejected`. A recorded
    decision changes only when the person explicitly asks to change it. Suggestions not named stay
-   `undecided`.
+   `undecided`. When the decisions come from a `multi` piece, every checked suggestion is
+   `accepted` and every unchecked one is `rejected`.
 2. For each `accepted` suggestion:
    - If the per-project person instructions have an `## On accept` section, follow it. Every action
      in it that writes a file outside the meeting folder needs its own yes first: show the path
