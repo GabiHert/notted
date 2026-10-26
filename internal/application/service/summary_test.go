@@ -491,6 +491,9 @@ func TestSummaryPassesCarryMCPConfig(t *testing.T) {
 		if r.Timeout != 0 {
 			t.Fatalf("run %d Timeout = %v", i, r.Timeout)
 		}
+		if r.ActWithoutAsking {
+			t.Fatalf("run %d ActWithoutAsking = true", i)
+		}
 	}
 }
 

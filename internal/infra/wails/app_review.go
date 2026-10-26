@@ -14,3 +14,14 @@ func (a *App) ReviewSuggestions(meetingID string) error {
 func (a *App) GetReviewState(meetingID string) ReviewStateDTO {
 	return ReviewStateDTO{Running: a.review.Running(meetingID)}
 }
+
+// GetReviewActWithoutAsking says whether review turns run without permission prompts (off by default).
+func (a *App) GetReviewActWithoutAsking() (bool, error) {
+	on, err := a.review.ActWithoutAsking(a.context())
+	return on, userFacing(err)
+}
+
+// SetReviewActWithoutAsking saves the review switch; the next review reads it.
+func (a *App) SetReviewActWithoutAsking(on bool) error {
+	return userFacing(a.review.SetActWithoutAsking(a.context(), on))
+}

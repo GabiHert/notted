@@ -48,6 +48,9 @@ export function initPreview(): View {
     case "mictest-quiet":
     case "mictest-ok":
     case "mictest-recording":
+    case "review-mode-off":
+    case "review-mode-on":
+    case "review-mode-save-failed":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -187,6 +190,12 @@ function autoDriveSettings(screen: string) {
     el?.scrollIntoView({ block: "start" });
     return Boolean(el);
   };
+  const check = (selector: string) => () => {
+    const el = document.querySelector<HTMLInputElement>(selector);
+    if (!el || el.disabled) return false;
+    el.click();
+    return true;
+  };
   const typeInto = (selector: string, value: string) => () => {
     const input = document.querySelector<HTMLInputElement>(selector);
     if (!input) return false;
@@ -216,6 +225,9 @@ function autoDriveSettings(screen: string) {
     "setup-my-file-created": [byLabel("Create your file for globex")],
     "setup-folder-new": [byLabel("Choose the meetings archive folder")],
     "setup-folder-in-repo": [byLabel("Choose the meetings archive folder")],
+    "review-mode-off": [scrollTo(".nt-reviewmode")],
+    "review-mode-on": [scrollTo(".nt-reviewmode")],
+    "review-mode-save-failed": [scrollTo(".nt-reviewmode"), check("#nt-reviewmode")],
     "update-idle": [scrollTo(".nt-update")],
     "update-no-source": [scrollTo(".nt-update")],
     "update-running": [scrollTo(".nt-update")],

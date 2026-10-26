@@ -84,6 +84,33 @@ func (r *revRunner) Run(ctx context.Context, run port.ClaudeRun) (string, error)
 	return r.out, r.err
 }
 
+type fakeReviewMode struct {
+	mu     sync.Mutex
+	on     bool
+	getErr error
+	setErr error
+	sets   []bool
+}
+
+func (f *fakeReviewMode) GetReviewActWithoutAsking(context.Context) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.on, f.getErr
+}
+
+func (f *fakeReviewMode) SetReviewActWithoutAsking(_ context.Context, on bool) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.sets = append(f.sets, on)
+	return f.setErr
+}
+
+func (f *fakeReviewMode) flip(on bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.on = on
+}
+
 type revFixture struct {
 	store    *revStore
 	runner   *revRunner
@@ -368,4 +395,95 @@ func TestBusyChecks(t *testing.T) {
 	if sess("other") != "" {
 		t.Fatal("other meeting busy")
 	}
+}
+
+func TestReviewRunCarriesTheSwitch(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		mode *fakeReviewMode
+		want bool
+	}{{"on", &fakeReviewMode{on: true}, true}, {"off", &fakeReviewMode{}, false}, {"nil store", nil, false}} {
+		t.Run(c.name, func(t *testing.T) {
+			f := newRevFixture(t)
+			if c.mode != nil {
+				f.svc.mode = c.mode
+			}
+			if err := f.svc.Start(context.Background(), "m1"); err != nil {
+				t.Fatal(err)
+			}
+			f.svc.Wait()
+			want := port.ClaudeRun{Checkout: f.checkout, SessionID: "sid-1", Resume: true, ProjectRoot: "/work/acme",
+				MCPConfig: "/s/m1/mcp.json", Timeout: 24 * time.Hour, Stdin: reviewStdin(f.store.meeting), ActWithoutAsking: c.want}
+			if len(f.runner.runs) != 1 || f.runner.runs[0] != want {
+				t.Fatalf("runs = %+v", f.runner.runs)
+			}
+		})
+	}
+}
+
+func TestReviewRefusesWhenTheSettingCannotBeRead(t *testing.T) {
+	f := newRevFixture(t)
+	f.svc.mode = &fakeReviewMode{getErr: errors.New("boom")}
+	wantErr(t, f.svc.Start(context.Background(), "m1"), "Notted could not read the review setting: boom")
+	if len(f.runner.runs) != 0 || len(f.em.events) != 0 || f.svc.Running("m1") {
+		t.Fatal("a refused start ran, emitted or registered")
+	}
+}
+
+func TestReviewReadsTheSwitchOnEveryStart(t *testing.T) {
+	f := newRevFixture(t)
+	mode := &fakeReviewMode{}
+	f.svc.mode = mode
+	if err := f.svc.Start(context.Background(), "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	mode.flip(true)
+	if err := f.svc.Start(context.Background(), "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	if len(f.runner.runs) != 2 || f.runner.runs[0].ActWithoutAsking || !f.runner.runs[1].ActWithoutAsking {
+		t.Fatalf("runs = %+v", f.runner.runs)
+	}
+}
+
+func TestRunningReviewKeepsItsMode(t *testing.T) {
+	f := newRevFixture(t)
+	mode := &fakeReviewMode{on: true}
+	f.svc.mode = mode
+	f.runner.block = make(chan struct{})
+	if err := f.svc.Start(context.Background(), "m1"); err != nil {
+		t.Fatal(err)
+	}
+	mode.flip(false)
+	close(f.runner.block)
+	f.svc.Wait()
+	if len(f.runner.runs) != 1 || !f.runner.runs[0].ActWithoutAsking {
+		t.Fatalf("runs = %+v", f.runner.runs)
+	}
+}
+
+func TestReviewSwitchGetterAndSetter(t *testing.T) {
+	ctx := context.Background()
+	f := newRevFixture(t)
+	if on, err := f.svc.ActWithoutAsking(ctx); err != nil || on {
+		t.Fatalf("nil store get = %v, %v", on, err)
+	}
+	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Notted could not save the review setting: no store.")
+
+	mode := &fakeReviewMode{on: true}
+	f.svc.mode = mode
+	if on, err := f.svc.ActWithoutAsking(ctx); err != nil || !on {
+		t.Fatalf("get = %v, %v", on, err)
+	}
+	if err := f.svc.SetActWithoutAsking(ctx, false); err != nil || len(mode.sets) != 1 || mode.sets[0] {
+		t.Fatalf("set = %v, %v", mode.sets, err)
+	}
+	mode.getErr = errors.New("boom")
+	if _, err := f.svc.ActWithoutAsking(ctx); err == nil || err.Error() != "Notted could not read the review setting: boom" {
+		t.Fatalf("get err = %v", err)
+	}
+	mode.setErr = errors.New("locked")
+	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Notted could not save the review setting: locked")
 }

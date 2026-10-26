@@ -39,6 +39,9 @@ func buildArgs(r port.ClaudeRun, promptFile string) []string {
 	} else {
 		args = append(args, "--session-id", r.SessionID)
 	}
+	if r.ActWithoutAsking {
+		args = append(args, "--permission-mode", domain.ReviewPermissionMode)
+	}
 	tools := readOnlyTools
 	if r.MCPConfig != "" {
 		args = append(args, "--mcp-config", r.MCPConfig, "--permission-prompt-tool", domain.PermissionToolName)

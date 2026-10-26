@@ -94,7 +94,7 @@ func Run(assets embed.FS) error {
 	permissions := service.NewPermissionsService(permChecker, system.Opener{})
 	micTest := service.NewMicTestService(audio.NewMicTester(helperPath()), permChecker, recording.Recording, emitter)
 	session := service.NewSessionService(st, st, term, claude.LoginShellEnv, claude.SessionEnv, claude.LookPath)
-	review := service.NewReviewService(service.ReviewDeps{Store: st, Settings: st, Runner: claude.Runner{EnvFn: claude.LoginShellEnv},
+	review := service.NewReviewService(service.ReviewDeps{Store: st, Settings: st, Mode: st, Runner: claude.Runner{EnvFn: claude.LoginShellEnv},
 		Terminal: term, Summary: summary, MCPConfig: forms.SessionConfig, Emit: emitter})
 	session.SetMCPConfig(forms.SessionConfig)
 	session.SetBusyCheck(service.SessionBusyCheck(review, summary))

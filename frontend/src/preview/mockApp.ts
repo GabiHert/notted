@@ -339,6 +339,12 @@ export async function ReviewSuggestions(_id: string) {
 export async function GetReviewState(_id: string) {
   return { running: screen === "review-running" || screen === "review-form-arrives" || screen === "session-review-running" };
 }
+export async function GetReviewActWithoutAsking() {
+  return screen === "review-mode-on";
+}
+export async function SetReviewActWithoutAsking(_on: boolean) {
+  if (screen === "review-mode-save-failed") throw new Error("Notted could not save the review setting: database is locked");
+}
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");
   return { sha: "abc1234", pushed: true };

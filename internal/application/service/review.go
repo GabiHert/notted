@@ -49,6 +49,7 @@ const (
 type ReviewDeps struct {
 	Store     port.MeetingStore
 	Settings  port.SettingsStore
+	Mode      port.ReviewModeStore // nil: always off
 	Runner    port.ClaudeRunner
 	Terminal  runningChecker // port.TerminalManager satisfies it
 	Summary   runningChecker
@@ -61,6 +62,7 @@ type ReviewDeps struct {
 type ReviewService struct {
 	store     port.MeetingStore
 	settings  port.SettingsStore
+	mode      port.ReviewModeStore
 	runner    port.ClaudeRunner
 	terminal  runningChecker
 	summary   runningChecker
@@ -79,7 +81,7 @@ func NewReviewService(d ReviewDeps) *ReviewService {
 	if rf == nil {
 		rf = os.ReadFile
 	}
-	return &ReviewService{store: d.Store, settings: d.Settings, runner: d.Runner, terminal: d.Terminal, summary: d.Summary,
+	return &ReviewService{store: d.Store, settings: d.Settings, mode: d.Mode, runner: d.Runner, terminal: d.Terminal, summary: d.Summary,
 		mcpConfig: d.MCPConfig, emit: d.Emit, readFile: rf, active: map[string]*summaryRun{}}
 }
 
@@ -144,6 +146,14 @@ func (s *ReviewService) Start(ctx context.Context, meetingID string) error {
 		return errors.New("Set the meetings archive folder in Settings > Instructions first.")
 	}
 
+	on := false
+	if s.mode != nil {
+		on, err = s.mode.GetReviewActWithoutAsking(ctx)
+		if err != nil {
+			return fmt.Errorf("Notted could not read the review setting: %w", err)
+		}
+	}
+
 	s.mu.Lock()
 	if s.terminal.Running(meetingID) {
 		s.mu.Unlock()
@@ -170,7 +180,7 @@ func (s *ReviewService) Start(ctx context.Context, meetingID string) error {
 
 	s.state(runCtx, meetingID, "running", "")
 	run := port.ClaudeRun{Checkout: st.CheckoutPath, SessionID: m.ClaudeSessionID, Resume: true,
-		ProjectRoot: st.ProjectRoots[m.ProjectKey], MCPConfig: file, Timeout: reviewTimeout, Stdin: reviewStdin(m)}
+		ProjectRoot: st.ProjectRoots[m.ProjectKey], MCPConfig: file, Timeout: reviewTimeout, Stdin: reviewStdin(m), ActWithoutAsking: on}
 	go func() {
 		defer func() {
 			s.mu.Lock()
@@ -182,6 +192,29 @@ func (s *ReviewService) Start(ctx context.Context, meetingID string) error {
 		}()
 		s.finish(runCtx, m, st.CheckoutPath, run)
 	}()
+	return nil
+}
+
+// ActWithoutAsking says whether the next review runs without permission prompts. Off when never saved.
+func (s *ReviewService) ActWithoutAsking(ctx context.Context) (bool, error) {
+	if s.mode == nil {
+		return false, nil
+	}
+	on, err := s.mode.GetReviewActWithoutAsking(ctx)
+	if err != nil {
+		return false, fmt.Errorf("Notted could not read the review setting: %w", err)
+	}
+	return on, nil
+}
+
+// SetActWithoutAsking saves the switch. A running review keeps the mode it started with.
+func (s *ReviewService) SetActWithoutAsking(ctx context.Context, on bool) error {
+	if s.mode == nil {
+		return errors.New("Notted could not save the review setting: no store.")
+	}
+	if err := s.mode.SetReviewActWithoutAsking(ctx, on); err != nil {
+		return fmt.Errorf("Notted could not save the review setting: %w", err)
+	}
 	return nil
 }
 

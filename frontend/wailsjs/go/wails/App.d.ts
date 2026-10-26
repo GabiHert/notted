@@ -40,6 +40,8 @@ export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
 export function GetPermissions():Promise<wails.PermissionsDTO>;
 
+export function GetReviewActWithoutAsking():Promise<boolean>;
+
 export function GetReviewState(arg1:string):Promise<wails.ReviewStateDTO>;
 
 export function GetSettings():Promise<wails.SettingsDTO>;
@@ -79,6 +81,8 @@ export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>
 export function ReviewSuggestions(arg1:string):Promise<void>;
 
 export function SetMeetingProject(arg1:string,arg2:string):Promise<void>;
+
+export function SetReviewActWithoutAsking(arg1:boolean):Promise<void>;
 
 export function SetSettings(arg1:wails.SettingsDTO):Promise<void>;
 

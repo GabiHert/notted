@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Source check: Notted holds no project knowledge and never writes the permission-skipping flag.
+# Source check: Notted holds no project knowledge, never writes the permission-skipping flag, and names Claude Code's bypass mode in one file only (the review switch, off by default).
 set -uo pipefail
 export LC_ALL=C
 cd "$(dirname "$0")/.."
@@ -9,6 +9,7 @@ files=$(git ls-files -co --exclude-standard |
   grep -vE '^(go\.sum|frontend/package-lock\.json|scripts/check-invariants\.sh|scripts/test-checks\.sh)$' | sort -u)
 
 flag="--dangerously-skip-""permissions"
+bypass_ok="internal/domain/permission_mode.go"
 
 for f in $files; do
   [ -f "$f" ] || continue
@@ -19,7 +20,7 @@ for f in $files; do
   while IFS= read -r hit; do
     echo "check-invariants: FAIL permission-flag: $f:${hit%%:*}: ${hit#*:}"
     fail=1
-  done < <(grep -nIF -e "$flag" -e "bypassPermissions" "$f")
+  done < <(if [ "$f" = "$bypass_ok" ]; then grep -nIF -e "$flag" "$f"; else grep -nIF -e "$flag" -e "bypassPermissions" "$f"; fi)
 done
 
 if [ "$fail" -ne 0 ]; then exit 1; fi

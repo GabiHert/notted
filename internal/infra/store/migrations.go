@@ -60,6 +60,13 @@ BEGIN SELECT RAISE(ABORT, 'folder is write-once'); END;`,
 INSERT INTO settings_new (key, value) SELECT key, value FROM settings;
 DROP TABLE settings;
 ALTER TABLE settings_new RENAME TO settings;`,
+	`CREATE TABLE settings_new (
+  key   TEXT PRIMARY KEY CHECK (key IN ('profile','checkout_path','project_roots','source_path','review_act_without_asking')),
+  value TEXT NOT NULL
+);
+INSERT INTO settings_new (key, value) SELECT key, value FROM settings;
+DROP TABLE settings;
+ALTER TABLE settings_new RENAME TO settings;`,
 }
 
 func runMigrations(db *sql.DB) error {

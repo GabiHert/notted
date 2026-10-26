@@ -185,7 +185,7 @@ Notted keeps its icon, the Notted N, in the menu bar for as long as it runs; a d
 
 ### Accept suggestions
 
-On a summarized meeting, click **Review suggestions** on the **Suggestions** card. Claude Code shows the suggestions as a form under **Waiting for you**: check the ones to accept and click **Send**. The unchecked ones are rejected. Claude Code then follows your accept instructions and asks you, in the same place, before it writes, commits or pushes anything. With no instructions, accepting prints the task and does nothing else.
+On a summarized meeting, click **Review suggestions** on the **Suggestions** card. Claude Code shows the suggestions as a form under **Waiting for you**: check the ones to accept and click **Send**. The unchecked ones are rejected. Claude Code then follows your accept instructions and asks you, in the same place, before it writes, commits or pushes anything. Each file edit and command comes to you as an **Allow** or **Deny** card. To skip those cards, switch on **Let Claude act without asking during reviews** in **Settings**, under **Suggestion reviews**. It is off by default. When it is on, Claude Code edits files and runs commands, git included, without asking you; the suggestions form, and any question your accept instructions ask, still come to you. With no instructions, accepting prints the task and does nothing else.
 
 You can also do it in the terminal: the **Claude Code session** card continues the meeting's conversation in the app. Claude asks before it changes anything, and your answer is the yes. The review and the terminal session use the same conversation, so only one of them runs at a time.
 
@@ -222,7 +222,7 @@ The base's non-negotiables win over every layer. Otherwise the more specific lay
 
 ### Claude Code
 
-Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed before `claude` runs. The summary runs read-only (`Read Grep Glob`). Every `claude` Notted starts also gets Notted's own tool server (`--mcp-config`): the Notted app itself in `mcp` mode, which talks to the open app over a private socket in `~/.notted/run/`. In headless turns, such as the summary and **Review suggestions**, Claude Code's permission requests come to Notted as cards (**Allow** or **Deny**). In the embedded session, Claude Code's permission prompts stay in the terminal and wait for you.
+Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` are removed before `claude` runs. The summary runs read-only (`Read Grep Glob`). Every `claude` Notted starts also gets Notted's own tool server (`--mcp-config`): the Notted app itself in `mcp` mode, which talks to the open app over a private socket in `~/.notted/run/`. In headless turns, such as the summary and **Review suggestions**, Claude Code's permission requests come to Notted as cards (**Allow** or **Deny**). With **Let Claude act without asking during reviews** on, Notted starts each **Review suggestions** turn in Claude Code's bypass-permissions mode, so it asks for no permission; only an ask rule in your own Claude Code settings still comes as a card. The summary and the embedded session never use that mode. In the embedded session, Claude Code's permission prompts stay in the terminal and wait for you.
 
 ### What Notted downloads
 

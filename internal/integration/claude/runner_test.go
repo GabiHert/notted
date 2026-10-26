@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/notted/internal/domain"
 )
 
 const (
@@ -56,6 +57,9 @@ func TestArgumentLists(t *testing.T) {
 		{"review", port.ClaudeRun{SessionID: "id1", Resume: true, ProjectRoot: "/r", MCPConfig: "/m.json", Timeout: 24 * time.Hour},
 			[]string{"-p", "--resume", "id1", "--mcp-config", "/m.json", "--permission-prompt-tool", "mcp__notted__permission",
 				"--allowedTools", tools + " mcp__notted__ask", "--add-dir", "/r"}},
+		{"review act without asking", port.ClaudeRun{SessionID: "id1", Resume: true, ProjectRoot: "/r", MCPConfig: "/m.json", Timeout: 24 * time.Hour, ActWithoutAsking: true},
+			[]string{"-p", "--resume", "id1", "--permission-mode", domain.ReviewPermissionMode, "--mcp-config", "/m.json", "--permission-prompt-tool", "mcp__notted__permission",
+				"--allowedTools", tools + " mcp__notted__ask", "--add-dir", "/r"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -75,7 +79,10 @@ func TestArgumentLists(t *testing.T) {
 			if !reflect.DeepEqual(got, want) {
 				t.Fatalf("got %q\nwant %q", got, want)
 			}
-			needles := []string{"skip-" + "permissions", "bypass" + "Permissions"}
+			needles := []string{"skip-" + "permissions"}
+			if !c.run.ActWithoutAsking {
+				needles = append(needles, "bypass"+"Permissions", "--permission-mode")
+			}
 			for _, a := range got {
 				for _, n := range needles {
 					if strings.Contains(a, n) {
