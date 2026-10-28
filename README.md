@@ -195,7 +195,7 @@ Claude Code can ask you something through Notted with its `ask` tool, in any ses
 
 ### Delete a meeting
 
-To delete a meeting, click **Delete meeting** on its page. Notted lists what it removes (the audio, the transcript, the summary and the suggestions) and asks first. It removes only Notted's copy and leaves the meeting's folder in the archive as it is. A recording must be stopped first.
+To delete a meeting, click **Delete meeting** on its page. Notted lists what it removes (the audio, the transcript, the summary and the suggestions) and asks first. It also answers the meeting's open forms with **Not now** and removes its session files. It removes only Notted's copy and leaves the meeting's folder in the archive as it is. A recording must be stopped first.
 
 ## How it works
 

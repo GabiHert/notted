@@ -16,6 +16,7 @@ import (
 
 type fakeStopper struct {
 	forgot, cancelled, stopped []string
+	dismissed                  []string
 	order                      *[]string
 	stopErr                    error
 }
@@ -26,6 +27,10 @@ func (f *fakeStopper) Stop(id string) error {
 	f.stopped = append(f.stopped, id)
 	f.note("session")
 	return f.stopErr
+}
+func (f *fakeStopper) DismissMeeting(id string) {
+	f.dismissed = append(f.dismissed, id)
+	f.note("dismiss")
 }
 func (f *fakeStopper) note(s string) {
 	if f.order != nil {
@@ -347,5 +352,112 @@ func TestDeleteCancelsTheReview(t *testing.T) {
 	}
 	if len(review.cancelled) != 1 || review.cancelled[0] != "m1" {
 		t.Fatalf("review cancelled = %v", review.cancelled)
+	}
+}
+
+// withSessions wires the fake as Forms and a temp SessionsDir, and writes <id>/mcp.json for each id.
+func (f *delFixture) withSessions(t *testing.T, ids ...string) string {
+	t.Helper()
+	dir := t.TempDir()
+	f.svc.forms = f.stop
+	f.svc.sessionsDir = dir
+	for _, id := range ids {
+		if err := os.MkdirAll(filepath.Join(dir, id), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, id, "mcp.json"), []byte("{}"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+func TestDeleteDismissesFormsAndRemovesSessionFolder(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateReady)
+	f.meeting(t, "m2", domain.StateReady)
+	dir := f.withSessions(t, "m1", "m2")
+	if err := f.svc.Delete(f.ctx, "m1"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if len(f.stop.dismissed) != 1 || f.stop.dismissed[0] != "m1" {
+		t.Fatalf("dismissed = %v", f.stop.dismissed)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "m1")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("session folder still there: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "m2", "mcp.json")); err != nil {
+		t.Fatalf("another meeting's session folder was touched: %v", err)
+	}
+	if got := strings.Join(f.order, ","); got != "forget,cancel,session,dismiss" {
+		t.Fatalf("order = %s", got)
+	}
+}
+
+func TestDeleteWithoutSessionFolderSucceeds(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateReady)
+	f.withSessions(t)
+	if err := f.svc.Delete(f.ctx, "m1"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if f.exists("m1") {
+		t.Fatal("row still there")
+	}
+}
+
+func TestDeleteKeepsRowsWhenSessionFolderCannotBeRemoved(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateReady)
+	dir := f.withSessions(t, "m1")
+	if err := os.Chmod(dir, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	err := f.svc.Delete(f.ctx, "m1")
+	if err == nil || !strings.HasPrefix(err.Error(), "The meeting was not deleted: its session folder could not be removed: ") {
+		t.Fatalf("err = %v", err)
+	}
+	if !f.exists("m1") {
+		t.Fatal("row gone")
+	}
+	if _, err := os.Stat(filepath.Join(f.audio, "m1", "mic-000001.wav")); err != nil {
+		t.Fatalf("audio removed: %v", err)
+	}
+}
+
+func TestDeleteRefusedWhileRecordingDismissesNothing(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateRecording)
+	dir := f.withSessions(t, "m1")
+	wantErr(t, f.svc.Delete(f.ctx, "m1"), "Stop the recording before you delete this meeting.")
+	if len(f.stop.dismissed) != 0 {
+		t.Fatalf("dismissed = %v", f.stop.dismissed)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "m1", "mcp.json")); err != nil {
+		t.Fatalf("session folder removed: %v", err)
+	}
+}
+
+func TestDeleteSessionFolderLinkIsUnlinkedNotFollowed(t *testing.T) {
+	f := newDelFixture(t)
+	f.meeting(t, "m1", domain.StateReady)
+	dir := f.withSessions(t)
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "keep"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "m1")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Delete(f.ctx, "m1"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if _, err := os.Lstat(link); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("link still there: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outside, "keep")); err != nil {
+		t.Fatalf("the link target was emptied: %v", err)
 	}
 }
