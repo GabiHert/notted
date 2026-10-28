@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -224,4 +225,103 @@ func (s *ArchiveService) CommitAndPushMeeting(ctx context.Context, meetingID str
 		return CommitResult{}, errors.New("The commit " + sha + " was saved locally but not pushed:\n" + out)
 	}
 	return CommitResult{SHA: sha, Pushed: true}, nil
+}
+
+// CommitProjectDeletion commits the removal of exactly paths, the tracked files a project delete removed, as
+// "project(<key>): delete", and pushes the current branch when the archive has an origin. Call it only after the person said yes.
+func (s *ArchiveService) CommitProjectDeletion(ctx context.Context, key string, paths []string) error {
+	st, err := s.checkout(ctx)
+	if err != nil {
+		return err
+	}
+	if !keyRe.MatchString(key) {
+		return errProjectKey
+	}
+	if len(paths) == 0 {
+		return fmt.Errorf("There is nothing to commit for project %q.", key)
+	}
+	for _, p := range paths {
+		if !deletionPath(key, st.Profile, p) {
+			return fmt.Errorf("Notted can commit only the deleted files of project %q. %s is not one of them.", key, p)
+		}
+	}
+	repo := st.CheckoutPath
+	msg := "project(" + key + "): delete"
+	restore := func() { _, _ = s.git.Run(ctx, repo, append([]string{"restore", "--staged", "--"}, paths...)...) }
+	if !s.deletionCommitted(ctx, repo, msg, paths) {
+		if out, err := s.git.Run(ctx, repo, append([]string{"add", "-A", "--"}, paths...)...); err != nil {
+			restore()
+			return errors.New("The commit was rejected:\n" + out)
+		}
+		switch out, err := s.git.Run(ctx, repo, append([]string{"diff", "--cached", "--quiet", "--"}, paths...)...); port.ExitCode(err) {
+		case 0:
+			// Nothing staged: the deletion is already in HEAD; go on to the push.
+		case 1:
+			if out, err := s.git.Run(ctx, repo, append([]string{"commit", "-m", msg, "--only", "--"}, paths...)...); err != nil {
+				restore()
+				return errors.New("The commit was rejected:\n" + out)
+			}
+		default:
+			restore()
+			return errors.New("The commit was rejected:\n" + out)
+		}
+	}
+	sha, err := s.git.Run(ctx, repo, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return errors.New("The commit was rejected:\n" + sha)
+	}
+	sha = strings.TrimSpace(sha)
+	if _, err := s.git.Run(ctx, repo, "remote", "get-url", "origin"); err != nil {
+		return nil
+	}
+	if out, err := s.git.Run(ctx, repo, "push", "-u", "origin", "HEAD"); err != nil {
+		return errors.New("The commit " + sha + " was saved locally but not pushed:\n" + out)
+	}
+	return nil
+}
+
+// deletionPath reports whether p is a file a project delete may have removed.
+func deletionPath(key, profile, p string) bool {
+	if p == "" || strings.ContainsAny(p, "\\\x00") || path.Clean(p) != p {
+		return false
+	}
+	switch {
+	case p == "instructions/projects/"+key+".md":
+		return true
+	case profile != "" && p == "instructions/people/"+profile+"/"+key+".md":
+		return true
+	}
+	return strings.HasPrefix(p, "meetings/"+key+"/")
+}
+
+// deletionCommitted reports whether an earlier call already committed the deletion of paths: none is in the index
+// any more and HEAD is that call's commit, which deleted every one of them. Git cannot add a path that is in neither the index nor the working tree,
+// so a retry after a failed push skips the add and goes straight to the push.
+func (s *ArchiveService) deletionCommitted(ctx context.Context, repo, msg string, paths []string) bool {
+	out, err := s.git.Run(ctx, repo, append([]string{"ls-files", "--"}, paths...)...)
+	if err != nil || strings.TrimSpace(out) != "" {
+		return false
+	}
+	subj, err := s.git.Run(ctx, repo, "log", "-1", "--format=%s")
+	if err != nil || strings.TrimSpace(subj) != msg {
+		return false
+	}
+	// HEAD must be the commit that deleted these very paths, not just any commit with the same subject.
+	deleted, err := s.git.Run(ctx, repo, append([]string{"show", "-z", "--format=", "--name-only", "--diff-filter=D", "HEAD", "--"}, paths...)...)
+	if err != nil {
+		return false
+	}
+	in := map[string]bool{}
+	// -z keeps non-ASCII names unquoted; entries are not trimmed because spaces can belong to a name.
+	for _, l := range strings.Split(deleted, "\x00") {
+		if l != "" {
+			in[l] = true
+		}
+	}
+	for _, p := range paths {
+		if !in[p] {
+			return false
+		}
+	}
+	return true
 }

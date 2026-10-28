@@ -14,6 +14,8 @@ export function CloneArchive(arg1:string,arg2:string):Promise<string>;
 
 export function CommitAndPushMeeting(arg1:string):Promise<wails.CommitDTO>;
 
+export function CommitProjectDeletion(arg1:string,arg2:Array<string>):Promise<void>;
+
 export function CreateMyProjectFile(arg1:string):Promise<string>;
 
 export function CreateProfile(arg1:string):Promise<string>;

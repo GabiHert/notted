@@ -383,6 +383,7 @@ export async function GetProjectDeletePlan(key: string) {
 export async function DeleteProject(key: string, _plan: unknown) {
   return { deletedMeetings: 3, trackedRemoved: [`instructions/projects/${key}.md`, `meetings/${key}/2026/2026-10-21-weekly-sync/meeting.md`] };
 }
+export async function CommitProjectDeletion(_key: string, _paths: string[]) {}
 export async function DownloadModels(_language: string) {}
 export async function ListOpenForms() {
   if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];

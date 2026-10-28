@@ -39,3 +39,8 @@ func (a *App) CommitAndPushMeeting(meetingID string) (CommitDTO, error) {
 	}
 	return CommitDTO{Sha: r.SHA, Pushed: r.Pushed}, nil
 }
+
+// CommitProjectDeletion commits and pushes the removal of a deleted project's tracked files. Call it only after the person said yes.
+func (a *App) CommitProjectDeletion(key string, paths []string) error {
+	return userFacing(a.archive.CommitProjectDeletion(a.context(), key, paths))
+}

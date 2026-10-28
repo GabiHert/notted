@@ -26,6 +26,10 @@ export function CommitAndPushMeeting(arg1) {
   return window['go']['wails']['App']['CommitAndPushMeeting'](arg1);
 }
 
+export function CommitProjectDeletion(arg1, arg2) {
+  return window['go']['wails']['App']['CommitProjectDeletion'](arg1, arg2);
+}
+
 export function CreateMyProjectFile(arg1) {
   return window['go']['wails']['App']['CreateMyProjectFile'](arg1);
 }
