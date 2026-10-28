@@ -24,6 +24,8 @@ export function DeleteMeeting(arg1:string):Promise<wails.DeleteResultDTO>;
 
 export function DeleteProfile(arg1:string,arg2:Array<string>):Promise<void>;
 
+export function DeleteProject(arg1:string,arg2:wails.ProjectDeletePlanDTO):Promise<wails.ProjectDeleteResultDTO>;
+
 export function DismissForm(arg1:string,arg2:string):Promise<void>;
 
 export function DownloadModels(arg1:string):Promise<void>;
@@ -39,6 +41,8 @@ export function GetMeeting(arg1:string):Promise<wails.MeetingDTO>;
 export function GetModelStatus(arg1:string):Promise<wails.ModelStatusDTO>;
 
 export function GetPermissions():Promise<wails.PermissionsDTO>;
+
+export function GetProjectDeletePlan(arg1:string):Promise<wails.ProjectDeletePlanDTO>;
 
 export function GetReviewActWithoutAsking():Promise<boolean>;
 

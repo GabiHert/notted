@@ -46,6 +46,10 @@ export function DeleteProfile(arg1, arg2) {
   return window['go']['wails']['App']['DeleteProfile'](arg1, arg2);
 }
 
+export function DeleteProject(arg1, arg2) {
+  return window['go']['wails']['App']['DeleteProject'](arg1, arg2);
+}
+
 export function DismissForm(arg1, arg2) {
   return window['go']['wails']['App']['DismissForm'](arg1, arg2);
 }
@@ -76,6 +80,10 @@ export function GetModelStatus(arg1) {
 
 export function GetPermissions() {
   return window['go']['wails']['App']['GetPermissions']();
+}
+
+export function GetProjectDeletePlan(arg1) {
+  return window['go']['wails']['App']['GetProjectDeletePlan'](arg1);
 }
 
 export function GetReviewActWithoutAsking() {

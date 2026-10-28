@@ -19,6 +19,7 @@ type App struct {
 	permissions  *service.PermissionsService
 	micTest      *service.MicTestService
 	deleter      *service.DeleteService
+	projects     *service.ProjectDeleteService
 	forms        *service.FormService
 	review       *service.ReviewService
 	visibility   *Visibility
@@ -40,6 +41,7 @@ type Deps struct {
 	Permissions   *service.PermissionsService
 	MicTest       *service.MicTestService
 	Delete        *service.DeleteService
+	Projects      *service.ProjectDeleteService
 	Meetings      port.MeetingStore
 	Models        port.ModelManager
 	Forms         *service.FormService
@@ -55,7 +57,7 @@ func New(e *Emitter, d Deps) *App {
 	if events == nil {
 		events = e
 	}
-	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, permissions: d.Permissions, micTest: d.MicTest, deleter: d.Delete, meetings: d.Meetings, models: d.Models, forms: d.Forms, review: d.Review, visibility: d.Visibility, events: events}
+	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, permissions: d.Permissions, micTest: d.MicTest, deleter: d.Delete, projects: d.Projects, meetings: d.Meetings, models: d.Models, forms: d.Forms, review: d.Review, visibility: d.Visibility, events: events}
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.
