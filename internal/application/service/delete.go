@@ -22,6 +22,7 @@ type activeMeeting interface{ ActiveMeetingID() string }
 type transcriptionForgetter interface{ Forget(meetingID string) }
 type summaryCanceller interface{ Cancel(meetingID string) }
 type sessionStopper interface{ Stop(meetingID string) error }
+type meetingDismisser interface{ DismissMeeting(meetingID string) }
 
 // DeleteDeps are the collaborators of DeleteService.
 type DeleteDeps struct {
@@ -31,10 +32,12 @@ type DeleteDeps struct {
 	Summary       summaryCanceller
 	Review        summaryCanceller
 	Session       sessionStopper
+	Forms         meetingDismisser // nil: no forms to dismiss
+	SessionsDir   string           // the folder holding one session folder per meeting; "": none to remove
 	AudioDir      func(meetingID string) string
 }
 
-// DeleteService removes a meeting from Notted: its rows and its audio. It never touches the archive.
+// DeleteService removes a meeting from Notted: its rows, its audio, its forms and its session folder. It never touches the archive.
 type DeleteService struct {
 	store         port.MeetingStore
 	recorder      activeMeeting
@@ -42,17 +45,19 @@ type DeleteService struct {
 	summary       summaryCanceller
 	review        summaryCanceller
 	session       sessionStopper
+	forms         meetingDismisser
+	sessionsDir   string
 	audioDir      func(meetingID string) string
 }
 
 // NewDeleteService builds the delete service.
 func NewDeleteService(d DeleteDeps) *DeleteService {
-	return &DeleteService{store: d.Store, recorder: d.Recorder, transcription: d.Transcription, summary: d.Summary, review: d.Review, session: d.Session, audioDir: d.AudioDir}
+	return &DeleteService{store: d.Store, recorder: d.Recorder, transcription: d.Transcription, summary: d.Summary, review: d.Review, session: d.Session, forms: d.Forms, sessionsDir: d.SessionsDir, audioDir: d.AudioDir}
 }
 
 // Delete removes meetingID. It refuses while the meeting records. Otherwise it stops the meeting's
-// transcription, summary and Claude Code session, deletes its rows in one transaction, then removes
-// its audio folder. A meeting saved to the archive keeps its folder there.
+// transcription, summary, review and Claude Code session, dismisses its forms, removes its session folder,
+// deletes its rows in one transaction, then removes its audio folder. A meeting saved to the archive keeps its folder there.
 func (s *DeleteService) Delete(ctx context.Context, meetingID string) error {
 	if !domain.ValidMeetingID(meetingID) {
 		return &userError{msg: msgMeetingNotFound, err: domain.ErrNotFound}
@@ -80,6 +85,14 @@ func (s *DeleteService) Delete(ctx context.Context, meetingID string) error {
 	if err := s.session.Stop(meetingID); err != nil {
 		log.Printf("delete: stop session %s: %v", meetingID, err)
 	}
+	if s.forms != nil {
+		s.forms.DismissMeeting(meetingID)
+	}
+	if s.sessionsDir != "" {
+		if err := removeMeetingDir(filepath.Join(s.sessionsDir, meetingID), meetingID); err != nil {
+			return fmt.Errorf("The meeting was not deleted: its session folder could not be removed: %w", err)
+		}
+	}
 
 	if err := s.store.DeleteMeeting(ctx, meetingID); err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -87,7 +100,7 @@ func (s *DeleteService) Delete(ctx context.Context, meetingID string) error {
 		}
 		return fmt.Errorf("The meeting was not deleted: %w", err)
 	}
-	if err := removeAudio(dir, meetingID); err != nil {
+	if err := removeMeetingDir(dir, meetingID); err != nil {
 		return &userError{msg: "The meeting was deleted, but its audio folder could not be removed: " + err.Error(), err: ErrAudioLeft}
 	}
 	return nil
@@ -102,9 +115,9 @@ func (s *DeleteService) audioPath(meetingID string) (string, error) {
 	return dir, nil
 }
 
-// removeAudio deletes <parent>/<id> through a root opened on the parent, so the removal cannot leave it:
+// removeMeetingDir deletes <parent>/<id> through a root opened on the parent, so the removal cannot leave it:
 // a symlink named <id> is unlinked, never followed. A missing folder is not an error.
-func removeAudio(dir, meetingID string) error {
+func removeMeetingDir(dir, meetingID string) error {
 	root, err := os.OpenRoot(filepath.Dir(dir))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

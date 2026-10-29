@@ -672,3 +672,60 @@ func TestSessionConfigRefusals(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestDismissMeetingAnswersEveryFormOfThatMeetingOnly(t *testing.T) {
+	r := newFormRig(t)
+	t1, t2 := r.token(t, testMeeting), r.token(t, testMeeting2)
+	r.setVisible(false)
+	c1 := r.handleAsync(context.Background(), testMeeting, t1, "One")
+	r.waitOpen(t, 1)
+	c2 := r.handleAsync(context.Background(), testMeeting, t1, "Two")
+	waitQueued(t, r, testMeeting, 1)
+	r.handleAsync(context.Background(), testMeeting2, t2, "Three")
+	open := r.waitOpen(t, 2)
+	openID := open[0].ID
+	before := r.emit.count("ask:changed")
+	r.svc.DismissMeeting(testMeeting)
+	for _, c := range []<-chan handleResult{c1, c2} {
+		if got := recv(t, c); got.err != nil || got.ans.Status != domain.StatusDismissed {
+			t.Fatalf("%+v", got)
+		}
+	}
+	left := r.svc.Open()
+	if len(left) != 1 || left[0].MeetingID != testMeeting2 {
+		t.Fatalf("open = %+v", left)
+	}
+	if d := r.emit.count("ask:changed") - before; d != 1 {
+		t.Fatalf("want one event, got %d", d)
+	}
+	_, removed := r.notify.snapshot()
+	if len(removed) != 1 || removed[0] != "ask-"+openID {
+		t.Fatalf("removed %v", removed)
+	}
+	r.svc.CloseAll()
+}
+
+func TestDismissMeetingForgetsTheToken(t *testing.T) {
+	r := newFormRig(t)
+	t1, t2 := r.token(t, testMeeting), r.token(t, testMeeting2)
+	r.svc.DismissMeeting(testMeeting)
+	_, err := r.svc.Handle(context.Background(), port.FormRequest{MeetingID: testMeeting, Token: t1, Form: askForm("late")})
+	if err == nil || err.Error() != msgNoToken {
+		t.Fatalf("err = %v", err)
+	}
+	r.handleAsync(context.Background(), testMeeting2, t2, "Still works")
+	r.waitOpen(t, 1)
+	r.svc.CloseAll()
+}
+
+func TestDismissMeetingWithNothingIsANoOp(t *testing.T) {
+	r := newFormRig(t)
+	before := r.emit.count("ask:changed")
+	r.svc.DismissMeeting(testMeeting)
+	if d := r.emit.count("ask:changed") - before; d != 0 {
+		t.Fatalf("events = %d", d)
+	}
+	if sent, removed := r.notify.snapshot(); len(sent) != 0 || len(removed) != 0 {
+		t.Fatalf("notifier called: %v %v", sent, removed)
+	}
+}

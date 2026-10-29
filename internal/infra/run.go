@@ -100,8 +100,9 @@ func Run(assets embed.FS) error {
 	session.SetBusyCheck(service.SessionBusyCheck(review, summary))
 	summary.SetMCPConfig(forms.SessionConfig)
 	summary.SetBusyCheck(service.SummaryBusyCheck(review))
-	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Review: review, Session: session, AudioDir: paths.AudioDir})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis})
+	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Review: review, Session: session, Forms: forms, SessionsDir: paths.SessionsDir(), AudioDir: paths.AudioDir})
+	projects := service.NewProjectDeleteService(service.ProjectDeleteDeps{Store: st, Settings: st, Recorder: recording, Meetings: deleter, Git: git.New(gitEnv(claude.LoginShellEnv)), Emit: emitter})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Projects: projects, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{

@@ -26,6 +26,10 @@ export function CommitAndPushMeeting(arg1) {
   return window['go']['wails']['App']['CommitAndPushMeeting'](arg1);
 }
 
+export function CommitProjectDeletion(arg1, arg2) {
+  return window['go']['wails']['App']['CommitProjectDeletion'](arg1, arg2);
+}
+
 export function CreateMyProjectFile(arg1) {
   return window['go']['wails']['App']['CreateMyProjectFile'](arg1);
 }
@@ -44,6 +48,10 @@ export function DeleteMeeting(arg1) {
 
 export function DeleteProfile(arg1, arg2) {
   return window['go']['wails']['App']['DeleteProfile'](arg1, arg2);
+}
+
+export function DeleteProject(arg1, arg2) {
+  return window['go']['wails']['App']['DeleteProject'](arg1, arg2);
 }
 
 export function DismissForm(arg1, arg2) {
@@ -76,6 +84,10 @@ export function GetModelStatus(arg1) {
 
 export function GetPermissions() {
   return window['go']['wails']['App']['GetPermissions']();
+}
+
+export function GetProjectDeletePlan(arg1) {
+  return window['go']['wails']['App']['GetProjectDeletePlan'](arg1);
 }
 
 export function GetReviewActWithoutAsking() {

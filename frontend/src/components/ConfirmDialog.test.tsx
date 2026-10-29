@@ -45,3 +45,33 @@ test("a confirm that is not destructive keeps the primary style", () => {
   expect(b).toHaveClass("nt-btn--primary");
   expect(b).not.toHaveClass("nt-btn--danger");
 });
+
+test("busy disables both buttons, Escape does not cancel and clicks do nothing", () => {
+  const p = setup({ busy: true });
+  expect(screen.getByRole("button", { name: "Keep profile" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Delete profile" })).toBeDisabled();
+  fireEvent.keyDown(document, { key: "Escape" });
+  fireEvent.click(screen.getByRole("button", { name: "Keep profile" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
+  expect(p.onCancel).not.toHaveBeenCalled();
+  expect(p.onConfirm).not.toHaveBeenCalled();
+});
+
+test("without busy both buttons are enabled", () => {
+  setup();
+  expect(screen.getByRole("button", { name: "Keep profile" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Delete profile" })).toBeEnabled();
+});
+
+test("error renders an alert after the hint; no alert without error", () => {
+  setup({ hint: "A hint.", error: "boom" });
+  const alert = screen.getByRole("alert");
+  expect(alert).toHaveTextContent("boom");
+  expect(alert).toHaveClass("nt-dialog__error");
+  expect(screen.getByText("A hint.").compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("no alert is rendered without an error", () => {
+  setup({ hint: "A hint." });
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});

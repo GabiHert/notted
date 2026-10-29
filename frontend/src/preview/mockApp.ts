@@ -329,6 +329,7 @@ export async function StopSession(_id: string) {}
 export async function ListProjects() {
   if (screen === "settings-no-archive" || screen === "settings-empty") throw new Error("Set the archive folder to list its projects.");
   if (screen === "setup-my-file" || screen === "setup-my-file-created") return ["acme", "globex"];
+  if (screen.startsWith("setup-delete-project")) return ["acme", "globex"];
   if (setupScreens.includes(screen)) return screen === "setup-project-created" && projectCreated ? ["acme", "initech-web"] : ["acme"];
   return projectsEmpty ? [] : projectFixtures;
 }
@@ -376,6 +377,14 @@ export async function GetDeletePlan(id: string) {
 export async function DeleteMeeting(_id: string) {
   return { warning: "" };
 }
+export async function GetProjectDeletePlan(key: string) {
+  const folder = `meetings/${key}/2026/2026-10-21-weekly-sync/`;
+  return { key, files: [`instructions/projects/${key}.md`, `instructions/people/ana/${key}.md`, `${folder}meeting.md`, `${folder}suggestions.md`, `${folder}summary.md`, `${folder}transcript.md`], folders: [folder, `meetings/${key}/2026/`, `meetings/${key}/`], localMeetings: 3, unsavedMeetings: 1, recording: key === "globex" && screen.startsWith("setup-delete-project") };
+}
+export async function DeleteProject(key: string, _plan: unknown) {
+  return { deletedMeetings: 3, trackedRemoved: [`instructions/projects/${key}.md`, `meetings/${key}/2026/2026-10-21-weekly-sync/meeting.md`] };
+}
+export async function CommitProjectDeletion(_key: string, _paths: string[]) {}
 export async function DownloadModels(_language: string) {}
 export async function ListOpenForms() {
   if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];

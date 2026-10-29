@@ -99,6 +99,20 @@ When a session runs inside Notted, Claude has an `ask` tool. It shows a form at 
 
 Every form also has a **Note** for free text and a **Not now** button. **Not now** means no: Claude does not act on a dismissed form. In the turns Notted runs without a terminal, such as **Review suggestions**, Claude Code's permission requests arrive as cards too: **Allow** lets the action run, **Deny** refuses it. Your instructions can ask for a form, for example "ask me with a `choice` which folder to use".
 
+## Deleting a project
+
+In Notted, open **Settings**, click **Delete a project…** under **Projects**, then **Delete…** on the project's row. Notted removes from this folder:
+
+- `instructions/projects/<key>.md`;
+- your own `instructions/people/<profile>/<key>.md`;
+- the whole `meetings/<key>/` folder, with every saved meeting of the project.
+
+It also deletes the project's meetings from Notted. A meeting that was never saved here is gone for good.
+
+Teammates' files for the project, `instructions/people/<other>/<key>.md`, stay. They are unused leftovers: a per-project person file is loaded only for its project's meetings. Each person can delete their own.
+
+Notted then offers one commit, `project(<key>): delete`, with only the removed files, and pushes it. Nothing is rewritten: to restore the project, check its files out from the commit before that one, for example `git checkout <commit>^ -- instructions/projects/<key>.md meetings/<key>`.
+
 ## Limits
 
 An instruction cannot widen the base's non-negotiables. Nothing is created, sent or committed without the person's yes, and a message to another session is a trigger for its reader, never an approval.

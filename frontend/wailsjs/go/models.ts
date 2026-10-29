@@ -264,6 +264,42 @@ export namespace wails {
 	        this.screen = source["screen"];
 	    }
 	}
+	export class ProjectDeletePlanDTO {
+	    key: string;
+	    files: string[];
+	    folders: string[];
+	    localMeetings: number;
+	    unsavedMeetings: number;
+	    recording: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectDeletePlanDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.files = source["files"];
+	        this.folders = source["folders"];
+	        this.localMeetings = source["localMeetings"];
+	        this.unsavedMeetings = source["unsavedMeetings"];
+	        this.recording = source["recording"];
+	    }
+	}
+	export class ProjectDeleteResultDTO {
+	    deletedMeetings: number;
+	    trackedRemoved: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectDeleteResultDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.deletedMeetings = source["deletedMeetings"];
+	        this.trackedRemoved = source["trackedRemoved"];
+	    }
+	}
 	export class ReviewStateDTO {
 	    running: boolean;
 	

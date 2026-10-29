@@ -315,6 +315,25 @@ func (s *FormService) CloseAll() {
 	fx.run(s)
 }
 
+// DismissMeeting answers every form of the meeting, open or waiting, with "Not now", and forgets the meeting's
+// session token, so a later request from its session is refused. A meeting with neither is a no-op.
+func (s *FormService) DismissMeeting(meetingID string) {
+	var fx formEffects
+	s.mu.Lock()
+	q := s.queues[meetingID]
+	delete(s.queues, meetingID)
+	delete(s.tokens, meetingID)
+	if len(q) > 0 {
+		fx.remove = append(fx.remove, "ask-"+q[0].id)
+		fx.emit = append(fx.emit, meetingID)
+	}
+	s.mu.Unlock()
+	for _, p := range q {
+		p.reply <- domain.Dismissed("")
+	}
+	fx.run(s)
+}
+
 type mcpServerConfig struct {
 	Command string   `json:"command"`
 	Args    []string `json:"args"`
