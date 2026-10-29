@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ProjectCard } from "./ProjectCard";
-import { ListProjects, SetMeetingProject, resetBindings } from "../test/bindingsMock";
+import { ListProjects, SetMeetingProject, emit, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -58,4 +58,14 @@ test("locked with a note once the meeting has a session", async () => {
   const select = await screen.findByLabelText("Project for this meeting");
   expect(select).toBeDisabled();
   expect(screen.getByText("The project is fixed once the summary exists.")).toBeInTheDocument();
+});
+
+test("reloads the list when a project is deleted", async () => {
+  renderCard();
+  await screen.findByRole("option", { name: "acme" });
+  ListProjects.mockResolvedValue(["globex"]);
+  act(() => emit("project:deleted", { key: "acme" }));
+  await waitFor(() => expect(screen.queryByRole("option", { name: "acme" })).not.toBeInTheDocument());
+  expect(screen.getByRole("option", { name: "globex" })).toBeInTheDocument();
+  expect(ListProjects).toHaveBeenCalledTimes(2);
 });

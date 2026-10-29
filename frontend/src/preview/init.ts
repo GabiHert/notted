@@ -30,6 +30,9 @@ export function initPreview(): View {
     case "setup-project-created":
     case "setup-delete-profile":
     case "setup-delete-confirm":
+    case "setup-delete-project":
+    case "setup-delete-project-confirm":
+    case "setup-delete-project-commit":
     case "setup-my-file":
     case "setup-my-file-created":
     case "setup-folder-new":
@@ -223,6 +226,9 @@ function autoDriveSettings(screen: string) {
     "setup-project-created": [...newProject, open("Create project")],
     "setup-delete-profile": [open("Delete a profile…")],
     "setup-delete-confirm": [open("Delete a profile…"), byLabel("Delete profile bruno")],
+    "setup-delete-project": [open("Delete a project…")],
+    "setup-delete-project-confirm": [open("Delete a project…"), byLabel("Delete project acme")],
+    "setup-delete-project-commit": [open("Delete a project…"), byLabel("Delete project acme"), open("Delete project")],
     "setup-my-file-created": [byLabel("Create your file for globex")],
     "setup-folder-new": [byLabel("Choose the meetings archive folder")],
     "setup-folder-in-repo": [byLabel("Choose the meetings archive folder")],

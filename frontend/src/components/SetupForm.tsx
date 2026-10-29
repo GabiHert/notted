@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChooseFolder, CloneArchive, CreateMyProjectFile, InspectArchive, PrepareArchive, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, type wails } from "../api/bindings";
+import { ChooseFolder, CloneArchive, CreateMyProjectFile, InspectArchive, PrepareArchive, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, SetSettings, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
 import { ConfirmDialog } from "./ConfirmDialog";
 import "./SetupForm.css";
@@ -66,6 +66,12 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const [deleteError, setDeleteError] = useState("");
   const [confirm, setConfirm] = useState<{ name: string; files: string[] } | null>(null);
 
+  const [projectDeleteOpen, setProjectDeleteOpen] = useState(false);
+  const [projectDeleteError, setProjectDeleteError] = useState("");
+  const [recordingKeys, setRecordingKeys] = useState<string[]>([]);
+  const [projectConfirm, setProjectConfirm] = useState<wails.ProjectDeletePlanDTO | null>(null);
+  const [projectCommit, setProjectCommit] = useState<{ key: string; paths: string[]; failed: boolean; error: string } | null>(null);
+
   const live = useRef(true);
   const prevSaved = useRef(saved);
   const busyRef = useRef(false);
@@ -78,6 +84,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
   const profileSelect = useRef<HTMLSelectElement>(null);
   const projectButton = useRef<HTMLButtonElement>(null);
   const deleteLink = useRef<HTMLButtonElement>(null);
+  const projectDeleteLink = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     live.current = true;
@@ -118,6 +125,17 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     refocus.current = null;
   });
 
+  useEffect(() => {
+    if (!projectDeleteOpen) return;
+    let current = true;
+    Promise.all(projects.map((k) => GetProjectDeletePlan(k).then((p) => (p.recording ? k : null), () => null))).then((keys) => {
+      if (current && live.current) setRecordingKeys(keys.filter((k): k is string => k !== null));
+    });
+    return () => {
+      current = false;
+    };
+  }, [projectDeleteOpen, projects]);
+
   const hasArchive = Boolean(saved?.checkoutPath);
   const hasProfile = Boolean(saved?.profile);
   const base = () => ({ profile: saved?.profile ?? "", checkoutPath: saved?.checkoutPath ?? "", projectRoots: { ...(saved?.projectRoots ?? {}) } });
@@ -133,6 +151,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     setProfileError("");
     setProjectError("");
     setDeleteError("");
+    setProjectDeleteError("");
     return true;
   };
   const end = () => {
@@ -376,6 +395,77 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
     }
   };
 
+  const closeProjectDelete = () => {
+    epoch.current++;
+    setProjectDeleteOpen(false);
+    setProjectDeleteError("");
+    setRecordingKeys([]);
+    refocus.current = () => projectDeleteLink.current?.focus();
+  };
+  const askDeleteProject = async (key: string) => {
+    if (!begin("other")) return;
+    const mine = epoch.current;
+    try {
+      const plan = await GetProjectDeletePlan(key);
+      if (!live.current || epoch.current !== mine) return;
+      if (plan.recording) {
+        setRecordingKeys((r) => (r.includes(key) ? r : [...r, key]));
+        return;
+      }
+      setProjectConfirm(plan);
+    } catch (e) {
+      if (epoch.current === mine) fail(setProjectDeleteError)(e);
+    } finally {
+      end();
+    }
+  };
+  const doDeleteProject = async () => {
+    const plan = projectConfirm;
+    if (!plan || !begin("other")) return;
+    try {
+      const r = await DeleteProject(plan.key, plan);
+      if (!live.current) return;
+      setProjectConfirm(null);
+      closeProjectDelete();
+      onDeleted();
+      const paths = r.trackedRemoved ?? [];
+      if (paths.length > 0) {
+        refocus.current = null;
+        setProjectCommit({ key: plan.key, paths, failed: false, error: "" });
+      } else setNotice(`Deleted project ${plan.key}.`);
+    } catch (e) {
+      if (!live.current) return;
+      setProjectConfirm(null);
+      setProjectDeleteError(errorMessage(e));
+      onDeleted();
+    } finally {
+      end();
+    }
+  };
+  const commitProjectDeletion = async () => {
+    const c = projectCommit;
+    if (!c || !begin("other")) return;
+    setProjectCommit({ ...c, error: "" });
+    try {
+      await CommitProjectDeletion(c.key, c.paths);
+      if (!live.current) return;
+      setProjectCommit(null);
+      refocus.current = () => projectDeleteLink.current?.focus();
+      setNotice(`Deleted project ${c.key}.`);
+    } catch (e) {
+      if (live.current) setProjectCommit({ ...c, failed: true, error: errorMessage(e) });
+    } finally {
+      end();
+    }
+  };
+  const skipProjectCommit = () => {
+    const c = projectCommit;
+    if (!c || busyRef.current) return;
+    setProjectCommit(null);
+    refocus.current = () => projectDeleteLink.current?.focus();
+    setNotice(c.failed ? `Deleted project ${c.key}.` : `Deleted project ${c.key}. The deletion is not committed.`);
+  };
+
   const createMyFile = async (key: string) => {
     if (!begin("other")) return;
     try {
@@ -569,6 +659,37 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
                   )}
                 </div>
               ))}
+            {hasArchive && projects.length > 0 && !projectDeleteOpen && (
+              <div>
+                <button type="button" ref={projectDeleteLink} className="nt-btn--link" disabled={busy !== ""} onClick={() => setProjectDeleteOpen(true)}>
+                  Delete a project…
+                </button>
+              </div>
+            )}
+            {hasArchive && projectDeleteOpen && (
+              <div className="nt-setup__inline">
+                <div className="nt-setup__sub">Delete a project</div>
+                <span className="nt-setup__help">Deleting a project removes its files and its meetings from your archive folder, and its meetings from Notted.</span>
+                {projects.map((key) => {
+                  const recording = recordingKeys.includes(key);
+                  return (
+                    <div className="nt-setup__person" key={key}>
+                      <span className="nt-setup__person-name">{key}</span>
+                      <button type="button" className="nt-btn" aria-label={"Delete project " + key} disabled={busy !== "" || recording} onClick={() => askDeleteProject(key)}>
+                        Delete…
+                      </button>
+                      {recording ? <span className="nt-setup__help">Recording. Stop the recording first.</span> : <span />}
+                    </div>
+                  );
+                })}
+                {projectDeleteError && <ErrorCard text={projectDeleteError} />}
+                <div className="nt-setup__actions">
+                  <button type="button" className="nt-btn" onClick={closeProjectDelete} disabled={busy !== ""}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="nt-setup__new">
               <button type="button" ref={projectButton} className="nt-btn" onClick={() => setProjectOpen(true)} disabled={!hasProfile || projectOpen || busy !== ""}>
                 New project…
@@ -612,6 +733,36 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
           confirmLabel="Delete profile"
           onCancel={() => setConfirm(null)}
           onConfirm={doDelete}
+        />
+      )}
+      {projectConfirm && (
+        <ConfirmDialog
+          title={`Delete project ${projectConfirm.key}?`}
+          body="Notted deletes these files and folders from your archive folder:"
+          items={[
+            ...projectConfirm.files,
+            ...[...projectConfirm.folders].sort(),
+            ...(projectConfirm.localMeetings > 0 ? [`${projectConfirm.localMeetings} meetings in Notted (${projectConfirm.unsavedMeetings} not saved to the archive)`] : []),
+          ]}
+          hint="Meetings not saved to the archive are gone for good. Everything else stays in the archive's git history."
+          cancelLabel="Keep project"
+          confirmLabel="Delete project"
+          destructive
+          busy={busy !== ""}
+          onCancel={() => setProjectConfirm(null)}
+          onConfirm={doDeleteProject}
+        />
+      )}
+      {projectCommit && (
+        <ConfirmDialog
+          title="Commit and push the deletion?"
+          body={`Notted commits only the removed files, with the message "project(${projectCommit.key}): delete", and pushes to origin.`}
+          cancelLabel="Not now"
+          confirmLabel="Commit and push"
+          busy={busy !== ""}
+          error={projectCommit.error}
+          onCancel={skipProjectCommit}
+          onConfirm={commitProjectDeletion}
         />
       )}
     </section>

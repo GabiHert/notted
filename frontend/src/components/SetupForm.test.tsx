@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SetupForm } from "./SetupForm";
-import { ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, resetBindings } from "../test/bindingsMock";
+import { ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, CreateMyProjectFile, CreateProfile, CreateProject, DeleteProfile, ListProfileFiles, SetSettings, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, resetBindings } from "../test/bindingsMock";
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
@@ -811,6 +811,242 @@ describe("delete a profile", () => {
     click("Close");
     expect(screen.queryByRole("button", { name: "Delete profile bruno" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete a profile…" })).toHaveFocus();
+  });
+});
+
+describe("delete a project", () => {
+  const PLAN = (key: string, over: Record<string, unknown> = {}) => ({
+    key,
+    files: [`instructions/projects/${key}.md`, `instructions/people/ana/${key}.md`, `meetings/${key}/2026/2026-10-01-sync/meeting.md`],
+    folders: [`meetings/${key}/2026/2026-10-01-sync/`, `meetings/${key}/2026/`, `meetings/${key}/`],
+    localMeetings: 2,
+    unsavedMeetings: 1,
+    recording: false,
+    ...over,
+  });
+  const TRACKED = ["instructions/projects/acme.md", "meetings/acme/2026/2026-10-01-sync/meeting.md"];
+  const openPanel = async () => {
+    GetProjectDeletePlan.mockClear();
+    click("Delete a project…");
+    await waitFor(() => expect(GetProjectDeletePlan).toHaveBeenCalledTimes(2));
+  };
+  const askAcme = async () => {
+    await openPanel();
+    click("Delete project acme");
+    return screen.findByRole("dialog", { name: "Delete project acme?" });
+  };
+  const escape = () => fireEvent.keyDown(document, { key: "Escape" });
+  const openCommit = async (trackedRemoved = TRACKED) => {
+    DeleteProject.mockResolvedValue({ deletedMeetings: 2, trackedRemoved });
+    const view = setup();
+    await askAcme();
+    click("Delete project");
+    await screen.findByRole("dialog", { name: "Commit and push the deletion?" });
+    return view;
+  };
+
+  test("the link shows with projects, is absent without projects or archive, and opens the panel", async () => {
+    const a = setup({ projects: [] });
+    expect(screen.queryByRole("button", { name: "Delete a project…" })).not.toBeInTheDocument();
+    a.unmount();
+    const b = setup({ saved: { ...SAVED, checkoutPath: "" } });
+    expect(screen.queryByRole("button", { name: "Delete a project…" })).not.toBeInTheDocument();
+    b.unmount();
+    setup();
+    await openPanel();
+    expect(screen.queryByRole("button", { name: "Delete a project…" })).not.toBeInTheDocument();
+    expect(screen.getByText("Delete a project")).toBeInTheDocument();
+    expect(screen.getByText("Deleting a project removes its files and its meetings from your archive folder, and its meetings from Notted.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete project acme" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Delete project globex" })).toBeEnabled();
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+  });
+
+  test("the prefetch disables the row of a recording project; a rejected plan leaves its row enabled", async () => {
+    GetProjectDeletePlan.mockImplementation(async (key: string) => {
+      if (key === "acme") throw new Error("nope");
+      return PLAN(key, { recording: true });
+    });
+    setup();
+    click("Delete a project…");
+    expect(await screen.findByText("Recording. Stop the recording first.")).toBeInTheDocument();
+    expect(screen.getAllByText("Recording. Stop the recording first.")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Delete project globex" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Delete project acme" })).toBeEnabled();
+  });
+
+  test("a plan fetched on click that reports recording opens no dialog and disables the row", async () => {
+    setup();
+    await openPanel();
+    GetProjectDeletePlan.mockImplementation(async (key: string) => PLAN(key, { recording: true }));
+    click("Delete project acme");
+    expect(await screen.findByText("Recording. Stop the recording first.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete project acme" })).toBeDisabled();
+  });
+
+  test("the confirm lists files, folders ascending and the meeting line", async () => {
+    setup();
+    const dialog = await askAcme();
+    expect(within(dialog).getByText("Notted deletes these files and folders from your archive folder:")).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "instructions/projects/acme.md",
+      "instructions/people/ana/acme.md",
+      "meetings/acme/2026/2026-10-01-sync/meeting.md",
+      "meetings/acme/",
+      "meetings/acme/2026/",
+      "meetings/acme/2026/2026-10-01-sync/",
+      "2 meetings in Notted (1 not saved to the archive)",
+    ]);
+    expect(within(dialog).getByText("Meetings not saved to the archive are gone for good. Everything else stays in the archive's git history.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Keep project" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Delete project" })).toHaveClass("nt-btn--danger");
+  });
+
+  test("with no local meetings the confirm has no meeting line", async () => {
+    GetProjectDeletePlan.mockImplementation(async (key: string) => PLAN(key, { localMeetings: 0, unsavedMeetings: 0 }));
+    setup();
+    const dialog = await askAcme();
+    const items = within(dialog).getAllByRole("listitem").map((li) => li.textContent);
+    expect(items).toHaveLength(6);
+    expect(items.some((t) => t?.includes("in Notted"))).toBe(false);
+  });
+
+  test("Keep project and Escape each close the dialog and delete nothing", async () => {
+    setup();
+    const dialog = await askAcme();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep project" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    click("Delete project acme");
+    await screen.findByRole("dialog", { name: "Delete project acme?" });
+    escape();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(DeleteProject).not.toHaveBeenCalled();
+  });
+
+  test("while DeleteProject is pending both buttons are disabled, Escape keeps the dialog and it is called once", async () => {
+    const d = deferred<{ deletedMeetings: number; trackedRemoved: string[] }>();
+    DeleteProject.mockReturnValue(d.promise);
+    setup();
+    const dialog = await askAcme();
+    click("Delete project");
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Keep project" })).toBeDisabled());
+    expect(within(dialog).getByRole("button", { name: "Delete project" })).toBeDisabled();
+    escape();
+    expect(screen.getByRole("dialog", { name: "Delete project acme?" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete project" }));
+    expect(DeleteProject).toHaveBeenCalledTimes(1);
+    expect(DeleteProject).toHaveBeenCalledWith("acme", PLAN("acme"));
+    await act(async () => d.resolve({ deletedMeetings: 2, trackedRemoved: [] }));
+  });
+
+  test("success with nothing tracked shows the notice, no commit dialog, closes the panel and calls onDeleted once", async () => {
+    DeleteProject.mockResolvedValue({ deletedMeetings: 2, trackedRemoved: [] });
+    const { onDeleted } = setup();
+    await askAcme();
+    click("Delete project");
+    expect(await screen.findByText("Deleted project acme.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Delete a project")).not.toBeInTheDocument();
+    expect(CommitProjectDeletion).not.toHaveBeenCalled();
+  });
+
+  test("success with tracked files asks to commit; Commit and push calls the binding once, disables while pending and ends with the notice", async () => {
+    const d = deferred<void>();
+    CommitProjectDeletion.mockReturnValue(d.promise);
+    await openCommit();
+    const dialog = screen.getByRole("dialog", { name: "Commit and push the deletion?" });
+    expect(within(dialog).getByText('Notted commits only the removed files, with the message "project(acme): delete", and pushes to origin.')).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Commit and push" })).toHaveClass("nt-btn--primary");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Commit and push" }));
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Not now" })).toBeDisabled());
+    expect(within(dialog).getByRole("button", { name: "Commit and push" })).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Commit and push" }));
+    expect(CommitProjectDeletion).toHaveBeenCalledTimes(1);
+    expect(CommitProjectDeletion).toHaveBeenCalledWith("acme", TRACKED);
+    await act(async () => d.resolve());
+    expect(await screen.findByText("Deleted project acme.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("Not now and Escape skip the commit with the not-committed notice", async () => {
+    const a = await openCommit();
+    click("Not now");
+    expect(await screen.findByText("Deleted project acme. The deletion is not committed.")).toBeInTheDocument();
+    expect(CommitProjectDeletion).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    a.unmount();
+    await openCommit();
+    escape();
+    expect(await screen.findByText("Deleted project acme. The deletion is not committed.")).toBeInTheDocument();
+    expect(CommitProjectDeletion).not.toHaveBeenCalled();
+  });
+
+  test("a commit failure keeps the dialog with the reason; Not now then gives the plain notice; a retry that works closes it", async () => {
+    const reason = "The commit 1a2b3c4 was saved locally but not pushed:\nno network";
+    CommitProjectDeletion.mockRejectedValueOnce(new Error(reason));
+    const a = await openCommit();
+    click("Commit and push");
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe(reason);
+    expect(screen.getByRole("dialog", { name: "Commit and push the deletion?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Not now" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Commit and push" })).toBeEnabled();
+    click("Not now");
+    expect(await screen.findByText("Deleted project acme.")).toBeInTheDocument();
+    expect(screen.queryByText(/not committed/)).not.toBeInTheDocument();
+    a.unmount();
+
+    CommitProjectDeletion.mockRejectedValueOnce(new Error(reason));
+    await openCommit();
+    click("Commit and push");
+    await screen.findByRole("alert");
+    click("Commit and push");
+    expect(await screen.findByText("Deleted project acme.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(CommitProjectDeletion).toHaveBeenCalledTimes(3);
+  });
+
+  test("focus: the commit dialog opens with Not now focused; Not now and Escape return focus to the Delete a project link", async () => {
+    const a = await openCommit();
+    expect(screen.getByRole("button", { name: "Not now" })).toHaveFocus();
+    click("Not now");
+    await screen.findByText("Deleted project acme. The deletion is not committed.");
+    expect(screen.getByRole("button", { name: "Delete a project…" })).toHaveFocus();
+    a.unmount();
+    await openCommit();
+    expect(screen.getByRole("button", { name: "Not now" })).toHaveFocus();
+    escape();
+    await screen.findByText("Deleted project acme. The deletion is not committed.");
+    expect(screen.getByRole("button", { name: "Delete a project…" })).toHaveFocus();
+  });
+
+  test("focus: a successful commit returns focus to the link; a failed one keeps it in the dialog", async () => {
+    CommitProjectDeletion.mockRejectedValueOnce(new Error("no network"));
+    await openCommit();
+    click("Commit and push");
+    await screen.findByRole("alert");
+    expect(screen.getByRole("dialog")).toContainElement(document.activeElement as HTMLElement);
+    click("Commit and push");
+    await screen.findByText("Deleted project acme.");
+    expect(screen.getByRole("button", { name: "Delete a project…" })).toHaveFocus();
+  });
+
+  test("a refused delete closes the dialog, keeps the panel open with the reason, reloads, and Delete… fetches a fresh plan", async () => {
+    const reason = 'Project "acme" changed since you reviewed it. Review the list again before deleting.';
+    DeleteProject.mockRejectedValueOnce(new Error(reason));
+    const { onDeleted } = setup();
+    await askAcme();
+    GetProjectDeletePlan.mockClear();
+    click("Delete project");
+    expect(await screen.findByRole("alert")).toHaveTextContent(reason);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Delete project acme" })).toBeEnabled();
+    click("Delete project acme");
+    await screen.findByRole("dialog", { name: "Delete project acme?" });
+    expect(GetProjectDeletePlan).toHaveBeenCalledWith("acme");
   });
 });
 

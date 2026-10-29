@@ -163,6 +163,12 @@ shows **Create my file** when your own file for that project is missing.
 Notted never commits these changes: deleting and creating files only changes the archive folder,
 like any edit.
 
+### Delete a project
+
+To remove a project, click **Delete a project…** under **Projects**, then **Delete…** on its row. Notted lists what it deletes and asks first: the project's file, your own file for it, its `meetings/<key>/` folder in the archive, and its meetings in Notted. Meetings that were never saved to the archive are gone for good. Teammates' files for the project stay. A project cannot be deleted while one of its meetings is being recorded.
+
+Notted then asks **Commit and push the deletion?** **Commit and push** commits only the removed files, with the message `project(<key>): delete`, and pushes them. **Not now** leaves the deletion in the archive folder, uncommitted. Everything that was committed before stays in the archive's git history.
+
 ## Use it
 
 ### Record a meeting

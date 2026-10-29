@@ -1,14 +1,16 @@
 import { useEffect, useRef } from "react";
 import "./SaveDialog.css";
 
-type Props = { title: string; body: string; items?: string[]; hint?: string; cancelLabel: string; confirmLabel: string; destructive?: boolean; onCancel: () => void; onConfirm: () => void };
+type Props = { title: string; body: string; items?: string[]; hint?: string; cancelLabel: string; confirmLabel: string; destructive?: boolean; busy?: boolean; error?: string; onCancel: () => void; onConfirm: () => void };
 
 // A two-button modal (destructive paints the confirm button red) in the same style as the save dialog. Escape means the cancel button.
 // Focus stays inside while it is open; the key handler sits on the document and is removed on close.
-export function ConfirmDialog({ title, body, items, hint, cancelLabel, confirmLabel, destructive, onCancel, onConfirm }: Props) {
+export function ConfirmDialog({ title, body, items, hint, cancelLabel, confirmLabel, destructive, busy, error, onCancel, onConfirm }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   const cancel = useRef(onCancel);
   cancel.current = onCancel;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
 
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
@@ -16,7 +18,7 @@ export function ConfirmDialog({ title, body, items, hint, cancelLabel, confirmLa
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        cancel.current();
+        if (!busyRef.current) cancel.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -58,11 +60,16 @@ export function ConfirmDialog({ title, body, items, hint, cancelLabel, confirmLa
           </ul>
         )}
         {hint && <p className="nt-dialog__hint">{hint}</p>}
+        {error && (
+          <div className="nt-card nt-card--error nt-dialog__error" role="alert">
+            {error}
+          </div>
+        )}
         <div className="nt-dialog__actions">
-          <button className="nt-btn" onClick={onCancel}>
+          <button className="nt-btn" disabled={busy} onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button className={"nt-btn " + (destructive ? "nt-btn--danger" : "nt-btn--primary")} onClick={onConfirm}>
+          <button className={"nt-btn " + (destructive ? "nt-btn--danger" : "nt-btn--primary")} disabled={busy} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

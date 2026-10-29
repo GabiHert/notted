@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ListProjects, SetMeetingProject } from "../api/bindings";
+import { EventsOn, ListProjects, SetMeetingProject } from "../api/bindings";
 import { errorMessage } from "../format";
 import "./ProjectCard.css";
 
@@ -10,8 +10,11 @@ export function ProjectCard({ meetingId, projectKey, hasSession, onChanged }: Pr
   const [listError, setListError] = useState("");
   const [value, setValue] = useState(projectKey);
   const [error, setError] = useState("");
+  const [reloadSeq, setReloadSeq] = useState(0);
 
   useEffect(() => setValue(projectKey), [projectKey]);
+
+  useEffect(() => EventsOn("project:deleted", () => setReloadSeq((n) => n + 1)), []);
 
   useEffect(() => {
     let live = true;
@@ -23,7 +26,7 @@ export function ProjectCard({ meetingId, projectKey, hasSession, onChanged }: Pr
     return () => {
       live = false;
     };
-  }, [meetingId]);
+  }, [meetingId, reloadSeq]);
 
   const change = (key: string) => {
     const previous = value;
