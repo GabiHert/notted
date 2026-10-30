@@ -51,6 +51,8 @@ person's files only on facts about the project.
 
 - The project file's "Existing work" section, and the person's per-project file when it adds
   sources, name where existing tasks live. Read each named source before you give verdicts.
+  The project file names only sources the whole team can read; the person's per-project file
+  adds the sources only that person can read, as paths under their project root.
 - Give each suggestion one verdict:
   - `new` — nothing in the sources covers it.
   - `duplicate of <X>` — an existing item already covers the same outcome.
