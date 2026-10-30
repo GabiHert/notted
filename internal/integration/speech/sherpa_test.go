@@ -36,14 +36,43 @@ func TestReadyForListsMissingFiles(t *testing.T) {
 }
 
 func TestLanguageMapping(t *testing.T) {
-	if sttDirName(domain.LangPTBR) != "sherpa-onnx-whisper-small" || sttFilePrefix(domain.LangPTBR) != "small" || whisperLang(domain.LangPTBR) != "pt" {
+	if sttDirName(domain.LangPTBR) != "sherpa-onnx-whisper-turbo" || sttFilePrefix(domain.LangPTBR) != "turbo" || whisperLang(domain.LangPTBR) != "pt" {
 		t.Error("pt-BR mapping wrong")
 	}
 	if sttDirName(domain.LangEN) != "sherpa-onnx-whisper-small.en" || sttFilePrefix(domain.LangEN) != "small.en" || whisperLang(domain.LangEN) != "en" {
 		t.Error("en mapping wrong")
 	}
-	if sttDirName(domain.Language("PT-br")) != "sherpa-onnx-whisper-small" {
+	if sttDirName(domain.Language("PT-br")) != "sherpa-onnx-whisper-turbo" || sttFilePrefix(domain.Language("PT-br")) != "turbo" {
 		t.Error("pt-BR must match in any case")
+	}
+}
+
+func TestReadyForPortugueseIgnoresLegacySmallFiles(t *testing.T) {
+	dir := t.TempDir()
+	seedFiles(t, dir, "sherpa-onnx-whisper-small", "small-encoder.int8.onnx", "small-decoder.int8.onnx", "small-tokens.txt")
+	ok, msg := New(Config{ModelsDir: dir}).ReadyFor(domain.LangPTBR)
+	if ok || msg != "speech models are not installed" {
+		t.Errorf("got %v %q", ok, msg)
+	}
+}
+
+func TestReadyForPortugueseNamesMissingTurboFiles(t *testing.T) {
+	dir := t.TempDir()
+	seedFiles(t, dir, "sherpa-onnx-whisper-turbo", "turbo-tokens.txt")
+	ok, msg := New(Config{ModelsDir: dir}).ReadyFor(domain.LangPTBR)
+	if ok || !strings.HasPrefix(msg, "missing speech model files: ") ||
+		!strings.Contains(msg, "turbo-encoder.int8.onnx") || !strings.Contains(msg, "turbo-decoder.int8.onnx") ||
+		strings.Contains(msg, "tokens") {
+		t.Errorf("got %v %q", ok, msg)
+	}
+}
+
+func TestReadyForPortugueseWithTurboFiles(t *testing.T) {
+	dir := t.TempDir()
+	seedFiles(t, dir, "sherpa-onnx-whisper-turbo", "turbo-encoder.int8.onnx", "turbo-decoder.int8.onnx", "turbo-tokens.txt")
+	ok, msg := New(Config{ModelsDir: dir}).ReadyFor(domain.LangPTBR)
+	if !ok || msg != "" {
+		t.Errorf("got %v %q", ok, msg)
 	}
 }
 

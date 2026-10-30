@@ -34,9 +34,9 @@ var _ port.SpeechEngine = (*Engine)(nil)
 const (
 	// WhisperEnDirName holds the English-only Whisper small.en model (file
 	// prefix "small.en"). WhisperMultiDirName holds the multilingual Whisper
-	// small model (file prefix "small") used for Portuguese.
+	// turbo model (file prefix "turbo") used for Portuguese.
 	WhisperEnDirName    = "sherpa-onnx-whisper-small.en"
-	WhisperMultiDirName = "sherpa-onnx-whisper-small"
+	WhisperMultiDirName = "sherpa-onnx-whisper-turbo"
 )
 
 const (
@@ -44,6 +44,9 @@ const (
 	defaultIdleUnload = 10 * time.Minute
 
 	whisperSampleRate = 16000
+	// whisperFeatureDim stays 80 for every model, turbo included: sherpa-onnx reads
+	// the mel-bin count from the model. Output with 80 and with 128 was byte-identical
+	// on sherpa-onnx-go v1.13.3; re-check this when the library changes.
 	whisperFeatureDim = 80
 )
 
@@ -60,10 +63,10 @@ func sttDirName(lang domain.Language) string {
 	return WhisperEnDirName
 }
 
-// sttFilePrefix is the Whisper file prefix for a language ("small" vs "small.en").
+// sttFilePrefix is the Whisper file prefix for a language ("turbo" vs "small.en").
 func sttFilePrefix(lang domain.Language) string {
 	if isPTBR(lang) {
-		return "small"
+		return "turbo"
 	}
 	return "small.en"
 }

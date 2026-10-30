@@ -22,12 +22,18 @@ func fakeModels(t *testing.T) (modelsDir string, mgr *ModelManager) {
 		"sherpa-onnx-whisper-small.en/small.en-decoder.int8.onnx": "d",
 		"sherpa-onnx-whisper-small.en/small.en-tokens.txt":        "t",
 	})
+	pt := buildTarGz(t, t.TempDir(), map[string]string{ // its own folder: buildTarGz always writes fake.tar.gz
+		"sherpa-onnx-whisper-turbo/turbo-encoder.int8.onnx": "e",
+		"sherpa-onnx-whisper-turbo/turbo-decoder.int8.onnx": "d",
+		"sherpa-onnx-whisper-turbo/turbo-tokens.txt":        "t",
+	})
 	vad := filepath.Join(src, "silero_vad.onnx")
 	if err := os.WriteFile(vad, []byte("vad"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	m := DownloadManifest{Schema: 2, Models: []ModelArtifact{
 		{Name: "whisper small.en", URL: en, SHA256: fileSum(t, en), Size: 1000, Dir: "sherpa-onnx-whisper-small.en", Lang: "en"},
+		{Name: "whisper turbo", URL: pt, SHA256: fileSum(t, pt), Size: 2000, Dir: "sherpa-onnx-whisper-turbo", Lang: "pt-BR"},
 		{Name: "silero vad", URL: vad, SHA256: fileSum(t, vad), Size: 24, Dir: "silero_vad", File: "silero_vad.onnx"},
 	}}
 	body, _ := json.Marshal(m)
@@ -38,6 +44,27 @@ func fakeModels(t *testing.T) (modelsDir string, mgr *ModelManager) {
 	t.Setenv("NOTTED_MODEL_MANIFEST", mp)
 	modelsDir = t.TempDir()
 	return modelsDir, NewModelManager(modelsDir, New(Config{ModelsDir: modelsDir}), NewDetector(modelsDir))
+}
+
+// seedFiles writes empty files under modelsDir/dir.
+func seedFiles(t *testing.T, modelsDir, dir string, files ...string) {
+	t.Helper()
+	d := filepath.Join(modelsDir, dir)
+	if err := os.MkdirAll(d, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if err := os.WriteFile(filepath.Join(d, f), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// seedLegacySmall creates the old Portuguese model folder and returns its path.
+func seedLegacySmall(t *testing.T, modelsDir string) string {
+	t.Helper()
+	seedFiles(t, modelsDir, "sherpa-onnx-whisper-small", "small-encoder.int8.onnx", "small-decoder.int8.onnx", "small-tokens.txt")
+	return filepath.Join(modelsDir, "sherpa-onnx-whisper-small")
 }
 
 func phases(ps []port.ModelProgress) []string {
@@ -151,6 +178,75 @@ func TestDownloadErrorEmitsErrorPhase(t *testing.T) {
 	}
 	if mgr.Status(domain.LangEN).Downloading {
 		t.Error("still Downloading after failure")
+	}
+}
+
+func TestStatusWithOnlyLegacyModelIsNotReady(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	seedLegacySmall(t, modelsDir)
+	seedFiles(t, modelsDir, "silero_vad", "silero_vad.onnx")
+	st := mgr.Status(domain.LangPTBR)
+	if st.Ready || st.DownloadBytes != 2000 || st.Missing != "speech models are not installed" {
+		t.Fatalf("legacy only: %+v", st)
+	}
+}
+
+func TestPortugueseDownloadInstallsTurboAndCallsOnReady(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	var n int
+	var lang domain.Language
+	mgr.SetOnReady(func(l domain.Language) { n++; lang = l })
+	var got []port.ModelProgress
+	if err := mgr.Download(t.Context(), domain.LangPTBR, func(p port.ModelProgress) { got = append(got, p) }); err != nil {
+		t.Fatal(err)
+	}
+	st := mgr.Status(domain.LangPTBR)
+	if !st.Ready || st.DownloadBytes != 0 || st.Missing != "" {
+		t.Fatalf("after: %+v", st)
+	}
+	for _, f := range []string{"turbo-encoder.int8.onnx", "turbo-decoder.int8.onnx", "turbo-tokens.txt"} {
+		if _, err := os.Stat(filepath.Join(modelsDir, "sherpa-onnx-whisper-turbo", f)); err != nil {
+			t.Errorf("missing %s: %v", f, err)
+		}
+	}
+	if n != 1 || lang != domain.LangPTBR {
+		t.Errorf("onReady calls=%d lang=%q", n, lang)
+	}
+	want := "download verify extract download verify extract done"
+	if g := strings.Join(phases(got), " "); g != want {
+		t.Errorf("phases: %q, want %q", g, want)
+	}
+}
+
+func TestEnglishIsUnchangedByThePortugueseArtifact(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	if b := mgr.Status(domain.LangEN).DownloadBytes; b != 1024 {
+		t.Fatalf("en bytes: %d", b)
+	}
+	if err := mgr.Download(t.Context(), domain.LangEN, func(port.ModelProgress) {}); err != nil {
+		t.Fatal(err)
+	}
+	if !mgr.Status(domain.LangEN).Ready {
+		t.Error("en not ready")
+	}
+	if _, err := os.Stat(filepath.Join(modelsDir, "sherpa-onnx-whisper-turbo")); !os.IsNotExist(err) {
+		t.Errorf("turbo folder exists after an English download: %v", err)
+	}
+	if b := mgr.Status(domain.LangPTBR).DownloadBytes; b != 2000 {
+		t.Errorf("pt-BR bytes: %d", b)
+	}
+}
+
+func TestStatusUsesThePinnedTurboSize(t *testing.T) {
+	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	dir := t.TempDir()
+	mgr := NewModelManager(dir, New(Config{ModelsDir: dir}), NewDetector(dir))
+	if b := mgr.Status(domain.LangPTBR).DownloadBytes; b != 564434061 {
+		t.Errorf("nothing installed: %d", b)
+	}
+	seedFiles(t, dir, "silero_vad", "silero_vad.onnx")
+	if b := mgr.Status(domain.LangPTBR).DownloadBytes; b != 563790207 {
+		t.Errorf("detector installed: %d", b)
 	}
 }
 
