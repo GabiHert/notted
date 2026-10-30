@@ -51,7 +51,7 @@ const transcript = [
 const modelsMissing = screen === "new" || screen === "new-downloading";
 
 if (screen === "new-downloading") {
-  setTimeout(() => emit("models:progress", { language: "pt-BR", name: "whisper-small", phase: "download", bytesDone: 205_000_000, bytesTotal: 487_000_000 }), 500);
+  setTimeout(() => emit("models:progress", { language: "pt-BR", name: "whisper-turbo", phase: "download", bytesDone: 237_000_000, bytesTotal: 564_000_000 }), 500);
 }
 if (screen === "mic-warning") {
   setTimeout(
@@ -364,7 +364,7 @@ export async function GetTranscript(id: string) {
   return id === "fx-transcribing" ? [] : transcript;
 }
 export async function GetModelStatus(language: string) {
-  return { language, ready: !modelsMissing, missing: modelsMissing ? "whisper-small" : "", downloadBytes: 487_400_000, downloading: false };
+  return { language, ready: !modelsMissing, missing: modelsMissing ? "whisper-turbo" : "", downloadBytes: 563_800_000, downloading: false };
 }
 export async function StartRecording(title: string, language: string) {
   return { ...meetings[0], title: title || "Untitled", language };

@@ -6,8 +6,8 @@ vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
 beforeEach(resetBindings);
 
-const missing = (over = {}) => ({ language: "pt-BR", ready: false, missing: "whisper", downloadBytes: 487_400_000, downloading: false, ...over });
-const progress = (over = {}) => ({ language: "pt-BR", name: "whisper-small", phase: "download", bytesDone: 50, bytesTotal: 200, ...over });
+const missing = (over = {}) => ({ language: "pt-BR", ready: false, missing: "whisper", downloadBytes: 563_800_000, downloading: false, ...over });
+const progress = (over = {}) => ({ language: "pt-BR", name: "whisper-turbo", phase: "download", bytesDone: 50, bytesTotal: 200, ...over });
 
 test("not ready: shows the size rounded to MB and the download button", async () => {
   GetModelStatus.mockResolvedValue(missing());
@@ -15,7 +15,7 @@ test("not ready: shows the size rounded to MB and the download button", async ()
   expect(await screen.findByText("Speech models")).toBeInTheDocument();
   expect(
     screen.getByText(
-      "The speech models for Portuguese (Brazil) are not on this Mac yet (about 487 MB). Recording works now; transcription starts once they are downloaded.",
+      "The speech models for Portuguese (Brazil) are not on this Mac yet (about 564 MB). Recording works now; transcription starts once they are downloaded.",
     ),
   ).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Download models" }));
@@ -27,11 +27,11 @@ test("download, verify and extract phases", async () => {
   render(<ModelBanner language="pt-BR" />);
   await screen.findByText("Speech models");
   await act(async () => emit("models:progress", progress()));
-  expect(screen.getByText("Downloading whisper-small… 25%")).toBeInTheDocument();
+  expect(screen.getByText("Downloading whisper-turbo… 25%")).toBeInTheDocument();
   await act(async () => emit("models:progress", progress({ phase: "verify" })));
-  expect(screen.getByText("Checking whisper-small…")).toBeInTheDocument();
+  expect(screen.getByText("Checking whisper-turbo…")).toBeInTheDocument();
   await act(async () => emit("models:progress", progress({ phase: "extract" })));
-  expect(screen.getByText("Unpacking whisper-small…")).toBeInTheDocument();
+  expect(screen.getByText("Unpacking whisper-turbo…")).toBeInTheDocument();
 });
 
 test("ignores progress for another language", async () => {
