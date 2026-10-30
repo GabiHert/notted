@@ -232,7 +232,7 @@ Claude Code is the only model Notted uses, and it needs no API key: `ANTHROPIC_A
 
 ### What Notted downloads
 
-On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 640 MB for Portuguese `small`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only download Notted makes itself; the `claude` program talks to Anthropic on its own. Notted also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, **Commit and push** runs `git push`, and **Update Notted** runs `git pull`.
+On first use per language, Notted downloads the Whisper model (about 640 MB for English `small.en`, about 564 MB for Portuguese `turbo`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.notted/models`. This is the only download Notted makes itself; the `claude` program talks to Anthropic on its own. Notted also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, **Commit and push** runs `git push`, and **Update Notted** runs `git pull`.
 
 ## Update Notted
 
