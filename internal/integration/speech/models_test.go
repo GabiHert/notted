@@ -1,7 +1,11 @@
 package speech
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -257,4 +261,296 @@ func TestStatusSurfacesManifestError(t *testing.T) {
 	if st.Ready || !strings.Contains(st.Missing, "model manifest") {
 		t.Fatalf("manifest error not surfaced: %+v", st)
 	}
+}
+
+// useManifest makes m the active manifest for the rest of the test.
+func useManifest(t *testing.T, m *DownloadManifest) {
+	t.Helper()
+	body, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(t.TempDir(), "manifest.json")
+	if err := os.WriteFile(p, body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("NOTTED_MODEL_MANIFEST", p)
+}
+
+var (
+	turboFiles  = []string{"turbo-encoder.int8.onnx", "turbo-decoder.int8.onnx", "turbo-tokens.txt"}
+	legacyFiles = []string{"small-encoder.int8.onnx", "small-decoder.int8.onnx", "small-tokens.txt"}
+)
+
+func seedTurbo(t *testing.T, modelsDir string) {
+	t.Helper()
+	seedFiles(t, modelsDir, "sherpa-onnx-whisper-turbo", turboFiles...)
+}
+
+func assertLegacyKept(t *testing.T, legacy string) {
+	t.Helper()
+	for _, f := range legacyFiles {
+		if _, err := os.Stat(filepath.Join(legacy, f)); err != nil {
+			t.Errorf("legacy file %s gone: %v", f, err)
+		}
+	}
+}
+
+func ignoreProgress(port.ModelProgress) {}
+
+func TestPortugueseDownloadRemovesLegacyFolder(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	legacy := seedLegacySmall(t, modelsDir)
+	seedFiles(t, modelsDir, "sherpa-onnx-whisper-small.en", "keep.txt")
+	exists := func() bool { _, err := os.Stat(legacy); return err == nil }
+	var atDone, atReady, doneSeen bool
+	var readyCalls int
+	mgr.SetOnReady(func(domain.Language) { readyCalls++; atReady = exists() })
+	err := mgr.Download(t.Context(), domain.LangPTBR, func(p port.ModelProgress) {
+		if p.Phase == "done" {
+			doneSeen = true
+			atDone = exists()
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists() {
+		t.Error("legacy folder still exists")
+	}
+	if !doneSeen || atDone {
+		t.Errorf("done seen=%v legacy existed at done=%v", doneSeen, atDone)
+	}
+	if readyCalls != 1 || atReady {
+		t.Errorf("onReady calls=%d legacy existed at ready=%v", readyCalls, atReady)
+	}
+	for _, f := range turboFiles {
+		if _, err := os.Stat(filepath.Join(modelsDir, "sherpa-onnx-whisper-turbo", f)); err != nil {
+			t.Errorf("missing %s: %v", f, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(modelsDir, "sherpa-onnx-whisper-small.en", "keep.txt")); err != nil {
+		t.Errorf("small.en touched: %v", err)
+	}
+}
+
+func TestPortugueseDownloadThatFetchesNothingRemovesLegacyFolder(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	legacy := seedLegacySmall(t, modelsDir)
+	var got []port.ModelProgress
+	if err := mgr.Download(t.Context(), domain.LangPTBR, func(p port.ModelProgress) { got = append(got, p) }); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range got {
+		if p.Phase == "download" {
+			t.Errorf("re-downloaded: %+v", p)
+		}
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("legacy folder still exists: %v", err)
+	}
+}
+
+func TestLegacySymlinkIsRemovedWithoutFollowingIt(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "keep.txt"), []byte("k"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(modelsDir, "sherpa-onnx-whisper-small")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(link); !os.IsNotExist(err) {
+		t.Errorf("link still exists: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outside, "keep.txt")); err != nil {
+		t.Errorf("target touched: %v", err)
+	}
+}
+
+func TestLegacyRemovalFailureIsLoggedAndDownloadSucceeds(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	legacy := seedLegacySmall(t, modelsDir)
+	locked := filepath.Join(legacy, "locked")
+	if err := os.MkdirAll(locked, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(locked, "x"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(locked, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(prev) })
+	var readyCalls int
+	mgr.SetOnReady(func(domain.Language) { readyCalls++ })
+	var got []port.ModelProgress
+	if err := mgr.Download(t.Context(), domain.LangPTBR, func(p port.ModelProgress) { got = append(got, p) }); err != nil {
+		t.Fatal(err)
+	}
+	if got[len(got)-1].Phase != "done" {
+		t.Errorf("last phase: %q", got[len(got)-1].Phase)
+	}
+	if readyCalls != 1 {
+		t.Errorf("onReady calls=%d", readyCalls)
+	}
+	if !strings.Contains(buf.String(), "remove legacy speech model: ") {
+		t.Errorf("log: %q", buf.String())
+	}
+	if _, err := os.Stat(legacy); err != nil {
+		t.Errorf("legacy folder gone despite failure: %v", err)
+	}
+	if err := os.Chmod(locked, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("retry left legacy folder: %v", err)
+	}
+}
+
+func TestPortugueseDownloadWithoutLegacyFolderSucceeds(t *testing.T) {
+	_, mgr := fakeModels(t)
+	var readyCalls int
+	mgr.SetOnReady(func(domain.Language) { readyCalls++ })
+	if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	if readyCalls != 1 {
+		t.Errorf("onReady calls=%d", readyCalls)
+	}
+}
+
+func TestFailedPortugueseDownloadKeepsLegacyFolder(t *testing.T) {
+	zero := strings.Repeat("0", 64)
+	cases := []struct {
+		name  string
+		setup func(t *testing.T, modelsDir string, m *DownloadManifest)
+	}{
+		{"turbo fails", func(t *testing.T, _ string, m *DownloadManifest) {
+			for i := range m.Models {
+				if m.Models[i].Name == "whisper turbo" {
+					m.Models[i].SHA256 = zero
+				}
+			}
+		}},
+		{"detector fails after turbo is in place", func(t *testing.T, modelsDir string, m *DownloadManifest) {
+			seedTurbo(t, modelsDir)
+			for i := range m.Models {
+				if m.Models[i].Name == "silero vad" {
+					m.Models[i].SHA256 = zero
+				}
+			}
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			modelsDir, mgr := fakeModels(t)
+			legacy := seedLegacySmall(t, modelsDir)
+			m, err := loadManifest()
+			if err != nil {
+				t.Fatal(err)
+			}
+			c.setup(t, modelsDir, m)
+			useManifest(t, m)
+			var readyCalls int
+			mgr.SetOnReady(func(domain.Language) { readyCalls++ })
+			var got []port.ModelProgress
+			if err := mgr.Download(t.Context(), domain.LangPTBR, func(p port.ModelProgress) { got = append(got, p) }); err == nil {
+				t.Fatal("want error")
+			}
+			if last := got[len(got)-1].Phase; last != "error" {
+				t.Errorf("last phase: %q", last)
+			}
+			if readyCalls != 0 {
+				t.Errorf("onReady calls=%d", readyCalls)
+			}
+			assertLegacyKept(t, legacy)
+		})
+	}
+}
+
+func TestCancelledPortugueseDownloadKeepsLegacyFolder(t *testing.T) {
+	for _, name := range []string{"turbo missing", "only the detector missing"} {
+		t.Run(name, func(t *testing.T) {
+			modelsDir, mgr := fakeModels(t)
+			legacy := seedLegacySmall(t, modelsDir)
+			if name == "only the detector missing" {
+				seedTurbo(t, modelsDir)
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+			err := mgr.Download(ctx, domain.LangPTBR, ignoreProgress)
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("err: %v", err)
+			}
+			assertLegacyKept(t, legacy)
+		})
+	}
+}
+
+func TestEnglishDownloadKeepsLegacyFolder(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	legacy := seedLegacySmall(t, modelsDir)
+	seedTurbo(t, modelsDir)
+	if err := mgr.Download(t.Context(), domain.LangEN, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	assertLegacyKept(t, legacy)
+	if _, err := os.Stat(filepath.Join(modelsDir, "sherpa-onnx-whisper-small.en")); err != nil {
+		t.Errorf("small.en missing: %v", err)
+	}
+}
+
+func TestManifestInstallingIntoLegacyFolderKeepsIt(t *testing.T) {
+	modelsDir, mgr := fakeModels(t)
+	legacy := seedLegacySmall(t, modelsDir)
+	seedTurbo(t, modelsDir)
+	m, err := loadManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range m.Models {
+		if m.Models[i].Name == "whisper turbo" {
+			m.Models[i].Dir = "sherpa-onnx-whisper-small"
+		}
+	}
+	useManifest(t, m)
+	if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+		t.Fatal(err)
+	}
+	assertLegacyKept(t, legacy)
+}
+
+func TestPortugueseDownloadWithoutTurboKeepsLegacyFolder(t *testing.T) {
+	t.Run("incomplete folder", func(t *testing.T) {
+		modelsDir, mgr := fakeModels(t)
+		legacy := seedLegacySmall(t, modelsDir)
+		seedFiles(t, modelsDir, "sherpa-onnx-whisper-turbo", "turbo-tokens.txt")
+		if err := mgr.Download(t.Context(), domain.LangPTBR, ignoreProgress); err != nil {
+			t.Fatal(err)
+		}
+		assertLegacyKept(t, legacy)
+	})
+	t.Run("language in another case", func(t *testing.T) {
+		modelsDir, mgr := fakeModels(t)
+		legacy := seedLegacySmall(t, modelsDir)
+		if err := mgr.Download(t.Context(), domain.Language("PT-br"), ignoreProgress); err != nil {
+			t.Fatal(err)
+		}
+		assertLegacyKept(t, legacy)
+	})
 }
