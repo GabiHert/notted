@@ -51,18 +51,19 @@ The schema of every instruction file (headings, order, precedence, an example of
 1. Read instructions/README.md and prompts/base.md in the archive.
 2. Interview me one question at a time. Wait for my answer before you ask the next.
 {{- if not .Profile}}
-   I have no profile yet, so start by asking me for a short profile name: lowercase letters, digits and dashes, starting with a letter or digit, like "ana" or "ana-lima". My person file will be instructions/people/<name>.md: draft it from my answers below with the headings the README gives, show it to me in full as rule 5 says, and write it only after my yes. Then ask about:
+   I have no profile yet, so start by asking me for a short profile name: lowercase letters, digits and dashes, starting with a letter or digit, like "ana" or "ana-lima". My person file will be instructions/people/<name>.md: draft it from my answers below with the headings the README gives, show it to me in full as rule 6 says, and write it only after my yes. Then ask about:
 {{- else}}
    Ask about:
 {{- end}}
    - my role and my style, for my person file (language, phrasing, how many suggestions I want);
-   - for each project I work on: its name, the other names it appears under in meeting titles (aliases), what it is about, where its existing work lives (task files, notes, folders), and what accepting a task should do for it;
+   - for each project I work on: its name, the other names it appears under in meeting titles (aliases), what it is about, where its existing work lives: what the whole team can read (an issue tracker, GitHub repositories), which goes in the project file, and any folders only I can read, which go in my per-project file, and what accepting a task should do for it;
    - for each project: the local folder of its work, which I set in Notted afterwards.
 3. Write only under instructions/ in the archive, and only the files for my profile and the projects we talk about. Use the headings the README gives.
-4. You must never edit prompts/base.md, bin/meeting or anything under meetings/.
-5. Before you write a file, show each file to me in full and wait for my yes. After I say yes, write it.
-6. You must never commit or push without my yes. Writing a file is not a commit.
-7. When we are done, tell me to open Notted's Settings and:
+4. A project file is shared by every profile that works on the project, so everything in it must be true and readable for all of them: the project's name, aliases, what it is about, and the issue tracker and GitHub repositories the whole team can read. Never write a local path, a folder on my machine or anything only I can open into a project file; put those in my per-project file. Before you write a project file, check each line against this rule.
+5. You must never edit prompts/base.md, bin/meeting or anything under meetings/.
+6. Before you write a file, show each file to me in full and wait for my yes. After I say yes, write it.
+7. You must never commit or push without my yes. Writing a file is not a commit.
+8. When we are done, tell me to open Notted's Settings and:
 {{if .Profile}}   - choose my profile;
 {{else}}   - choose the profile I just named, which Notted lists once its file exists;
 {{end}}   - set each project's root folder, with Choose;

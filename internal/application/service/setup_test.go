@@ -308,7 +308,7 @@ func TestCreateProject(t *testing.T) {
 	if read(t, filepath.Join(f.root, got[0])) != "# Project: acme\n\n## Key\nacme\n\n## Name\n\n## Aliases\n\n## About\n\n## Existing work\n" {
 		t.Fatal("project template")
 	}
-	if read(t, filepath.Join(f.root, got[1])) != "# ana — acme\n\n## Project root\n\n## Tools\n" {
+	if read(t, filepath.Join(f.root, got[1])) != "# ana — acme\n\n## Project root\n\n## Tools\n\n## Existing work\n" {
 		t.Fatal("person-project template")
 	}
 	_, err = f.svc.CreateProject(f.ctx, "acme")

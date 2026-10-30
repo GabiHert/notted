@@ -372,5 +372,5 @@ func projectTemplate(key string) string {
 }
 
 func personProjectTemplate(profile, key string) string {
-	return "# " + profile + " — " + key + "\n\n## Project root\n\n## Tools\n"
+	return "# " + profile + " — " + key + "\n\n## Project root\n\n## Tools\n\n## Existing work\n"
 }

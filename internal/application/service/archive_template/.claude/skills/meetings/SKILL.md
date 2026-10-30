@@ -73,9 +73,10 @@ Used by process and accept.
 
 1. Read `summary.md` and `transcript.md`.
 2. Draft tasks per the base instructions ("Drafting a task") and the person's style (number and size).
-3. Read every source the project file's `## Existing work` section names (and the per-project person
-   file, if it adds any), using whatever tool that source says. Note each as `read` or
-   `unavailable: <reason>`. Never guess an identifier.
+3. Read every source the project file's `## Existing work` section names (and the
+   `## Existing work` section of the per-project person file, if it has one), using whatever
+   tool that source says. Note each as `read` or `unavailable: <reason>`. Never guess an
+   identifier.
 4. Give each suggestion one verdict: `new`, `duplicate of <X>` or `add to <X>`, where X is the
    source's own identifier. When no source is named, every verdict is `new`.
 5. Write `<folder>/suggestions.md` in exactly this format:

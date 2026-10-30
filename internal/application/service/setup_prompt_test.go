@@ -219,7 +219,7 @@ func TestSetupPromptNoProfileStartsWithAName(t *testing.T) {
 		"lowercase letters, digits and dashes, starting with a letter or digit",
 		`"ana" or "ana-lima"`,
 		"My person file will be instructions/people/<name>.md",
-		"show it to me in full as rule 5 says, and write it only after my yes",
+		"show it to me in full as rule 6 says, and write it only after my yes",
 		"choose the profile I just named",
 		"one question at a time",
 	)
@@ -261,4 +261,34 @@ func TestSetupPromptFolderFailingTheCheckStopsAtSettings(t *testing.T) {
 		"Prompt preview",
 		"Projects in the archive",
 	)
+}
+
+const sharedProjectRule = "A project file is shared by every profile that works on the project, so everything in it must be true and readable for all of them: the project's name, aliases, what it is about, and the issue tracker and GitHub repositories the whole team can read. Never write a local path, a folder on my machine or anything only I can open into a project file; put those in my per-project file. Before you write a project file, check each line against this rule."
+
+const sharedExistingWork = "where its existing work lives: what the whole team can read (an issue tracker, GitHub repositories), which goes in the project file, and any folders only I can read, which go in my per-project file"
+
+func TestSetupPromptProjectFileIsSharedAcrossProfiles(t *testing.T) {
+	for _, profile := range []string{"ana", ""} {
+		f := newSetupFx(t, profile)
+		seedSetupState(t, f)
+		got, err := f.svc.GetSetupPrompt(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustContain(t, got,
+			"Use the headings the README gives.\n4. "+sharedProjectRule+"\n5. You must never edit prompts/base.md",
+			sharedExistingWork,
+			"\n6. Before you write a file, show each file to me in full",
+			"\n7. You must never commit or push without my yes.",
+			"\n8. When we are done, tell me to open Notted's Settings and:",
+		)
+		mustNotContain(t, got, "(task files, notes, folders)", "as rule 5 says")
+	}
+	g := newSetupFx(t, "ana")
+	g.set.s.CheckoutPath = ""
+	unset, err := g.svc.GetSetupPrompt(g.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustNotContain(t, unset, sharedProjectRule)
 }
