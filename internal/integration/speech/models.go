@@ -3,6 +3,7 @@ package speech
 import (
 	"context"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,6 +16,10 @@ var _ port.ModelManager = (*ModelManager)(nil)
 
 // ErrDownloadRunning is returned when a download starts while another runs.
 var ErrDownloadRunning = errors.New("A model download is already running.")
+
+// legacyWhisperSmallDirName is the folder earlier builds installed the Portuguese
+// model into. Nothing reads it now that Portuguese uses turbo.
+const legacyWhisperSmallDirName = "sherpa-onnx-whisper-small"
 
 // ModelManager reports which speech models are installed and downloads the rest.
 type ModelManager struct {
@@ -119,6 +124,7 @@ func (m *ModelManager) Download(ctx context.Context, lang domain.Language, onPro
 			return fail(a.Name, err)
 		}
 	}
+	m.removeLegacyPT(manifest, lang)
 	onProgress(port.ModelProgress{Language: lang, Phase: "done"})
 
 	m.mu.Lock()
@@ -128,4 +134,25 @@ func (m *ModelManager) Download(ctx context.Context, lang domain.Language, onPro
 		cb(lang)
 	}
 	return nil
+}
+
+// removeLegacyPT removes the old Portuguese model folder after a successful
+// Portuguese download. It does nothing for another language, while turbo is not
+// ready, or when the active manifest installs a Portuguese artifact into that
+// folder. A failure is only logged: the download itself succeeded.
+func (m *ModelManager) removeLegacyPT(manifest *DownloadManifest, lang domain.Language) {
+	if !isPTBR(lang) {
+		return
+	}
+	if ok, _ := m.engine.ReadyFor(domain.LangPTBR); !ok {
+		return
+	}
+	for _, a := range manifest.forLanguage(domain.LangPTBR) {
+		if a.Dir == legacyWhisperSmallDirName {
+			return
+		}
+	}
+	if err := os.RemoveAll(filepath.Join(m.modelsDir, legacyWhisperSmallDirName)); err != nil {
+		log.Printf("remove legacy speech model: %v", err)
+	}
 }
