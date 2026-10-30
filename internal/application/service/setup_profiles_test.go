@@ -314,7 +314,7 @@ func TestCreateMyProjectFile(t *testing.T) {
 		t.Fatalf("%q %v", got, err)
 	}
 	p := filepath.Join(f.root, got)
-	if read(t, p) != "# ana — acme\n\n## Project root\n\n## Tools\n" {
+	if read(t, p) != "# ana — acme\n\n## Project root\n\n## Tools\n\n## Existing work\n" {
 		t.Fatalf("template %q", read(t, p))
 	}
 	put(t, p, "mine")

@@ -255,8 +255,8 @@ const instructionText: Record<string, string> = {
   "instructions/people/ana/acme.md": "# Ana for Acme\n\nList the follow-ups last.\n",
   "instructions/local/notes.md": "# Local notes\n",
   "instructions/projects/initech-web.md": "# Project: initech-web\n\n## Key\ninitech-web\n\n## Name\n\n## Aliases\n\n## About\n\n## Existing work\n",
-  "instructions/people/ana/initech-web.md": "# ana — initech-web\n\n## Project root\n\n## Tools\n",
-  "instructions/people/ana/globex.md": "# ana — globex\n\n## Project root\n\n## Tools\n",
+  "instructions/people/ana/initech-web.md": "# ana — initech-web\n\n## Project root\n\n## Tools\n\n## Existing work\n",
+  "instructions/people/ana/globex.md": "# ana — globex\n\n## Project root\n\n## Tools\n\n## Existing work\n",
 };
 const createdFiles = [
   { path: "instructions/projects/initech-web.md", kind: "project", readOnly: false },
