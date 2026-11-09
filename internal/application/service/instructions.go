@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // InstructionFile is one instruction file of the archive.

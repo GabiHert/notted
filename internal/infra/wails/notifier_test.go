@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 

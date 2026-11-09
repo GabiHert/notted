@@ -1,6 +1,6 @@
 package wails
 
-import "github.com/GabiHert/notted/internal/application/service"
+import "github.com/GabiHert/phonon/internal/application/service"
 
 // FormOptionDTO is one option of a choice or multi piece.
 type FormOptionDTO struct {

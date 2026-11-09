@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // fakeModels builds a manifest of tiny archives named like the real ones, so the

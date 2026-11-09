@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // HelperEvent is one parsed line of the audio helper's stdout.

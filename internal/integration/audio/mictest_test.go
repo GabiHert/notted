@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 func testerRig(t *testing.T, mode string) (*MicTester, string) {

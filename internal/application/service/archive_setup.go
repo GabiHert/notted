@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 // archiveTemplate holds the files a folder needs to be a meetings archive. The folder's dot-files are included.

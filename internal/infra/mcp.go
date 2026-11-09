@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/GabiHert/notted/internal/domain"
-	"github.com/GabiHert/notted/internal/integration/askipc"
-	"github.com/GabiHert/notted/internal/integration/mcpserver"
+	"github.com/GabiHert/phonon/internal/domain"
+	"github.com/GabiHert/phonon/internal/integration/askipc"
+	"github.com/GabiHert/phonon/internal/integration/mcpserver"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

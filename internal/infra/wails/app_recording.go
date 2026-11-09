@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GabiHert/notted/internal/application/service"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/service"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 func (a *App) context() context.Context {

@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 const msgPermissionsUnavailable = "Notted could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Notted if this keeps happening."

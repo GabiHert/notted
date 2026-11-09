@@ -1,6 +1,6 @@
 package wails
 
-import "github.com/GabiHert/notted/internal/domain"
+import "github.com/GabiHert/phonon/internal/domain"
 
 // ProjectDeletePlanDTO is what deleting a project removes, for the confirm.
 type ProjectDeletePlanDTO struct {

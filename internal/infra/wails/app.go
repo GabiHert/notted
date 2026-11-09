@@ -1,8 +1,8 @@
 package wails
 
 import (
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/application/service"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/service"
 )
 
 // App holds every method bound to the frontend.

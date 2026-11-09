@@ -1,4 +1,4 @@
-module github.com/GabiHert/notted
+module github.com/GabiHert/phonon
 
 go 1.26
 

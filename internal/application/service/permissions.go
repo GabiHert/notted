@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 // Privacy panes of System Settings, by the permission's kind.

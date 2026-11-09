@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 const envMarker = "__NOTTED_ENV_BEGIN__"

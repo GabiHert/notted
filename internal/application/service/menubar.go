@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // StatusItem is the menu bar icon; it shows the idle or the recording look.

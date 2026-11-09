@@ -3,7 +3,7 @@ package wails
 import (
 	"time"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // MeetingDTO is a meeting as the frontend sees it.

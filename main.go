@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/GabiHert/notted/internal/infra"
+	"github.com/GabiHert/phonon/internal/infra"
 )
 
 //go:embed all:frontend/dist

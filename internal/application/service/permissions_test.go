@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 type fakeChecker struct {

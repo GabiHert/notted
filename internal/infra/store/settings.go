@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 const (

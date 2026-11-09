@@ -15,8 +15,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 	"github.com/google/uuid"
 )
 

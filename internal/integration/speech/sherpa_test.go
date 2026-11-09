@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 func TestReadyForWithNoFiles(t *testing.T) {

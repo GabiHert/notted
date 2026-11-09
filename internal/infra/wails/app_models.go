@@ -3,8 +3,8 @@ package wails
 import (
 	"fmt"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // ModelStatusDTO says whether the speech models for a language are installed.

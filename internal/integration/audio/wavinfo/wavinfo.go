@@ -7,7 +7,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 // silentBelowDBFS is the level under which a file counts as silent.

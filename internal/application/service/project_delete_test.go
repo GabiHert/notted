@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
-	"github.com/GabiHert/notted/internal/infra/store"
-	"github.com/GabiHert/notted/internal/integration/git"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
+	"github.com/GabiHert/phonon/internal/infra/store"
+	"github.com/GabiHert/phonon/internal/integration/git"
 )
 
 type gitSpy struct {

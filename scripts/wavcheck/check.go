@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GabiHert/notted/internal/integration/audio/wavinfo"
+	"github.com/GabiHert/phonon/internal/integration/audio/wavinfo"
 )
 
 const chunkToleranceSeconds = 1.0

@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/service"
-	"github.com/GabiHert/notted/internal/infra/store"
-	"github.com/GabiHert/notted/internal/integration/git"
-	"github.com/GabiHert/notted/internal/integration/process"
+	"github.com/GabiHert/phonon/internal/application/service"
+	"github.com/GabiHert/phonon/internal/infra/store"
+	"github.com/GabiHert/phonon/internal/integration/git"
+	"github.com/GabiHert/phonon/internal/integration/process"
 )
 
 const flowMakefile = "build:\n\tmkdir -p build/bin/Notted.app/Contents/MacOS\n\ttouch build/bin/Notted.app/Contents/MacOS/Notted\n\t@echo built-ok\n"

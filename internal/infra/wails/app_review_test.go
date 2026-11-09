@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/application/service"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/service"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 type reviewStore struct{ port.MeetingStore }

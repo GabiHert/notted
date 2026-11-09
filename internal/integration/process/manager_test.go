@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/integration/claude"
+	"github.com/GabiHert/phonon/internal/integration/claude"
 )
 
 type ev struct {

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // defaultManifestJSON is the manifest pinned to this build: the upstream

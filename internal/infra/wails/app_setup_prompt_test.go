@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GabiHert/notted/internal/application/service"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/service"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 type noSettings struct{}

@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // SpeechSpan is one stretch of detected speech.

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/domain"
-	"github.com/GabiHert/notted/internal/infra/store"
-	"github.com/GabiHert/notted/internal/integration/claude"
+	"github.com/GabiHert/phonon/internal/domain"
+	"github.com/GabiHert/phonon/internal/infra/store"
+	"github.com/GabiHert/phonon/internal/integration/claude"
 )
 
 type startCall struct {

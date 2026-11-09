@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
+	"github.com/GabiHert/phonon/internal/application/port"
 )
 
 // UpdateStatus is what the update card shows.

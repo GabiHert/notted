@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/application/port"
-	"github.com/GabiHert/notted/internal/domain"
+	"github.com/GabiHert/phonon/internal/application/port"
+	"github.com/GabiHert/phonon/internal/domain"
 )
 
 // memStore is an in-memory port.MeetingStore; methods the recording service does not use panic.

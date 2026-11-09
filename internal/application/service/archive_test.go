@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GabiHert/notted/internal/domain"
-	"github.com/GabiHert/notted/internal/infra/store"
-	"github.com/GabiHert/notted/internal/integration/git"
+	"github.com/GabiHert/phonon/internal/domain"
+	"github.com/GabiHert/phonon/internal/infra/store"
+	"github.com/GabiHert/phonon/internal/integration/git"
 )
 
 type archFixture struct {
