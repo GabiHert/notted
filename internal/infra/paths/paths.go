@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 )
 
+// HomeEnv overrides the data folder.
+const HomeEnv = "NOTTED_HOME"
+
 // Home returns the root data directory for Notted.
 // Order of precedence:
 //  1. $NOTTED_HOME if non-empty
@@ -18,7 +21,7 @@ import (
 //
 // The directory is NOT created here; callers must MkdirAll as needed.
 func Home() string {
-	if v := os.Getenv("NOTTED_HOME"); v != "" {
+	if v := os.Getenv(HomeEnv); v != "" {
 		return v
 	}
 	home, err := os.UserHomeDir()

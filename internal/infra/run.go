@@ -42,6 +42,12 @@ func helperPath() string {
 
 // Run wires the app and starts the Wails window.
 func Run(assets embed.FS) error {
+	// wails build runs this to list the bound methods: give that run a throwaway data folder.
+	cleanup, err := isolateHome(generatingBindings)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
 	st, err := store.Open(paths.DBPath())
 	if err != nil {
 		return err
