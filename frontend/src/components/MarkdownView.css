@@ -9,7 +9,8 @@
 .nt-md h3 {
   font-family: var(--font-display);
   font-size: var(--h3);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0 0 8px;
 }
 .nt-md h2,
@@ -33,7 +34,7 @@
   margin-right: 6px;
 }
 .nt-md code {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   background: var(--side);
   border-radius: var(--r-sm);
