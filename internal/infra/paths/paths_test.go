@@ -61,3 +61,11 @@ func TestAskPathsUnderHome(t *testing.T) {
 		t.Fatalf("SessionsDir() = %q, want %q", got, want)
 	}
 }
+
+func TestThemesDirUnderHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PHONON_HOME", dir)
+	if got, want := ThemesDir(), filepath.Join(dir, "themes"); got != want {
+		t.Fatalf("ThemesDir() = %q, want %q", got, want)
+	}
+}

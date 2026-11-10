@@ -394,3 +394,38 @@ export async function ListOpenForms() {
 export async function AnswerForm(_formId: string, _answers: Record<string, unknown>, _note: string) {}
 export async function DismissForm(_formId: string, _note: string) {}
 export async function SetWindowVisible(_visible: boolean) {}
+
+const darkTokens = { bg: "#111214", bar: "#0b0c0d", side: "#0b0c0d", card: "#18191c", fg: "#ecebe7", fg2: "#b6b3ab", fg3: "#8d8a83", "fg3-text": "#9a978f", border: "#2a2b2f", sel: "#2c2416", dot: "#3a3b40", accent: "#f2a93b", "on-accent": "#1b1204", rec: "#ff7b6b", "rec-bg": "#3b1d18", wave: "#a8742a", speaker: "#f2b55a" };
+const lightTokens = { bg: "#f4f3f0", bar: "#ebe9e4", side: "#ebe9e4", card: "#fbfaf8", fg: "#1b1a17", fg2: "#4f4b43", fg3: "#736e64", "fg3-text": "#6a655b", border: "#dcd8d0", sel: "#f3e3c6", dot: "#cdc8be", accent: "#9a5600", "on-accent": "#ffffff", rec: "#b8321f", "rec-bg": "#f5e0d9", wave: "#d8a75e", speaker: "#9a5600" };
+const themes = [
+  { id: "system", name: "Oscilloscope (match system)", mode: "system", builtin: true, tokens: {} as Record<string, string> },
+  { id: "oscilloscope-dark", name: "Oscilloscope Dark", mode: "dark", builtin: true, tokens: darkTokens as Record<string, string> },
+  { id: "oscilloscope-light", name: "Oscilloscope Light", mode: "light", builtin: true, tokens: lightTokens as Record<string, string> },
+  { id: "harbor-night", name: "Harbor Night", mode: "dark", builtin: false, tokens: { bg: "#1a1b26", bar: "#16161e", side: "#16161e", card: "#1f2030", fg: "#c0caf5", fg2: "#7d83a2", fg3: "#848bb0", "fg3-text": "#848bb0", border: "#101014", sel: "#2d3650", dot: "#3b3e4f", accent: "#6787cd", "on-accent": "#0a0e15", rec: "#f7768e", "rec-bg": "#3d2a37", wave: "#4c6193", speaker: "#73daca" } as Record<string, string> },
+];
+// ?theme=light|dark keeps the preview in that mode; the default follows the browser.
+const previewTheme = new URLSearchParams(window.location.search).get("theme");
+let selectedTheme = previewTheme === "light" ? "oscilloscope-light" : previewTheme === "dark" ? "oscilloscope-dark" : "system";
+export async function ListThemes() {
+  return themes.map((t) => ({ ...t }));
+}
+export async function GetSelectedTheme() {
+  return { ...(themes.find((t) => t.id === selectedTheme) ?? themes[0]) };
+}
+export async function SelectTheme(id: string) {
+  if (!themes.some((t) => t.id === id)) throw new Error(`No such theme "${id}"`);
+  selectedTheme = id;
+  return GetSelectedTheme();
+}
+export async function ImportVSCodeTheme() {
+  if (screen === "appearance-import-failed") throw new Error('This file is not a VS Code colour theme: it needs a "colors" object with keys such as editor.background and editor.foreground.');
+  return { id: "", name: "", mode: "", builtin: false, tokens: {} };
+}
+export async function DeleteTheme(id: string) {
+  const i = themes.findIndex((t) => t.id === id && !t.builtin);
+  if (i >= 0) themes.splice(i, 1);
+  if (selectedTheme === id) selectedTheme = "system";
+}
+export async function ExportTheme(id: string) {
+  return `/Users/ana/Downloads/${id}.phonon-theme.json`;
+}

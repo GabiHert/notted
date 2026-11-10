@@ -5,13 +5,16 @@ import (
 	"embed"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/GabiHert/phonon/internal/application/service"
 	"github.com/GabiHert/phonon/internal/domain"
 	"github.com/GabiHert/phonon/internal/infra/migrate"
 	"github.com/GabiHert/phonon/internal/infra/paths"
 	"github.com/GabiHert/phonon/internal/infra/store"
+	"github.com/GabiHert/phonon/internal/infra/themes"
 	"github.com/GabiHert/phonon/internal/infra/wails"
 	"github.com/GabiHert/phonon/internal/integration/askipc"
 	"github.com/GabiHert/phonon/internal/integration/audio"
@@ -114,7 +117,8 @@ func Run(assets embed.FS) error {
 	summary.SetBusyCheck(service.SummaryBusyCheck(review))
 	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Review: review, Session: session, Forms: forms, SessionsDir: paths.SessionsDir(), AudioDir: paths.AudioDir})
 	projects := service.NewProjectDeleteService(service.ProjectDeleteDeps{Store: st, Settings: st, Recorder: recording, Meetings: deleter, Git: git.New(gitEnv(claude.LoginShellEnv)), Emit: emitter})
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Projects: projects, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis})
+	themeStore := &themes.Store{Dir: paths.ThemesDir()}
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Projects: projects, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis, Themes: themeStore})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{
@@ -132,7 +136,7 @@ func Run(assets embed.FS) error {
 		Height:           800,
 		MinWidth:         960,
 		MinHeight:        600,
-		BackgroundColour: &options.RGBA{R: 251, G: 251, B: 248, A: 255},
+		BackgroundColour: windowBackground(themeStore.Selected()),
 		Mac:              &mac.Options{TitleBar: mac.TitleBarHiddenInset()},
 		// Closing the window hides it; the menu bar icon and a running recording stay.
 		HideWindowOnClose: true,
@@ -177,4 +181,12 @@ func Run(assets embed.FS) error {
 // gitEnv wraps an environment source for git so API credentials never reach git or its hooks.
 func gitEnv(src func() []string) func() []string {
 	return func() []string { return claude.CleanEnv(src()) }
+}
+
+// windowBackground is the native window colour before the page paints, so a dark theme does not
+// flash light on launch.
+func windowBackground(t themes.Theme) *options.RGBA {
+	out, _ := exec.Command("/usr/bin/defaults", "read", "-g", "AppleInterfaceStyle").Output()
+	r, g, b := themes.WindowBackground(t, strings.TrimSpace(string(out)) == "Dark")
+	return &options.RGBA{R: r, G: g, B: b, A: 255}
 }

@@ -54,6 +54,8 @@ export function initPreview(): View {
     case "review-mode-off":
     case "review-mode-on":
     case "review-mode-save-failed":
+    case "appearance":
+    case "appearance-import-failed":
       autoDriveSettings(readScreen());
       return { kind: "settings" };
     case "transcribing":
@@ -235,6 +237,8 @@ function autoDriveSettings(screen: string) {
     "review-mode-off": [scrollTo(".nt-reviewmode")],
     "review-mode-on": [scrollTo(".nt-reviewmode")],
     "review-mode-save-failed": [scrollTo(".nt-reviewmode"), check("#nt-reviewmode")],
+    appearance: [scrollTo(".nt-appearance")],
+    "appearance-import-failed": [scrollTo(".nt-appearance"), open("Import VS Code theme…")],
     "update-idle": [scrollTo(".nt-update")],
     "update-no-source": [scrollTo(".nt-update")],
     "update-running": [scrollTo(".nt-update")],

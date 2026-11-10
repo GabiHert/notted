@@ -51,9 +51,8 @@ SOFTWARE.
 
 ## Fonts
 
-Newsreader and IBM Plex Sans are bundled under the SIL Open Font License 1.1; see
-`frontend/src/assets/fonts/OFL-*.txt`. The woff2 files come from the npm packages
-`@fontsource-variable/newsreader` 5.3.0 (Newsreader, optical-size variable files, latin and
-latin-ext) and `@fontsource/ibm-plex-sans` 5.3.0 (IBM Plex Sans 400, 500 and 600, latin and
-latin-ext), fetched with `npm pack`. The packages are not dependencies, and nothing is fetched
-at runtime.
+Geist and Geist Mono are bundled under the SIL Open Font License 1.1; see
+`frontend/src/assets/fonts/OFL-Geist.txt`. The two variable woff2 files (weights 100–900) come
+from the npm package `geist` 1.3.1 (`dist/fonts/geist-sans/Geist-Variable.woff2` and
+`dist/fonts/geist-mono/GeistMono-Variable.woff2`), fetched with `npm pack`. The package is not a
+dependency, and nothing is fetched at runtime.

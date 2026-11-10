@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GetSettings, ListMyProjectKeys, ListProfiles, ListProjects, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
+import { AppearanceCard } from "./AppearanceCard";
 import { InstructionFiles } from "./InstructionFiles";
 import { PermissionsCard } from "./PermissionsCard";
 import { PromptPreview } from "./PromptPreview";
@@ -126,6 +127,7 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         <InstructionFiles onDirtyPath={onDirtyPath} archivePath={saved?.checkoutPath ?? ""} openRequest={openRequest} refresh={filesRefresh} />
         <PromptPreview projects={projects} projectsError={projectsError} />
         <ReviewModeCard />
+        <AppearanceCard />
         <UpdateCard />
         <PermissionsCard />
       </div>

@@ -1,0 +1,109 @@
+.nt-appearance__desc {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-appearance__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nt-appearance__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+}
+.nt-appearance__row--selected {
+  background: var(--sel);
+}
+.nt-appearance__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.nt-appearance__name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nt-appearance__mode {
+  font-size: 12px;
+  color: var(--fg3-text);
+  white-space: nowrap;
+}
+.nt-appearance__actions {
+  display: flex;
+  gap: 6px;
+}
+.nt-appearance__actions .nt-btn {
+  padding: 3px 9px;
+  font-size: 12px;
+}
+.nt-appearance__footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.nt-appearance__notice {
+  font-size: 12px;
+  color: var(--fg3-text);
+  overflow-wrap: anywhere;
+}
+.nt-appearance__error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}
+
+/* The swatch paints itself with the theme's own tokens, set inline on each half. */
+.nt-swatch {
+  display: inline-flex;
+  flex: none;
+  width: 44px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.nt-swatch__half {
+  position: relative;
+  flex: 1;
+  background: var(--bg);
+}
+.nt-swatch__bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: var(--bar);
+  border-bottom: 1px solid var(--border);
+}
+.nt-swatch__line {
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 60%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--fg);
+}
+.nt-swatch__line--short {
+  top: 15px;
+  width: 40%;
+  background: var(--fg3);
+}
+.nt-swatch__accent {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
