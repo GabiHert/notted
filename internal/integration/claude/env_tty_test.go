@@ -15,13 +15,13 @@ import (
 	"github.com/creack/pty"
 )
 
-const ttyHelperEnv = "NOTTED_TEST_TTY_HELPER"
+const ttyHelperEnv = "PHONON_TEST_TTY_HELPER"
 
 // An app started from a terminal has a controlling tty. The interactive shell must not
 // stop on terminal access there and run into the timeout.
 func TestInteractiveShellUnderATerminalReturnsQuickly(t *testing.T) {
-	if os.Getenv("NOTTED_TEST_REAL_SHELL") != "1" {
-		t.Skip("set NOTTED_TEST_REAL_SHELL=1 to run against the real zsh")
+	if os.Getenv("PHONON_TEST_REAL_SHELL") != "1" {
+		t.Skip("set PHONON_TEST_REAL_SHELL=1 to run against the real zsh")
 	}
 	if _, err := os.Stat("/bin/zsh"); err != nil {
 		t.Skip("no /bin/zsh")
@@ -35,7 +35,7 @@ func TestInteractiveShellUnderATerminalReturnsQuickly(t *testing.T) {
 		ttyHelperEnv + "=1",
 		"HOME=" + home,
 		"ZDOTDIR=" + zdotdir,
-		"NOTTED_HOME=" + t.TempDir(),
+		"PHONON_HOME=" + t.TempDir(),
 		"PATH=/usr/bin:/bin:/usr/sbin:/sbin",
 		"TERM=xterm",
 	}

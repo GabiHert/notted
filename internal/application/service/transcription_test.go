@@ -76,7 +76,7 @@ type transFixture struct {
 
 func newTransFixture(t *testing.T, lang domain.Language) *transFixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	st, err := store.Open(filepath.Join(t.TempDir(), "meetings.sqlite"))
 	if err != nil {
 		t.Fatal(err)

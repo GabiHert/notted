@@ -19,7 +19,7 @@ type ClaudeRun struct {
 	PromptText       string        // "" = no --append-system-prompt-file (the suggestions pass)
 	ProjectRoot      string        // "" = no --add-dir
 	Stdin            string        // instruction + meeting details + whole transcript
-	MCPConfig        string        // "" = no Notted tools; else --mcp-config <file> and the permission tool
+	MCPConfig        string        // "" = no Phonon tools; else --mcp-config <file> and the permission tool
 	Timeout          time.Duration // 0 = the runner's default (15 minutes)
 	ActWithoutAsking bool          // true: --permission-mode domain.ReviewPermissionMode (review turns, when the person switched it on)
 }

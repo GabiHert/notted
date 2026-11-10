@@ -113,7 +113,7 @@ func (f *fakeStream) Stream(ctx context.Context, dir string, argv []string, extr
 		onLine(l)
 	}
 	if st.makeApp {
-		if err := os.MkdirAll(filepath.Join(dir, "build", "bin", "Notted.app", "Contents", "MacOS"), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(dir, "build", "bin", "Phonon.app", "Contents", "MacOS"), 0o755); err != nil {
 			return err
 		}
 	}
@@ -160,7 +160,7 @@ func resolved(t *testing.T, p string) string {
 func srcDir(t *testing.T) string {
 	t.Helper()
 	d := resolved(t, t.TempDir())
-	if err := os.WriteFile(filepath.Join(d, "wails.json"), []byte(`{"name": "Notted"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(d, "wails.json"), []byte(`{"name": "Phonon"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(d, "Makefile"), []byte("build:\n"), 0o644); err != nil {
@@ -174,11 +174,11 @@ func srcDir(t *testing.T) string {
 
 func appExeIn(t *testing.T, parent string) string {
 	t.Helper()
-	dir := filepath.Join(parent, "Notted.app", "Contents", "MacOS")
+	dir := filepath.Join(parent, "Phonon.app", "Contents", "MacOS")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	exe := filepath.Join(dir, "Notted")
+	exe := filepath.Join(dir, "Phonon")
 	if err := os.WriteFile(exe, []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -209,12 +209,12 @@ type uh struct {
 
 func newUH(t *testing.T) *uh {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	oldQuit := quitDelay
 	quitDelay = 0
 	t.Cleanup(func() { quitDelay = oldQuit })
 	h := &uh{t: t, src: srcDir(t), exe: appExe(t), git: &scriptGit{branch: "main"}, inst: &fakeInstaller{}, emit: &recEmitter{},
-		stream: &fakeStream{steps: map[string]streamStep{}}, log: "/tmp/notted-test/update.log"}
+		stream: &fakeStream{steps: map[string]streamStep{}}, log: "/tmp/phonon-test/update.log"}
 	h.source = &memSource{path: h.src}
 	h.svc = NewUpdateService(UpdateDeps{
 		Source:        h.source,
@@ -284,14 +284,14 @@ func TestSetSource(t *testing.T) {
 	if err := os.Remove(filepath.Join(noGit, ".git")); err != nil {
 		t.Fatal(err)
 	}
-	notClone := "That folder is not a Notted source clone: "
+	notClone := "That folder is not a Phonon source clone: "
 	cases := []struct{ name, in, want string }{
-		{"empty", "", "Choose your Notted source folder first."},
-		{"blank", "  ", "Choose your Notted source folder first."},
+		{"empty", "", "Choose your Phonon source folder first."},
+		{"blank", "  ", "Choose your Phonon source folder first."},
 		{"relative", "rel/x", "Use the full path of the folder, starting with /."},
-		{"missing", "/no/such/notted-folder", "That folder does not exist: /no/such/notted-folder"},
-		{"no wails.json", noWails, notClone + "wails.json is missing or does not name Notted."},
-		{"other name", otherName, notClone + "wails.json is missing or does not name Notted."},
+		{"missing", "/no/such/phonon-folder", "That folder does not exist: /no/such/phonon-folder"},
+		{"no wails.json", noWails, notClone + "wails.json is missing or does not name Phonon."},
+		{"other name", otherName, notClone + "wails.json is missing or does not name Phonon."},
 		{"no makefile", noMake, notClone + "Makefile is missing."},
 		{"no git", noGit, "That folder is not a git clone: " + noGit},
 	}
@@ -330,7 +330,7 @@ func TestGetStatus(t *testing.T) {
 		t.Fatalf("lines = %#v", st.Lines)
 	}
 	h.signing.Store(true)
-	h.exe = "/usr/local/bin/notted"
+	h.exe = "/usr/local/bin/phonon"
 	st, _ = h.svc.GetStatus(context.Background())
 	if st.InstalledApp != "" || !st.Signing {
 		t.Fatalf("status = %+v", st)
@@ -350,29 +350,29 @@ func TestStartRefusals(t *testing.T) {
 	}{
 		{"no source", func(h *uh) string {
 			h.source.path = ""
-			return "Choose your Notted source folder first."
+			return "Choose your Phonon source folder first."
 		}, false},
 		{"invalid source", func(h *uh) string {
-			h.source.path = "/no/such/notted-folder"
-			return "That folder does not exist: /no/such/notted-folder"
+			h.source.path = "/no/such/phonon-folder"
+			return "That folder does not exist: /no/such/phonon-folder"
 		}, false},
 		{"recording", func(h *uh) string {
 			h.recording.Store(true)
-			return "Stop the recording first. Notted quits and reopens to finish the update."
+			return "Stop the recording first. Phonon quits and reopens to finish the update."
 		}, false},
 		{"not in a bundle", func(h *uh) string {
-			h.exe = "/usr/local/bin/notted"
-			return "Notted is not running from an app bundle, so it cannot replace itself. Run make build in your Notted source folder, copy build/bin/Notted.app to your Applications folder, and open that copy."
+			h.exe = "/usr/local/bin/phonon"
+			return "Phonon is not running from an app bundle, so it cannot replace itself. Run make build in your Phonon source folder, copy build/bin/Phonon.app to your Applications folder, and open that copy."
 		}, false},
 		{"app inside the source", func(h *uh) string {
 			h.exe = appExeIn(h.t, filepath.Join(h.src, "build", "bin"))
-			return "Notted is running from " + h.app() + ", inside its own source folder. Copy that app to your Applications folder, open the copy, and update from there."
+			return "Phonon is running from " + h.app() + ", inside its own source folder. Copy that app to your Applications folder, open the copy, and update from there."
 		}, false},
 		{"leftover old", func(h *uh) string {
 			if err := os.Mkdir(h.app()+".old", 0o755); err != nil {
 				h.t.Fatal(err)
 			}
-			return "A previous update left " + h.app() + ".old. Check that Notted opens, delete " + h.app() + ".old, then update again."
+			return "A previous update left " + h.app() + ".old. Check that Phonon opens, delete " + h.app() + ".old, then update again."
 		}, false},
 		{"unwritable", func(h *uh) string {
 			if !notRoot {
@@ -383,15 +383,15 @@ func TestStartRefusals(t *testing.T) {
 				h.t.Fatal(err)
 			}
 			h.t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
-			return "Notted cannot write to " + dir + ", so it cannot replace " + h.app() + ". Move Notted to a folder you can write to, such as Applications."
+			return "Phonon cannot write to " + dir + ", so it cannot replace " + h.app() + ". Move Phonon to a folder you can write to, such as Applications."
 		}, false},
 		{"detached", func(h *uh) string {
 			h.git.detached = true
-			return "The Notted source folder is not on a branch. Switch it to main in Terminal, then update again."
+			return "The Phonon source folder is not on a branch. Switch it to main in Terminal, then update again."
 		}, true},
 		{"other branch", func(h *uh) string {
 			h.git.branch = "feature-x"
-			return "The Notted source folder is on feature-x, not main. Switch it to main in Terminal, then update again."
+			return "The Phonon source folder is on feature-x, not main. Switch it to main in Terminal, then update again."
 		}, true},
 		{"status error", func(h *uh) string {
 			h.git.statusErr = true
@@ -400,7 +400,7 @@ func TestStartRefusals(t *testing.T) {
 		}, true},
 		{"tracked changes", func(h *uh) string {
 			h.git.status = " M Makefile\n"
-			return "The Notted source folder has uncommitted changes. Commit them, or undo them, in Terminal, then update again:\nM Makefile"
+			return "The Phonon source folder has uncommitted changes. Commit them, or undo them, in Terminal, then update again:\nM Makefile"
 		}, true},
 	}
 	for _, c := range cases {
@@ -453,7 +453,7 @@ func TestStartSucceeds(t *testing.T) {
 	for _, e := range h.emit.named("update:state") {
 		states = append(states, [2]string{e.payload["state"].(string), e.payload["message"].(string)})
 	}
-	wantStates := [][2]string{{"pulling", ""}, {"building", ""}, {"installing", "Notted quits now and reopens when the new version is in place."}}
+	wantStates := [][2]string{{"pulling", ""}, {"building", ""}, {"installing", "Phonon quits now and reopens when the new version is in place."}}
 	if !reflect.DeepEqual(states, wantStates) {
 		t.Fatalf("states = %v", states)
 	}
@@ -468,7 +468,7 @@ func TestStartSucceeds(t *testing.T) {
 		}
 	}
 	inst := h.inst.callList()
-	if len(inst) != 1 || inst[0] != (installCall{4242, filepath.Join(h.src, "build", "bin", "Notted.app"), h.app(), h.log}) {
+	if len(inst) != 1 || inst[0] != (installCall{4242, filepath.Join(h.src, "build", "bin", "Phonon.app"), h.app(), h.log}) {
 		t.Fatalf("installer calls = %+v", inst)
 	}
 	if h.quits.Load() != 1 {
@@ -484,7 +484,7 @@ func TestStartFailures(t *testing.T) {
 	oldPull, oldBuild := pullTimeout, buildTimeout
 	t.Cleanup(func() { pullTimeout, buildTimeout = oldPull, oldBuild })
 	pullTimeout, buildTimeout = 50*time.Millisecond, 50*time.Millisecond
-	buildFailed := "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
+	buildFailed := "make build failed. Phonon did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Phonon source folder, then update again."
 	cases := []struct {
 		name      string
 		setup     func(h *uh)
@@ -492,26 +492,26 @@ func TestStartFailures(t *testing.T) {
 		installer bool
 	}{
 		{"pull error", func(h *uh) { h.stream.set("git", streamStep{err: errors.New("exit status 1")}) },
-			func(h *uh) string { return "git pull failed. Notted did not change. The output below shows why." }, false},
+			func(h *uh) string { return "git pull failed. Phonon did not change. The output below shows why." }, false},
 		{"pull timeout", func(h *uh) { h.stream.set("git", streamStep{block: true}) },
-			func(h *uh) string { return "git pull did not finish within 5 minutes. Notted did not change." }, false},
+			func(h *uh) string { return "git pull did not finish within 5 minutes. Phonon did not change." }, false},
 		{"build error", func(h *uh) { h.stream.set("make", streamStep{err: errors.New("exit status 2")}) },
 			func(h *uh) string { return buildFailed }, false},
 		{"build timeout", func(h *uh) { h.stream.set("make", streamStep{block: true}) },
-			func(h *uh) string { return "make build did not finish within 30 minutes. Notted did not change." }, false},
+			func(h *uh) string { return "make build did not finish within 30 minutes. Phonon did not change." }, false},
 		{"app missing", func(h *uh) {},
 			func(h *uh) string {
-				return "make build finished, but " + h.src + "/build/bin/Notted.app is missing. Notted did not change."
+				return "make build finished, but " + h.src + "/build/bin/Phonon.app is missing. Phonon did not change."
 			}, false},
 		{"recording during build", func(h *uh) {
 			h.stream.set("make", streamStep{makeApp: true, hook: func() { h.recording.Store(true) }})
 		}, func(h *uh) string {
-			return "The new Notted is built, but a recording is running. Stop the recording and click Update Notted again. Notted did not change."
+			return "The new Phonon is built, but a recording is running. Stop the recording and click Update Phonon again. Phonon did not change."
 		}, false},
 		{"installer error", func(h *uh) {
 			h.stream.set("make", streamStep{makeApp: true})
 			h.inst.err = errors.New("boom")
-		}, func(h *uh) string { return "Notted could not start the installer: boom. Notted did not change." }, true},
+		}, func(h *uh) string { return "Phonon could not start the installer: boom. Phonon did not change." }, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

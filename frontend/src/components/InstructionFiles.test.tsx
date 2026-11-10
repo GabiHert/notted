@@ -79,12 +79,12 @@ test("Mod-s saves like the button", async () => {
 });
 
 test("a rejected save is shown verbatim and the file stays dirty", async () => {
-  WriteInstructionFile.mockRejectedValue(new Error("This file is read-only in Notted."));
+  WriteInstructionFile.mockRejectedValue(new Error("This file is read-only in Phonon."));
   render(<InstructionFiles />);
   await open("^acme\\.md");
   fireEvent.change(await screen.findByLabelText("File contents"), { target: { value: "x" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("This file is read-only in Notted.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("This file is read-only in Phonon.");
   expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
   expect(screen.queryByText("Saved.")).not.toBeInTheDocument();
 });
@@ -93,7 +93,7 @@ test("a read-only file opens in Preview only, with the note and no toggle or Sav
   render(<InstructionFiles />);
   await open("base\\.md");
   expect(await screen.findByRole("heading", { name: "Base prompt", level: 1 })).toBeInTheDocument();
-  expect(screen.getByText("This file is read-only in Notted.")).toBeInTheDocument();
+  expect(screen.getByText("This file is read-only in Phonon.")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();

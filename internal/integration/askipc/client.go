@@ -47,18 +47,18 @@ func (c Client) Ask(ctx context.Context, kind domain.FormKind, form domain.Form)
 		if ctx.Err() != nil {
 			return domain.FormAnswer{}, ctx.Err()
 		}
-		return domain.FormAnswer{}, errors.New("Notted stopped before the form was answered.")
+		return domain.FormAnswer{}, errors.New("Phonon stopped before the form was answered.")
 	}
 	raw, err := readLine(bufio.NewReaderSize(conn, 64<<10), maxReplyBytes)
 	if ctx.Err() != nil {
 		return domain.FormAnswer{}, ctx.Err()
 	}
 	if err != nil {
-		return domain.FormAnswer{}, errors.New("Notted stopped before the form was answered.")
+		return domain.FormAnswer{}, errors.New("Phonon stopped before the form was answered.")
 	}
 	var rep reply
 	if err := json.Unmarshal(raw, &rep); err != nil {
-		return domain.FormAnswer{}, fmt.Errorf("Notted sent a reply that could not be read: %v", err)
+		return domain.FormAnswer{}, fmt.Errorf("Phonon sent a reply that could not be read: %v", err)
 	}
 	if !rep.OK || rep.Answer == nil {
 		return domain.FormAnswer{}, errors.New(rep.Error)

@@ -14,7 +14,7 @@ import (
 	"github.com/GabiHert/phonon/internal/application/port"
 )
 
-const msgPermissionsUnavailable = "Notted could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Notted if this keeps happening."
+const msgPermissionsUnavailable = "Phonon could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Phonon if this keeps happening."
 
 var _ port.PermissionChecker = (*Permissions)(nil)
 

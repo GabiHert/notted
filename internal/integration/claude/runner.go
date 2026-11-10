@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (internal/application/service/job_manager.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
 package claude
 
@@ -96,7 +96,7 @@ func (rn Runner) Run(ctx context.Context, r port.ClaudeRun) (string, error) {
 
 	promptFile := ""
 	if r.PromptText != "" {
-		f, err := os.CreateTemp("", "notted-prompt-*.md")
+		f, err := os.CreateTemp("", "phonon-prompt-*.md")
 		if err != nil {
 			return "", fmt.Errorf("could not write the prompt file: %w", err)
 		}

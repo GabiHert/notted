@@ -24,7 +24,7 @@ func (a *App) GetUpdateStatus() (UpdateStatusDTO, error) {
 	return UpdateStatusDTO{SourcePath: st.SourcePath, InstalledApp: st.InstalledApp, Signing: st.Signing, State: st.State, Message: st.Message, Lines: lines, Seq: st.Seq}, nil
 }
 
-// SetUpdateSource checks and saves the Notted source folder; it runs nothing.
+// SetUpdateSource checks and saves the Phonon source folder; it runs nothing.
 func (a *App) SetUpdateSource(path string) error {
 	return a.update.SetSource(a.context(), path)
 }

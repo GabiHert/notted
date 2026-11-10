@@ -18,7 +18,7 @@ type SessionService struct {
 	cleanEnv func(env []string) []string
 	lookPath func(env []string, name string) (string, error)
 
-	mcpConfig func(meetingID string) (string, error) // nil = no Notted tools
+	mcpConfig func(meetingID string) (string, error) // nil = no Phonon tools
 	busy      func(meetingID string) string          // nil = never busy; "" = free
 }
 
@@ -70,7 +70,7 @@ func (s *SessionService) Start(ctx context.Context, meetingID string) error {
 	if s.mcpConfig != nil {
 		file, err := s.mcpConfig(meetingID)
 		if err != nil {
-			return fmt.Errorf("Notted could not prepare the session's tools: %w", err)
+			return fmt.Errorf("Phonon could not prepare the session's tools: %w", err)
 		}
 		args = append(args, "--mcp-config", file, "--allowedTools", domain.AskToolName)
 	}

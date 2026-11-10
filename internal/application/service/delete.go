@@ -37,7 +37,7 @@ type DeleteDeps struct {
 	AudioDir      func(meetingID string) string
 }
 
-// DeleteService removes a meeting from Notted: its rows, its audio, its forms and its session folder. It never touches the archive.
+// DeleteService removes a meeting from Phonon: its rows, its audio, its forms and its session folder. It never touches the archive.
 type DeleteService struct {
 	store         port.MeetingStore
 	recorder      activeMeeting

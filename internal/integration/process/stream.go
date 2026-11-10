@@ -43,7 +43,7 @@ func (s *Streamer) Stream(ctx context.Context, dir string, argv []string, extraE
 	if !strings.Contains(path, "/") {
 		p, ok := lookPathIn(env, path)
 		if !ok {
-			return fmt.Errorf("Notted cannot find %s on your login shell's PATH.", argv[0])
+			return fmt.Errorf("Phonon cannot find %s on your login shell's PATH.", argv[0])
 		}
 		path = p
 	}

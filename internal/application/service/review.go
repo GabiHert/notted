@@ -58,7 +58,7 @@ type ReviewDeps struct {
 	ReadFile  func(path string) ([]byte, error) // nil: os.ReadFile
 }
 
-// ReviewService has Claude Code review a meeting's suggestions through Notted's forms.
+// ReviewService has Claude Code review a meeting's suggestions through Phonon's forms.
 type ReviewService struct {
 	store     port.MeetingStore
 	settings  port.SettingsStore
@@ -150,7 +150,7 @@ func (s *ReviewService) Start(ctx context.Context, meetingID string) error {
 	if s.mode != nil {
 		on, err = s.mode.GetReviewActWithoutAsking(ctx)
 		if err != nil {
-			return fmt.Errorf("Notted could not read the review setting: %w", err)
+			return fmt.Errorf("Phonon could not read the review setting: %w", err)
 		}
 	}
 
@@ -170,7 +170,7 @@ func (s *ReviewService) Start(ctx context.Context, meetingID string) error {
 	file, err := s.mcpConfig(meetingID)
 	if err != nil {
 		s.mu.Unlock()
-		return fmt.Errorf("Notted could not prepare the session's tools: %w", err)
+		return fmt.Errorf("Phonon could not prepare the session's tools: %w", err)
 	}
 	runCtx, cancel := context.WithCancel(context.Background())
 	r := &summaryRun{cancel: cancel, done: make(chan struct{})}
@@ -202,7 +202,7 @@ func (s *ReviewService) ActWithoutAsking(ctx context.Context) (bool, error) {
 	}
 	on, err := s.mode.GetReviewActWithoutAsking(ctx)
 	if err != nil {
-		return false, fmt.Errorf("Notted could not read the review setting: %w", err)
+		return false, fmt.Errorf("Phonon could not read the review setting: %w", err)
 	}
 	return on, nil
 }
@@ -210,10 +210,10 @@ func (s *ReviewService) ActWithoutAsking(ctx context.Context) (bool, error) {
 // SetActWithoutAsking saves the switch. A running review keeps the mode it started with.
 func (s *ReviewService) SetActWithoutAsking(ctx context.Context, on bool) error {
 	if s.mode == nil {
-		return errors.New("Notted could not save the review setting: no store.")
+		return errors.New("Phonon could not save the review setting: no store.")
 	}
 	if err := s.mode.SetReviewActWithoutAsking(ctx, on); err != nil {
-		return fmt.Errorf("Notted could not save the review setting: %w", err)
+		return fmt.Errorf("Phonon could not save the review setting: %w", err)
 	}
 	return nil
 }
@@ -271,7 +271,7 @@ func reviewStdin(m domain.Meeting) string {
 	return strings.NewReplacer("<title>", m.Title, "<folder>", m.Folder).Replace(reviewPrompt)
 }
 
-const reviewPrompt = `Review this meeting's suggestions with me through Notted's ask tool (mcp__notted__ask). I am not reading a terminal, so ask me nothing outside ask.
+const reviewPrompt = `Review this meeting's suggestions with me through Phonon's ask tool (mcp__phonon__ask). I am not reading a terminal, so ask me nothing outside ask.
 
 Meeting: <title>
 Meeting folder: <folder>

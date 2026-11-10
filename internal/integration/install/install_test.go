@@ -35,7 +35,7 @@ func writeFile(t *testing.T, path, content string, mode os.FileMode) {
 // fakeApp builds a bundle whose executable is a re-signed copy of /bin/sleep.
 func fakeApp(t *testing.T, dir, marker string) {
 	t.Helper()
-	exe := filepath.Join(dir, "Contents", "MacOS", "Notted")
+	exe := filepath.Join(dir, "Contents", "MacOS", "Phonon")
 	if err := os.MkdirAll(filepath.Dir(exe), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -65,15 +65,15 @@ func newRig(t *testing.T) *rig {
 		openLog: filepath.Join(root, "open.log"),
 		pidLog:  filepath.Join(root, "pids.log"),
 	}
-	r.dest = filepath.Join(r.apps, "Notted.app")
-	r.newApp = filepath.Join(root, "src", "build", "bin", "Notted.app")
+	r.dest = filepath.Join(r.apps, "Phonon.app")
+	r.newApp = filepath.Join(root, "src", "build", "bin", "Phonon.app")
 	fakeApp(t, r.dest, "old")
 	fakeApp(t, r.newApp, "new")
 	r.fakeOpen = filepath.Join(root, "bin", "open")
 	writeFile(t, r.fakeOpen, `#!/bin/bash
 echo "$1" >> "$OPEN_LOG"
 if [ "${FAKE_OPEN_LAUNCH:-1}" != "0" ]; then
-  "$1/Contents/MacOS/Notted" 30 >/dev/null 2>&1 &
+  "$1/Contents/MacOS/Phonon" 30 >/dev/null 2>&1 &
   echo $! >> "$PID_LOG"
 fi
 `, 0o755)
@@ -96,7 +96,7 @@ fi
 }
 
 func (r *rig) env() []string {
-	return []string{"NOTTED_OPEN=" + r.fakeOpen, "NOTTED_TCCUTIL=" + r.fakeTccutil, "NOTTED_LAUNCH_SETTLE=0", "OPEN_LOG=" + r.openLog, "PID_LOG=" + r.pidLog}
+	return []string{"PHONON_OPEN=" + r.fakeOpen, "PHONON_TCCUTIL=" + r.fakeTccutil, "PHONON_LAUNCH_SETTLE=0", "OPEN_LOG=" + r.openLog, "PID_LOG=" + r.pidLog}
 }
 
 func (r *rig) marker(t *testing.T, app string) string {
@@ -149,7 +149,7 @@ func exitingPid(t *testing.T, delay time.Duration) int {
 
 func runScript(t *testing.T, env []string, pid int, newApp, dest string) (string, int, string) {
 	t.Helper()
-	dir := filepath.Join(tempDir(t), "notted-install-x")
+	dir := filepath.Join(tempDir(t), "phonon-install-x")
 	path := filepath.Join(dir, "install.sh")
 	writeFile(t, path, string(script), 0o700)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -204,7 +204,7 @@ func TestInstallReplacesTheApp(t *testing.T) {
 		t.Errorf("opens = %q", got)
 	}
 	assertOrdered(t, out,
-		"install: waiting for Notted (pid "+strconv.Itoa(pid)+") to quit",
+		"install: waiting for Phonon (pid "+strconv.Itoa(pid)+") to quit",
 		"install: copying "+r.newApp+" to "+r.dest+".new",
 		"install: moving "+r.dest+" to "+r.dest+".old",
 		"install: moving "+r.dest+".new to "+r.dest,
@@ -216,11 +216,11 @@ func TestInstallReplacesTheApp(t *testing.T) {
 func TestInstallQuitTimeout(t *testing.T) {
 	r := newRig(t)
 	pid := exitingPid(t, 0)
-	out, code, dir := runScript(t, append(r.env(), "NOTTED_QUIT_WAIT=1"), pid, r.newApp, r.dest)
+	out, code, dir := runScript(t, append(r.env(), "PHONON_QUIT_WAIT=1"), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
-	if !strings.HasSuffix(strings.TrimSpace(out), "install: Notted did not quit within 1 seconds; nothing changed") {
+	if !strings.HasSuffix(strings.TrimSpace(out), "install: Phonon did not quit within 1 seconds; nothing changed") {
 		t.Errorf("output:\n%s", out)
 	}
 	if m := r.marker(t, r.dest); m != "old" {
@@ -287,7 +287,7 @@ func TestInstallSecondRenameFails(t *testing.T) {
 	fakeMv := filepath.Join(r.root, "bin", "mv")
 	writeFile(t, fakeMv, "#!/bin/bash\ncase \"$1\" in *.new) exit 1 ;; esac\nexec /bin/mv \"$@\"\n", 0o755)
 	pid := exitingPid(t, 100*time.Millisecond)
-	out, code, _ := runScript(t, append(r.env(), "NOTTED_MV="+fakeMv), pid, r.newApp, r.dest)
+	out, code, _ := runScript(t, append(r.env(), "PHONON_MV="+fakeMv), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
@@ -309,7 +309,7 @@ func TestInstallRestoreDoesNotNestWhenTheTargetExists(t *testing.T) {
 	// Refuses to move anything to <dest>.new, which is the rollback of the new app.
 	writeFile(t, fakeMv, "#!/bin/bash\ncase \"$2\" in *.new) exit 1 ;; esac\nexec /bin/mv \"$@\"\n", 0o755)
 	pid := exitingPid(t, 100*time.Millisecond)
-	out, code, _ := runScript(t, append(r.env(), "NOTTED_MV="+fakeMv, "FAKE_OPEN_LAUNCH=0", "NOTTED_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
+	out, code, _ := runScript(t, append(r.env(), "PHONON_MV="+fakeMv, "FAKE_OPEN_LAUNCH=0", "PHONON_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
@@ -320,7 +320,7 @@ func TestInstallRestoreDoesNotNestWhenTheTargetExists(t *testing.T) {
 	if strings.Contains(out, "restored the previous version") && !strings.Contains(out, "could not restore") {
 		t.Errorf("claims a restore:\n%s", out)
 	}
-	if _, err := os.Stat(filepath.Join(r.dest, "Notted.app.old")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(r.dest, "Phonon.app.old")); !os.IsNotExist(err) {
 		t.Error("the old app was moved into the new bundle")
 	}
 	if m := r.marker(t, r.dest); m != "new" {
@@ -336,7 +336,7 @@ func TestInstallRestoreDoesNotNestWhenTheTargetExists(t *testing.T) {
 
 func TestInstallIgnoresAnOldProcessThatWasReopened(t *testing.T) {
 	r := newRig(t)
-	old := exec.Command(filepath.Join(r.dest, "Contents", "MacOS", "Notted"), "30")
+	old := exec.Command(filepath.Join(r.dest, "Contents", "MacOS", "Phonon"), "30")
 	if err := old.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -344,11 +344,11 @@ func TestInstallIgnoresAnOldProcessThatWasReopened(t *testing.T) {
 	go func() { _ = old.Wait(); close(reaped) }()
 	t.Cleanup(func() { _ = old.Process.Kill(); <-reaped })
 	pid := exitingPid(t, 100*time.Millisecond)
-	out, code, _ := runScript(t, append(r.env(), "FAKE_OPEN_LAUNCH=0", "NOTTED_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
+	out, code, _ := runScript(t, append(r.env(), "FAKE_OPEN_LAUNCH=0", "PHONON_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
-	if !strings.Contains(out, "install: the new Notted did not start within 1 seconds; restored the previous version") {
+	if !strings.Contains(out, "install: the new Phonon did not start within 1 seconds; restored the previous version") {
 		t.Errorf("output:\n%s", out)
 	}
 	if m := r.marker(t, r.dest); m != "old" {
@@ -362,7 +362,7 @@ func TestInstallFirstRenameFails(t *testing.T) {
 	fakeMv := filepath.Join(r.root, "bin", "mv")
 	writeFile(t, fakeMv, "#!/bin/bash\nexit 1\n", 0o755)
 	pid := exitingPid(t, 100*time.Millisecond)
-	out, code, _ := runScript(t, append(r.env(), "NOTTED_MV="+fakeMv), pid, r.newApp, r.dest)
+	out, code, _ := runScript(t, append(r.env(), "PHONON_MV="+fakeMv), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
@@ -378,11 +378,11 @@ func TestInstallFirstRenameFails(t *testing.T) {
 func TestInstallNewAppDoesNotStart(t *testing.T) {
 	r := newRig(t)
 	pid := exitingPid(t, 100*time.Millisecond)
-	out, code, _ := runScript(t, append(r.env(), "FAKE_OPEN_LAUNCH=0", "NOTTED_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
+	out, code, _ := runScript(t, append(r.env(), "FAKE_OPEN_LAUNCH=0", "PHONON_LAUNCH_WAIT=1"), pid, r.newApp, r.dest)
 	if code != 1 {
 		t.Fatalf("exit %d\n%s", code, out)
 	}
-	if !strings.Contains(out, "install: the new Notted did not start within 1 seconds; restored the previous version") {
+	if !strings.Contains(out, "install: the new Phonon did not start within 1 seconds; restored the previous version") {
 		t.Errorf("output:\n%s", out)
 	}
 	if m := r.marker(t, r.dest); m != "old" {
@@ -407,7 +407,7 @@ func waitFor(t *testing.T, d time.Duration, what string, ok func() bool) {
 
 func installFolders(t *testing.T, tmp string) []string {
 	t.Helper()
-	m, err := filepath.Glob(filepath.Join(tmp, "notted-install-*"))
+	m, err := filepath.Glob(filepath.Join(tmp, "phonon-install-*"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +439,7 @@ func TestInstallerStart(t *testing.T) {
 	}
 	readLog := func() string { b, _ := os.ReadFile(logPath); return string(b) }
 	waitFor(t, 2*time.Second, "waiting line", func() bool {
-		return strings.Contains(readLog(), "install: waiting for Notted (pid "+strconv.Itoa(pid)+") to quit")
+		return strings.Contains(readLog(), "install: waiting for Phonon (pid "+strconv.Itoa(pid)+") to quit")
 	})
 	_ = cmd.Process.Kill()
 	waitFor(t, 15*time.Second, "done line", func() bool {

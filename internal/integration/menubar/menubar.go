@@ -1,4 +1,4 @@
-// Package menubar puts Notted's icon and menu in the macOS menu bar.
+// Package menubar puts Phonon's icon and menu in the macOS menu bar.
 package menubar
 
 import "sync"

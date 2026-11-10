@@ -166,8 +166,8 @@ func TestInstructionsReadTooLarge(t *testing.T) {
 
 func TestInstructionsWriteReadOnly(t *testing.T) {
 	f := newInsFixture(t)
-	wantErr(t, f.svc.Write(f.ctx, "prompts/base.md", "x"), "prompts/base.md is read-only in Notted. Change it through the archive repository.")
-	wantErr(t, f.svc.Write(f.ctx, "instructions/README.md", "x"), "instructions/README.md is read-only in Notted.")
+	wantErr(t, f.svc.Write(f.ctx, "prompts/base.md", "x"), "prompts/base.md is read-only in Phonon. Change it through the archive repository.")
+	wantErr(t, f.svc.Write(f.ctx, "instructions/README.md", "x"), "instructions/README.md is read-only in Phonon.")
 	if f.text("prompts/base.md") != "BASE" || f.text("instructions/README.md") != "README" {
 		t.Fatal("a read-only file changed")
 	}

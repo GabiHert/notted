@@ -28,9 +28,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
-// helperPath is $NOTTED_AUDIOCAP if set, else the helper next to the app binary.
+// helperPath is $PHONON_AUDIOCAP if set, else the helper next to the app binary.
 func helperPath() string {
-	if v := os.Getenv("NOTTED_AUDIOCAP"); v != "" {
+	if v := os.Getenv("PHONON_AUDIOCAP"); v != "" {
 		return v
 	}
 	exe, err := os.Executable()
@@ -64,7 +64,7 @@ func Run(assets embed.FS) error {
 		SessionsDir: paths.SessionsDir(), Executable: exe, Socket: paths.AskSocket()})
 	askServer, err := askipc.Listen(paths.AskSocket(), forms)
 	if err != nil {
-		log.Printf("forms: %v", err) // the app runs on; ask then reports "Notted is not running"
+		log.Printf("forms: %v", err) // the app runs on; ask then reports "Phonon is not running"
 	}
 	recording := service.NewRecordingService(st, audio.NewSupervisor(helperPath()), emitter, paths.AudioDir, wavinfo.Inspector{})
 	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
@@ -121,7 +121,7 @@ func Run(assets embed.FS) error {
 	})
 
 	runErr := wailsv2.Run(&options.App{
-		Title:            "Notted",
+		Title:            "Phonon",
 		Width:            1280,
 		Height:           800,
 		MinWidth:         960,

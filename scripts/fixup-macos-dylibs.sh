@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copied from github.com/brienze1/quant (scripts/fixup-macos-dylibs.sh), MIT License,
-# Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
-# fixup-macos-dylibs.sh — make the packaged Notted.app self-contained.
+# Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
+# fixup-macos-dylibs.sh — make the packaged Phonon.app self-contained.
 #
 # The sherpa-onnx Go bindings (github.com/k2-fsa/sherpa-onnx-go-macos) link
 # against SHARED dylibs (libsherpa-onnx-c-api.dylib ~4MB and
@@ -15,7 +15,7 @@
 # re-codesign ad-hoc (install_name_tool invalidates the signature).
 #
 # Usage: fixup-macos-dylibs.sh [path-to-app-binary]
-#   Default binary: <repo>/build/bin/Notted.app/Contents/MacOS/Notted
+#   Default binary: <repo>/build/bin/Phonon.app/Contents/MacOS/Phonon
 #   Called by `make build` after the helper is signed inside the bundle.
 #
 # Idempotent: safe to run repeatedly. Exits 0 (no-op) when not on macOS, when
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN="${1:-$ROOT/build/bin/Notted.app/Contents/MacOS/Notted}"
+BIN="${1:-$ROOT/build/bin/Phonon.app/Contents/MacOS/Phonon}"
 
 log() { echo "[fixup-macos-dylibs] $*"; }
 

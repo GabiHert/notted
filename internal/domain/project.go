@@ -7,7 +7,7 @@ type ProjectDeletePlan struct {
 	Key             string
 	Files           []string // project file, the current profile's file for it, then every file under meetings/<key>/ sorted; never nil
 	Folders         []string // meetings/<key>/ and its subfolders, each ending in "/", deepest first; never nil
-	LocalMeetings   int      // Notted's meetings whose project is Key
+	LocalMeetings   int      // Phonon's meetings whose project is Key
 	UnsavedMeetings int      // of those, the ones never saved to the archive (empty Folder)
 	Recording       bool     // a meeting of the project is being recorded
 }

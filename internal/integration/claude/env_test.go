@@ -39,7 +39,7 @@ func TestLookPathUsesTheEnvPathAndSkipsNonExecutables(t *testing.T) {
 	}
 }
 
-const testMarker = "__NOTTED_ENV_BEGIN__"
+const testMarker = "__PHONON_ENV_BEGIN__"
 
 // envBlock is what `printf marker; env -0` prints: the marker line, then NUL-ended entries.
 func envBlock(entries ...string) string {
@@ -63,7 +63,7 @@ func fakeShell(calls *[]shellCall, interactive, login func(ctx context.Context) 
 
 func isolate(t *testing.T) (home string) {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	home = t.TempDir()
 	prev := fallbackDirs
 	fallbackDirs = nil
@@ -145,11 +145,11 @@ func TestInteractiveTimeoutFallsBackToPlainLogin(t *testing.T) {
 
 func TestBothShellsFailingFallsBackToOsEnviron(t *testing.T) {
 	home := isolate(t)
-	t.Setenv("NOTTED_TEST_MARK", "yes")
+	t.Setenv("PHONON_TEST_MARK", "yes")
 	var calls []shellCall
 	fail := func(context.Context) ([]byte, error) { return nil, errors.New("boom") }
 	got := loginShellEnvWith(fakeShell(&calls, fail, fail), home, "/bin/zsh")
-	if !envHas(got, "NOTTED_TEST_MARK=yes") {
+	if !envHas(got, "PHONON_TEST_MARK=yes") {
 		t.Fatalf("expected os.Environ fallback, got %d entries", len(got))
 	}
 }
@@ -239,10 +239,10 @@ func TestCleanEnvStillStripsKeysFromLoginShellResult(t *testing.T) {
 }
 
 func TestRealShellFindsClaude(t *testing.T) {
-	if os.Getenv("NOTTED_TEST_REAL_SHELL") != "1" {
-		t.Skip("set NOTTED_TEST_REAL_SHELL=1 to run against the real login shell")
+	if os.Getenv("PHONON_TEST_REAL_SHELL") != "1" {
+		t.Skip("set PHONON_TEST_REAL_SHELL=1 to run against the real login shell")
 	}
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	p, err := LookPath(LoginShellEnv(), "claude")
 	if err != nil {
 		t.Fatal(err)

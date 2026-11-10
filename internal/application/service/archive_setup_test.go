@@ -28,7 +28,7 @@ var wantTemplateOrder = []string{
 	"CLAUDE.md",
 }
 
-const gitignoreMarker = "# Notted: recordings and session logs never enter git"
+const gitignoreMarker = "# Phonon: recordings and session logs never enter git"
 
 // isolatedGit is the real git adapter with no user or system config, so no test depends on the machine's git setup.
 func isolatedGit() *git.Git {
@@ -79,7 +79,7 @@ func treeSnapshot(t *testing.T, dir string) map[string]string {
 }
 
 func TestInspectEmptyFolder(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	d := t.TempDir()
 	got, err := prepSvc().InspectArchive(context.Background(), d)
 	if err != nil {
@@ -94,7 +94,7 @@ func TestInspectEmptyFolder(t *testing.T) {
 }
 
 func TestInspectAndPrepareRefuseABadPath(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	file := filepath.Join(t.TempDir(), "f")
 	put(t, file, "x")
 	for _, p := range []string{"rel", filepath.Join(t.TempDir(), "nope"), file} {
@@ -105,7 +105,7 @@ func TestInspectAndPrepareRefuseABadPath(t *testing.T) {
 }
 
 func TestPrepareEmptyFolder(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	svc := prepSvc()
@@ -131,7 +131,7 @@ func TestPrepareEmptyFolder(t *testing.T) {
 			t.Fatalf("%s: %v %v", p, fi, err)
 		}
 	}
-	if read(t, filepath.Join(d, "CLAUDE.md")) != "Notted writes meeting folders under meetings/. Edit instructions/ and prompts/ freely; never edit meetings/ by hand outside a meeting session.\n" {
+	if read(t, filepath.Join(d, "CLAUDE.md")) != "Phonon writes meeting folders under meetings/. Edit instructions/ and prompts/ freely; never edit meetings/ by hand outside a meeting session.\n" {
 		t.Fatalf("CLAUDE.md %q", read(t, filepath.Join(d, "CLAUDE.md")))
 	}
 	if first, _, _ := strings.Cut(read(t, filepath.Join(d, ".gitignore")), "\n"); first != gitignoreMarker {
@@ -147,7 +147,7 @@ func TestPrepareEmptyFolder(t *testing.T) {
 }
 
 func TestPrepareKeepsExistingFiles(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	put(t, filepath.Join(d, "README.md"), "mine\n")
@@ -195,7 +195,7 @@ func TestPrepareKeepsExistingFiles(t *testing.T) {
 }
 
 func TestPrepareInsideAnotherRepository(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	parent := t.TempDir()
 	if out, err := gitOut(parent, "init", "-q"); err != nil {
@@ -230,7 +230,7 @@ func TestPrepareInsideAnotherRepository(t *testing.T) {
 }
 
 func TestPrepareTopOfExistingRepository(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	if out, err := gitOut(d, "init", "-q"); err != nil {
@@ -259,7 +259,7 @@ func TestPrepareTopOfExistingRepository(t *testing.T) {
 }
 
 func TestPrepareRefusesLinksOutsideTheFolder(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	out := t.TempDir()
@@ -296,7 +296,7 @@ func TestPrepareRefusesLinksOutsideTheFolder(t *testing.T) {
 }
 
 func TestPrepareFailureKeepsCreatedFiles(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	d := t.TempDir()
 	put(t, filepath.Join(d, "instructions"), "a file, not a folder")
 	err := prepSvc().PrepareArchive(context.Background(), d)
@@ -312,7 +312,7 @@ func TestPrepareFailureKeepsCreatedFiles(t *testing.T) {
 // When commitSetup is true the person has already committed the setup files.
 func preparedArchive(t *testing.T, commitSetup bool) (*archFixture, string) {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	if err := prepSvc().PrepareArchive(ctx, d); err != nil {
@@ -402,7 +402,7 @@ func TestCommitDoesNotReAddATrackedProjectFile(t *testing.T) {
 }
 
 func TestInspectAndPrepareMakeScriptsExecutable(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	d := t.TempDir()
 	svc := prepSvc()
@@ -441,7 +441,7 @@ func TestInspectAndPrepareMakeScriptsExecutable(t *testing.T) {
 }
 
 func TestInspectTopOfRepositoryIsNotNestedForAnyPathSpelling(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	d := t.TempDir()
 	if out, err := gitOut(d, "init", "-q"); err != nil {
 		t.Fatal(out)
@@ -462,7 +462,7 @@ func TestInspectTopOfRepositoryIsNotNestedForAnyPathSpelling(t *testing.T) {
 }
 
 func TestInspectRefusesALinkOutsideTheFolder(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	d := t.TempDir()
 	out := t.TempDir()
 	if err := os.Symlink(out, filepath.Join(d, "prompts")); err != nil {
@@ -476,7 +476,7 @@ func TestInspectRefusesALinkOutsideTheFolder(t *testing.T) {
 }
 
 func TestInspectWrapsAnUnreadableFolder(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	d := filepath.Join(t.TempDir(), "locked")
 	if err := os.Mkdir(d, 0o755); err != nil {
 		t.Fatal(err)
@@ -491,5 +491,32 @@ func TestInspectWrapsAnUnreadableFolder(t *testing.T) {
 	_, err := prepSvc().InspectArchive(context.Background(), d)
 	if err == nil || !strings.HasPrefix(err.Error(), "Could not read "+d+": ") {
 		t.Fatalf("err %v", err)
+	}
+}
+
+// An archive set up by Notted, Phonon's old name, carries Notted's marker line: it needs no new rules.
+func TestInspectAcceptsNottedsGitignoreMarker(t *testing.T) {
+	t.Setenv("PHONON_HOME", t.TempDir())
+	ctx := context.Background()
+	d := t.TempDir()
+	svc := prepSvc()
+	if err := svc.PrepareArchive(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+	gi := filepath.Join(d, ".gitignore")
+	put(t, gi, strings.Replace(read(t, gi), gitignoreMarker, "# Notted: recordings and session logs never enter git", 1))
+	before := read(t, gi)
+	got, err := svc.InspectArchive(ctx, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Ready || len(got.Missing) != 0 {
+		t.Fatalf("got %+v", got)
+	}
+	if err := svc.PrepareArchive(ctx, d); err != nil {
+		t.Fatal(err)
+	}
+	if read(t, gi) != before {
+		t.Fatalf(".gitignore changed:\n%s", read(t, gi))
 	}
 }

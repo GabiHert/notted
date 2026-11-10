@@ -39,9 +39,11 @@ var templateFiles = []templateFile{
 }
 
 const (
-	gitignoreMarkerLine = "# Notted: recordings and session logs never enter git"
-	gitignoreAddsRules  = ".gitignore (adds the recording rules)"
-	makesExecutable     = " (makes it executable)"
+	gitignoreMarkerLine = "# Phonon: recordings and session logs never enter git"
+	// legacyMarkerLine is the same line in an archive set up by Notted, Phonon's old name.
+	legacyMarkerLine   = "# Notted: recordings and session logs never enter git"
+	gitignoreAddsRules = ".gitignore (adds the recording rules)"
+	makesExecutable    = " (makes it executable)"
 )
 
 // scripts are the template files that must be executable.
@@ -76,7 +78,7 @@ func templateBytes(path string) []byte {
 
 func hasMarker(content string) bool {
 	for _, l := range strings.Split(content, "\n") {
-		if strings.TrimRight(l, "\r") == gitignoreMarkerLine {
+		if l = strings.TrimRight(l, "\r"); l == gitignoreMarkerLine || l == legacyMarkerLine {
 			return true
 		}
 	}

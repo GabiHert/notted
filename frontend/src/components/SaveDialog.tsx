@@ -108,7 +108,7 @@ export function SaveDialog({ meetingId, onDeclined }: { meetingId: string; onDec
           </>
         ) : (
           <>
-            <p className="nt-dialog__text">{`Notted wrote these files to ${ready.folder} in the archive folder:`}</p>
+            <p className="nt-dialog__text">{`Phonon wrote these files to ${ready.folder} in the archive folder:`}</p>
             <ul className="nt-dialog__files">
               {ready.files.map((f) => (
                 <li key={f}>{lastSegment(f)}</li>

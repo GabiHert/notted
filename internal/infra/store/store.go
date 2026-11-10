@@ -1,7 +1,7 @@
 // Copied from github.com/brienze1/quant (internal/infra/db/sqlite.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
-// Package store is the SQLite store under the Notted data home.
+// Package store is the SQLite store under the Phonon data home.
 package store
 
 import (

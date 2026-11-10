@@ -115,7 +115,7 @@ func TestSetupPromptWithoutArchive(t *testing.T) {
 		"Archive folder: not chosen yet",
 		"Choose or clone the archive",
 		"Settings",
-		"Notted sets the folder up",
+		"Phonon sets the folder up",
 		"microphone",
 	)
 	mustNotContain(t, got,
@@ -143,7 +143,7 @@ func TestSetupPromptArchiveReadErrorIsALine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a read error must not fail the prompt: %v", err)
 	}
-	mustContain(t, got, "Notted could not read the archive's projects", "one question at a time")
+	mustContain(t, got, "Phonon could not read the archive's projects", "one question at a time")
 	mustNotContain(t, got, "Projects without a file of mine")
 }
 
@@ -202,7 +202,7 @@ func TestSetupPromptProfileFolderReadErrorIsALine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a read error must not fail the prompt: %v", err)
 	}
-	mustContain(t, got, "Notted could not read my per-project files")
+	mustContain(t, got, "Phonon could not read my per-project files")
 	mustNotContain(t, got, "Projects without a file of mine")
 }
 
@@ -249,8 +249,8 @@ func TestSetupPromptFolderFailingTheCheckStopsAtSettings(t *testing.T) {
 		f.root,
 		"is not set up as a meetings archive yet",
 		"bin/meeting is missing",
-		"choose this folder again in Notted's Settings",
-		"Notted sets it up",
+		"choose this folder again in Phonon's Settings",
+		"Phonon sets it up",
 		"Then stop.",
 	)
 	mustNotContain(t, got,
@@ -280,7 +280,7 @@ func TestSetupPromptProjectFileIsSharedAcrossProfiles(t *testing.T) {
 			sharedExistingWork,
 			"\n6. Before you write a file, show each file to me in full",
 			"\n7. You must never commit or push without my yes.",
-			"\n8. When we are done, tell me to open Notted's Settings and:",
+			"\n8. When we are done, tell me to open Phonon's Settings and:",
 		)
 		mustNotContain(t, got, "(task files, notes, folders)", "as rule 5 says")
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/GabiHert/phonon/internal/integration/process"
 )
 
-const flowMakefile = "build:\n\tmkdir -p build/bin/Notted.app/Contents/MacOS\n\ttouch build/bin/Notted.app/Contents/MacOS/Notted\n\t@echo built-ok\n"
+const flowMakefile = "build:\n\tmkdir -p build/bin/Phonon.app/Contents/MacOS\n\ttouch build/bin/Phonon.app/Contents/MacOS/Phonon\n\t@echo built-ok\n"
 
 type flowInstaller struct {
 	mu    sync.Mutex
@@ -72,7 +72,7 @@ type flow struct {
 func newFlow(t *testing.T, makefile string) *flow {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("NOTTED_HOME", home)
+	t.Setenv("PHONON_HOME", home)
 	base, err := filepath.EvalSymlinks(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +89,7 @@ func newFlow(t *testing.T, makefile string) *flow {
 	src := filepath.Join(base, "src")
 	sh(t, base, "init", "-q", "--bare", "-b", "main", remote)
 	sh(t, base, "init", "-q", "-b", "main", seed)
-	for name, text := range map[string]string{"wails.json": `{"name": "Notted"}`, ".gitignore": "build/\n", "Makefile": makefile} {
+	for name, text := range map[string]string{"wails.json": `{"name": "Phonon"}`, ".gitignore": "build/\n", "Makefile": makefile} {
 		if err := os.WriteFile(filepath.Join(seed, name), []byte(text), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -107,14 +107,14 @@ func newFlow(t *testing.T, makefile string) *flow {
 	f.commit(seed, "news")
 	sh(t, seed, "push", "-q", "origin", "main")
 
-	exe := filepath.Join(base, "Apps", "Notted.app", "Contents", "MacOS", "Notted")
+	exe := filepath.Join(base, "Apps", "Phonon.app", "Contents", "MacOS", "Phonon")
 	if err := os.MkdirAll(filepath.Dir(exe), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(exe, []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	f.app = filepath.Join(base, "Apps", "Notted.app")
+	f.app = filepath.Join(base, "Apps", "Phonon.app")
 	f.log = filepath.Join(home, "update.log")
 
 	st, err := store.Open(filepath.Join(home, "meetings.sqlite"))
@@ -206,7 +206,7 @@ func TestUpdateFlowPullsBuildsAndHandsOver(t *testing.T) {
 		t.Fatalf("installer calls = %v", f.inst.calls)
 	}
 	c := f.inst.calls[0]
-	if c[0] != 4242 || c[1] != filepath.Join(f.src, "build", "bin", "Notted.app") || c[2] != f.app || c[3] != f.log {
+	if c[0] != 4242 || c[1] != filepath.Join(f.src, "build", "bin", "Phonon.app") || c[2] != f.app || c[3] != f.log {
 		t.Fatalf("installer call = %v", c)
 	}
 }
@@ -217,7 +217,7 @@ func TestUpdateFlowBuildFails(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := f.waitState("installing", "failed")
-	want := "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again."
+	want := "make build failed. Phonon did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Phonon source folder, then update again."
 	if st.State != "failed" || st.Message != want {
 		t.Fatalf("status = %+v", st)
 	}
@@ -241,7 +241,7 @@ func TestUpdateFlowDivergedPull(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := f.waitState("installing", "failed")
-	if st.State != "failed" || st.Message != "git pull failed. Notted did not change. The output below shows why." {
+	if st.State != "failed" || st.Message != "git pull failed. Phonon did not change. The output below shows why." {
 		t.Fatalf("status = %+v", st)
 	}
 	if _, err := os.Stat(filepath.Join(f.src, "build")); err == nil {
@@ -258,7 +258,7 @@ func TestUpdateFlowRefusesDirtyClone(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := f.svc.Start(context.Background())
-	if err == nil || !strings.Contains(err.Error(), "M Makefile") || !strings.HasPrefix(err.Error(), "The Notted source folder has uncommitted changes.") {
+	if err == nil || !strings.Contains(err.Error(), "M Makefile") || !strings.HasPrefix(err.Error(), "The Phonon source folder has uncommitted changes.") {
 		t.Fatalf("err = %v", err)
 	}
 	if f.emit.count() != 0 {

@@ -76,7 +76,7 @@ type sumFixture struct {
 
 func newSumFixture(t *testing.T) *sumFixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	st, err := store.Open(filepath.Join(t.TempDir(), "meetings.sqlite"))
 	if err != nil {
 		t.Fatal(err)
@@ -348,7 +348,7 @@ func TestExportFailureIsReported(t *testing.T) {
 	_ = f.svc.Generate(f.ctx, "m1")
 	f.svc.Wait()
 	st := f.states()
-	if st[len(st)-1] != "suggestions/error:The summary is saved in Notted, but writing the files failed: disk full" {
+	if st[len(st)-1] != "suggestions/error:The summary is saved in Phonon, but writing the files failed: disk full" {
 		t.Fatalf("states = %v", st)
 	}
 	if m, _ := f.st.GetMeeting(f.ctx, "m1"); m.State != domain.StateSummarized {
@@ -506,7 +506,7 @@ func TestSummaryConfigErrorEmitsError(t *testing.T) {
 	}
 	f.svc.Wait()
 	got := f.states()
-	if len(got) != 1 || got[0] != "summary/error:Notted could not prepare the session's tools: no space" {
+	if len(got) != 1 || got[0] != "summary/error:Phonon could not prepare the session's tools: no space" {
 		t.Fatalf("states = %v", got)
 	}
 	if len(f.run.runs) != 0 {

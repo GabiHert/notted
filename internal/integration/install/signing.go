@@ -8,7 +8,7 @@ import (
 )
 
 // IdentityName is the code-signing identity that scripts/create-signing-identity.sh creates.
-const IdentityName = "Notted Local Signing"
+const IdentityName = "Phonon Local Signing"
 
 // Signing checks the person's keychain for IdentityName.
 type Signing struct {

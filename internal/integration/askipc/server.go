@@ -1,4 +1,4 @@
-// Package askipc carries one form from a `Notted mcp` process to the running
+// Package askipc carries one form from a `Phonon mcp` process to the running
 // app over a unix socket: one JSON line each way per connection.
 package askipc
 

@@ -242,7 +242,7 @@ func (s *ArchiveService) CommitProjectDeletion(ctx context.Context, key string, 
 	}
 	for _, p := range paths {
 		if !deletionPath(key, st.Profile, p) {
-			return fmt.Errorf("Notted can commit only the deleted files of project %q. %s is not one of them.", key, p)
+			return fmt.Errorf("Phonon can commit only the deleted files of project %q. %s is not one of them.", key, p)
 		}
 	}
 	repo := st.CheckoutPath

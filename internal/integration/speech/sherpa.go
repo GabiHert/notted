@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (internal/integration/voice/engine/sherpaengine/sherpaengine.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
 // Package speech runs the offline speech engine: sherpa-onnx Whisper for
 // speech-to-text and the Silero detector, plus the model manifest and downloader.

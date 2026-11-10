@@ -80,13 +80,13 @@ func PermissionResult(input json.RawMessage, a FormAnswer) string {
 		return string(b)
 	}
 	if a.Status == StatusAnswered {
-		msg := "The person denied this in Notted."
+		msg := "The person denied this in Phonon."
 		if strings.TrimSpace(a.Note) != "" {
 			msg += " Their note: " + a.Note
 		}
 		return PermissionDeny(msg)
 	}
-	return PermissionDeny("The person dismissed this request in Notted (Not now). Do not try it again unless they ask.")
+	return PermissionDeny("The person dismissed this request in Phonon (Not now). Do not try it again unless they ask.")
 }
 
 // PermissionDeny returns a deny JSON carrying message.

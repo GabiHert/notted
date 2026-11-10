@@ -8,7 +8,7 @@
         <key>CFBundleExecutable</key>
         <string>{{.OutputFilename}}</string>
         <key>CFBundleIdentifier</key>
-        <string>tech.bhlabs.notted</string>
+        <string>tech.bhlabs.phonon</string>
         <key>CFBundleVersion</key>
         <string>{{.Info.ProductVersion}}</string>
         <key>CFBundleGetInfoString</key>
@@ -43,6 +43,6 @@
         </array>
         {{end}}
         <key>NSMicrophoneUsageDescription</key>
-        <string>Notted records your microphone during a meeting you start, so it can transcribe the meeting on this Mac.</string>
+        <string>Phonon records your microphone during a meeting you start, so it can transcribe the meeting on this Mac.</string>
     </dict>
 </plist>

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Creates the self-signed code-signing identity "Notted Local Signing" once, so every build of
-# Notted keeps the same signature and macOS keeps its microphone and screen recording grants.
+# Creates the self-signed code-signing identity "Phonon Local Signing" once, so every build of
+# Phonon keeps the same signature and macOS keeps its microphone and screen recording grants.
 set -euo pipefail
-NAME="Notted Local Signing"
-KEYCHAIN="${NOTTED_KEYCHAIN:-$HOME/Library/Keychains/login.keychain-db}"
-OPENSSL="${NOTTED_OPENSSL:-/usr/bin/openssl}"
-UNTRUSTED='The certificate "Notted Local Signing" is in your keychain, but macOS does not trust it for code signing. Open Keychain Access, double-click "Notted Local Signing", open Trust, and set Code Signing to Always Trust. Then run make build.'
+NAME="Phonon Local Signing"
+KEYCHAIN="${PHONON_KEYCHAIN:-$HOME/Library/Keychains/login.keychain-db}"
+OPENSSL="${PHONON_OPENSSL:-/usr/bin/openssl}"
+UNTRUSTED='The certificate "Phonon Local Signing" is in your keychain, but macOS does not trust it for code signing. Open Keychain Access, double-click "Phonon Local Signing", open Trust, and set Code Signing to Always Trust. Then run make build.'
 
 # has_identity [-v]: reads all of the listing before matching, so grep never closes the pipe early.
 has_identity() {
@@ -20,7 +20,7 @@ if ! command -v security >/dev/null 2>&1; then
 fi
 
 if has_identity -v; then
-  echo 'The code-signing identity "Notted Local Signing" already exists. Nothing to do.'
+  echo 'The code-signing identity "Phonon Local Signing" already exists. Nothing to do.'
   exit 0
 fi
 
@@ -31,7 +31,7 @@ fi
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-echo "Creating the code-signing identity \"Notted Local Signing\" in $KEYCHAIN."
+echo "Creating the code-signing identity \"Phonon Local Signing\" in $KEYCHAIN."
 
 cat >"$tmp/req.cnf" <<'CNF'
 [req]
@@ -39,7 +39,7 @@ distinguished_name=dn
 prompt=no
 x509_extensions=ext
 [dn]
-CN=Notted Local Signing
+CN=Phonon Local Signing
 [ext]
 basicConstraints=critical,CA:false
 keyUsage=critical,digitalSignature
@@ -52,12 +52,12 @@ legacy=""
 if "$OPENSSL" version | grep -q '^OpenSSL 3'; then
   legacy="-legacy"
 fi
-NOTTED_P12_PASS="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 || true)"
-export NOTTED_P12_PASS
+PHONON_P12_PASS="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 || true)"
+export PHONON_P12_PASS
 # shellcheck disable=SC2086
-"$OPENSSL" pkcs12 -export $legacy -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -name "$NAME" -out "$tmp/id.p12" -passout env:NOTTED_P12_PASS
+"$OPENSSL" pkcs12 -export $legacy -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -name "$NAME" -out "$tmp/id.p12" -passout env:PHONON_P12_PASS
 
-security import "$tmp/id.p12" -k "$KEYCHAIN" -P "$NOTTED_P12_PASS" -T /usr/bin/codesign
+security import "$tmp/id.p12" -k "$KEYCHAIN" -P "$PHONON_P12_PASS" -T /usr/bin/codesign
 
 echo "macOS now asks for your login password to trust the certificate for code signing."
 if ! security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN" "$tmp/cert.pem"; then
@@ -69,5 +69,5 @@ if ! has_identity -v; then
   echo "$UNTRUSTED"
   exit 1
 fi
-echo 'Created the code-signing identity "Notted Local Signing". Run make build: macOS asks for the microphone and Screen & System Audio Recording permissions once more, then keeps them across builds and updates.'
+echo 'Created the code-signing identity "Phonon Local Signing". Run make build: macOS asks for the microphone and Screen & System Audio Recording permissions once more, then keeps them across builds and updates.'
 exit 0

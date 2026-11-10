@@ -13,7 +13,7 @@ func isolateHome(on bool) (func(), error) {
 	if !on {
 		return func() {}, nil
 	}
-	dir, err := os.MkdirTemp("", "notted-bindings-")
+	dir, err := os.MkdirTemp("", "phonon-bindings-")
 	if err != nil {
 		return nil, err
 	}

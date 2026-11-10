@@ -62,7 +62,7 @@ func archiveDir(t *testing.T) string {
 }
 
 func TestCheckArchive(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	if err := checkArchive(archiveDir(t)); err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ type setupFx struct {
 
 func newSetupFx(t *testing.T, profile string) *setupFx {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	root := archiveDir(t)
 	set := &memSettings{s: domain.Settings{Profile: profile, CheckoutPath: root, ProjectRoots: map[string]string{}}}
 	g := &fakeGit{}

@@ -105,7 +105,7 @@ func TestStreamExtraEnvWinsAndDirIsUsed(t *testing.T) {
 func TestStreamRefusesMissingCommand(t *testing.T) {
 	called := 0
 	err := newStreamer(t).Stream(context.Background(), t.TempDir(), []string{"nosuch-tool"}, nil, func(string) { called++ })
-	if err == nil || err.Error() != "Notted cannot find nosuch-tool on your login shell's PATH." {
+	if err == nil || err.Error() != "Phonon cannot find nosuch-tool on your login shell's PATH." {
 		t.Fatalf("err = %v", err)
 	}
 	if called != 0 {

@@ -4,7 +4,7 @@ import { AskPermissions, GetPermissions, OpenPermissionSettings, resetBindings }
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
-const HINT = "If it is already on in System Settings, select Notted there, remove it with the minus button, then click Check again.";
+const HINT = "If it is already on in System Settings, select Phonon there, remove it with the minus button, then click Check again.";
 const perms = (microphone: string, screenState: string) => ({ microphone, screen: screenState });
 const row = (name: string) => screen.getByRole("listitem", { name });
 const MIC = "Microphone";
@@ -125,9 +125,9 @@ test("checks again when the window regains focus, and stops listening on unmount
 });
 
 test("a helper failure shows the message and keeps Check again usable", async () => {
-  GetPermissions.mockRejectedValue(new Error("Notted could not read the permissions: the audio recorder did not answer."));
+  GetPermissions.mockRejectedValue(new Error("Phonon could not read the permissions: the audio recorder did not answer."));
   render(<PermissionsCard />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Notted could not read the permissions");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Phonon could not read the permissions");
   expect(screen.queryByText("Allowed")).not.toBeInTheDocument();
   GetPermissions.mockResolvedValue(perms("allowed", "allowed"));
   fireEvent.click(screen.getByRole("button", { name: "Check again" }));

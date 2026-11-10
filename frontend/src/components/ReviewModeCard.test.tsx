@@ -64,19 +64,19 @@ test("the box is disabled while the save is pending, and a second click is ignor
 });
 
 test("a rejected save shows the message in an alert and the box returns to unchecked", async () => {
-  SetReviewActWithoutAsking.mockRejectedValue(new Error("Notted could not save the review setting: database is locked"));
+  SetReviewActWithoutAsking.mockRejectedValue(new Error("Phonon could not save the review setting: database is locked"));
   render(<ReviewModeCard />);
   await waitFor(() => expect(box()).not.toBeDisabled());
   fireEvent.click(box());
-  expect(await screen.findByRole("alert")).toHaveTextContent("Notted could not save the review setting: database is locked");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Phonon could not save the review setting: database is locked");
   expect(box()).not.toBeChecked();
   expect(box()).not.toBeDisabled();
 });
 
 test("a rejected load shows the alert, and the box stays disabled and unchecked", async () => {
-  GetReviewActWithoutAsking.mockRejectedValue(new Error("Notted could not read the review setting: boom"));
+  GetReviewActWithoutAsking.mockRejectedValue(new Error("Phonon could not read the review setting: boom"));
   render(<ReviewModeCard />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Notted could not read the review setting: boom");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Phonon could not read the review setting: boom");
   expect(box()).toBeDisabled();
   expect(box()).not.toBeChecked();
 });

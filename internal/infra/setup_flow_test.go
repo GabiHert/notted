@@ -12,7 +12,7 @@ import (
 )
 
 func TestSetupCloneWithRealGit(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	base := t.TempDir()
 	src := filepath.Join(base, "meetings-src")
 	sh(t, base, "init", "-q", "-b", "main", src)

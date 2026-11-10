@@ -3,12 +3,12 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>tech.bhlabs.notted.audiocap</string>
+    <string>tech.bhlabs.phonon.audiocap</string>
     <key>CFBundleName</key>
     <string>audiocap</string>
     <key>CFBundleVersion</key>
     <string>0.1.0</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Notted records your microphone during a meeting you start, so it can transcribe the meeting on this Mac.</string>
+    <string>Phonon records your microphone during a meeting you start, so it can transcribe the meeting on this Mac.</string>
 </dict>
 </plist>

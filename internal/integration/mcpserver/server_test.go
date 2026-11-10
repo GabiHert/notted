@@ -82,8 +82,8 @@ func TestListTools(t *testing.T) {
 	if got["ask"] != askDescription || got["permission"] != permissionDescription {
 		t.Fatalf("descriptions %v", got)
 	}
-	if !strings.HasPrefix(askDescription, "Show the person a form in the Notted app") ||
-		permissionDescription != "Notted's permission prompt for Claude Code. Claude Code calls it; do not call it yourself." {
+	if !strings.HasPrefix(askDescription, "Show the person a form in the Phonon app") ||
+		permissionDescription != "Phonon's permission prompt for Claude Code. Claude Code calls it; do not call it yourself." {
 		t.Fatal("description constants drifted")
 	}
 	for _, s := range []string{askSchema, permissionSchema} {
@@ -134,7 +134,7 @@ func TestAskAppNotRunning(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !r.IsError || text(t, r) != "Notted is not running. Open Notted, then ask again." {
+	if !r.IsError || text(t, r) != "Phonon is not running. Open Phonon, then ask again." {
 		t.Fatalf("result %v %v", r.IsError, r.Content)
 	}
 }
@@ -202,7 +202,7 @@ func TestPermissionUnreadable(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if r.IsError || text(t, r) != domain.PermissionDeny("Notted could not read this permission request.") {
+		if r.IsError || text(t, r) != domain.PermissionDeny("Phonon could not read this permission request.") {
 			t.Fatalf("result %v %s", r.IsError, text(t, r))
 		}
 	}
@@ -218,7 +218,7 @@ func TestPermissionAppNotRunning(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.IsError || text(t, r) != domain.PermissionDeny("Notted is not running, so nobody could answer this request.") {
+	if r.IsError || text(t, r) != domain.PermissionDeny("Phonon is not running, so nobody could answer this request.") {
 		t.Fatalf("result %v %s", r.IsError, text(t, r))
 	}
 }
@@ -230,7 +230,7 @@ func TestPermissionOtherError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.IsError || text(t, r) != domain.PermissionDeny("Notted could not show this request: boom") {
+	if r.IsError || text(t, r) != domain.PermissionDeny("Phonon could not show this request: boom") {
 		t.Fatalf("result %v %s", r.IsError, text(t, r))
 	}
 }

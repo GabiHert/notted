@@ -2,20 +2,20 @@
 #include "menubar_darwin.h"
 
 // Implemented in Go; the numbers match the action constants in menubar.go.
-extern void nottedMenuBarAction(int action);
+extern void phononMenuBarAction(int action);
 
-@interface NottedMenuTarget : NSObject
+@interface PhononMenuTarget : NSObject
 - (void)pick:(NSMenuItem *)sender;
 @end
 
-@implementation NottedMenuTarget
+@implementation PhononMenuTarget
 - (void)pick:(NSMenuItem *)sender {
-	nottedMenuBarAction((int)sender.tag);
+	phononMenuBarAction((int)sender.tag);
 }
 @end
 
 static NSStatusItem *statusItem;
-static NottedMenuTarget *target;
+static PhononMenuTarget *target;
 static BOOL isRecording;
 
 static NSMenuItem *menuItem(NSString *title, NSInteger tag) {
@@ -70,7 +70,7 @@ static void render(void) {
 	if (statusItem == nil) {
 		return;
 	}
-	NSString *label = isRecording ? @"Notted — recording" : @"Notted";
+	NSString *label = isRecording ? @"Phonon — recording" : @"Phonon";
 	NSImage *image = icon(isRecording, label);
 	statusItem.button.image = image;
 	statusItem.button.toolTip = label;
@@ -81,24 +81,24 @@ static void render(void) {
 	} else {
 		[menu addItem:menuItem(@"Start recording", 0)];
 	}
-	[menu addItem:menuItem(@"Open Notted", 2)];
+	[menu addItem:menuItem(@"Open Phonon", 2)];
 	[menu addItem:[NSMenuItem separatorItem]];
-	[menu addItem:menuItem(@"Quit Notted", 3)];
+	[menu addItem:menuItem(@"Quit Phonon", 3)];
 	statusItem.menu = menu;
 }
 
-void NottedMenuBarInstall(void) {
+void PhononMenuBarInstall(void) {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		if (statusItem != nil) {
 			return;
 		}
-		target = [[NottedMenuTarget alloc] init];
+		target = [[PhononMenuTarget alloc] init];
 		statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
 		render();
 	});
 }
 
-void NottedMenuBarSetRecording(int recording) {
+void PhononMenuBarSetRecording(int recording) {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		isRecording = recording != 0;
 		render();

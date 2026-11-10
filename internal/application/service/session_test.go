@@ -64,7 +64,7 @@ func cleanForTest(env []string) []string {
 
 func newSessFixture(t *testing.T) *sessFixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	st, err := store.Open(filepath.Join(t.TempDir(), "meetings.sqlite"))
 	if err != nil {
 		t.Fatal(err)
@@ -193,7 +193,7 @@ func TestSessionStartWithTools(t *testing.T) {
 	if err := f.svc.Start(f.ctx, "m1"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/s/m1/mcp.json", "--allowedTools", "mcp__notted__ask", "--add-dir", "/work/acme"}
+	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/s/m1/mcp.json", "--allowedTools", "mcp__phonon__ask", "--add-dir", "/work/acme"}
 	if got := f.term.calls[0].argv; !eq(got, want) {
 		t.Fatalf("argv = %v", got)
 	}
@@ -211,7 +211,7 @@ func TestSessionStartWithToolsNoRoot(t *testing.T) {
 	if err := f.svc.Start(f.ctx, "m1"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/c.json", "--allowedTools", "mcp__notted__ask"}
+	want := []string{"/bin/claude", "--resume", "sid-1", "--mcp-config", "/c.json", "--allowedTools", "mcp__phonon__ask"}
 	if got := f.term.calls[0].argv; !eq(got, want) {
 		t.Fatalf("argv = %v", got)
 	}
@@ -221,7 +221,7 @@ func TestSessionStartConfigError(t *testing.T) {
 	f := newSessFixture(t)
 	f.meeting(t, "m1", "acme", "sid-1")
 	f.svc.SetMCPConfig(func(string) (string, error) { return "", errors.New("disk full") })
-	wantErr(t, f.svc.Start(f.ctx, "m1"), "Notted could not prepare the session's tools: disk full")
+	wantErr(t, f.svc.Start(f.ctx, "m1"), "Phonon could not prepare the session's tools: disk full")
 	if len(f.term.calls) != 0 {
 		t.Fatal("a refused start reached the terminal")
 	}

@@ -26,7 +26,7 @@ func fakeDialog(t *testing.T, path string, err error) *wruntime.OpenDialogOption
 }
 
 func TestChooseFolderStartDir(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	dir := t.TempDir()
 	file := filepath.Join(dir, "f")
 	if err := os.WriteFile(file, nil, 0o644); err != nil {
@@ -48,7 +48,7 @@ func TestChooseFolderStartDir(t *testing.T) {
 }
 
 func TestChooseFolderCancelAndError(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	fakeDialog(t, "", nil)
 	got, err := (&App{emitter: &Emitter{}}).ChooseFolder("t", "")
 	if got != "" || err != nil {
@@ -62,7 +62,7 @@ func TestChooseFolderCancelAndError(t *testing.T) {
 }
 
 func TestInspectAndPrepareArchiveBindings(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	a := &App{emitter: &Emitter{}, setup: service.NewSetupService(nil, git.New(os.Environ))}
 	dir := t.TempDir()
 	c, err := a.InspectArchive(dir)

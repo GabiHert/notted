@@ -46,7 +46,7 @@ row='| `internal/nolicense.go` | `internal/nolicense.go` (lines 1-1) | planted |
 awk -v row="$row" '{print} /^\|---\|---\|---\|$/{print row}' "$tmp/NOTICE.md" > "$tmp/NOTICE.new" && mv "$tmp/NOTICE.new" "$tmp/NOTICE.md"
 expect "notice" check-clean.sh notice
 
-fresh; sed -i.bak 's/tech\.bhlabs\.notted/com.wails.notted/' "$tmp/build/darwin/Info.plist"; rm -f "$tmp/build/darwin/Info.plist.bak"
+fresh; sed -i.bak 's/tech\.bhlabs\.phonon/com.wails.phonon/' "$tmp/build/darwin/Info.plist"; rm -f "$tmp/build/darwin/Info.plist.bak"
 expect "bundle-id" check-clean.sh bundle-id
 
 fresh; mkdir -p "$tmp/internal"; echo '// acme planner' > "$tmp/internal/k.go"

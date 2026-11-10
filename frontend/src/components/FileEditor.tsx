@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (frontend/src/components/FileTabPanel.tsx), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 import { useEffect, useRef, useState } from "react";
 import { ReadInstructionFile, WriteInstructionFile } from "../api/bindings";
 import { errorMessage } from "../format";
@@ -98,7 +98,7 @@ export function FileEditor({ path, readOnly, onDirtyChange }: Props) {
           </button>
         )}
       </div>
-      {readOnly && <p className="nt-editor-pane__note">This file is read-only in Notted.</p>}
+      {readOnly && <p className="nt-editor-pane__note">This file is read-only in Phonon.</p>}
       {error && (
         <div className="nt-card nt-card--error nt-editor-pane__error" role="alert">
           {error}

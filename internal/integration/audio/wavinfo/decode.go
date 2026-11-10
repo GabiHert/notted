@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (internal/integration/voice/engine/wav.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
 package wavinfo
 

@@ -59,7 +59,7 @@ func (a *App) GetMeeting(id string) (MeetingDTO, error) {
 	return toMeetingDTO(m), nil
 }
 
-// DeleteMeeting removes a meeting from Notted: its audio, its transcript, summary and suggestions.
+// DeleteMeeting removes a meeting from Phonon: its audio, its transcript, summary and suggestions.
 // It refuses while the meeting records. A meeting saved to the archive keeps its folder there.
 // When the rows are gone but the audio folder stays, it resolves with a warning instead of an error.
 func (a *App) DeleteMeeting(meetingID string) (DeleteResultDTO, error) {

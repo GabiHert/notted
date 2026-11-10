@@ -45,7 +45,7 @@ func fakeModels(t *testing.T) (modelsDir string, mgr *ModelManager) {
 	if err := os.WriteFile(mp, body, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NOTTED_MODEL_MANIFEST", mp)
+	t.Setenv("PHONON_MODEL_MANIFEST", mp)
 	modelsDir = t.TempDir()
 	return modelsDir, NewModelManager(modelsDir, New(Config{ModelsDir: modelsDir}), NewDetector(modelsDir))
 }
@@ -170,7 +170,7 @@ func TestDownloadErrorEmitsErrorPhase(t *testing.T) {
 	if err := os.WriteFile(bad, body, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NOTTED_MODEL_MANIFEST", bad)
+	t.Setenv("PHONON_MODEL_MANIFEST", bad)
 	var got []port.ModelProgress
 	err := mgr.Download(t.Context(), domain.LangEN, func(p port.ModelProgress) { got = append(got, p) })
 	if err == nil {
@@ -242,7 +242,7 @@ func TestEnglishIsUnchangedByThePortugueseArtifact(t *testing.T) {
 }
 
 func TestStatusUsesThePinnedTurboSize(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	dir := t.TempDir()
 	mgr := NewModelManager(dir, New(Config{ModelsDir: dir}), NewDetector(dir))
 	if b := mgr.Status(domain.LangPTBR).DownloadBytes; b != 564434061 {
@@ -256,7 +256,7 @@ func TestStatusUsesThePinnedTurboSize(t *testing.T) {
 
 func TestStatusSurfacesManifestError(t *testing.T) {
 	_, mgr := fakeModels(t)
-	t.Setenv("NOTTED_MODEL_MANIFEST", filepath.Join(t.TempDir(), "missing.json"))
+	t.Setenv("PHONON_MODEL_MANIFEST", filepath.Join(t.TempDir(), "missing.json"))
 	st := mgr.Status(domain.LangEN)
 	if st.Ready || !strings.Contains(st.Missing, "model manifest") {
 		t.Fatalf("manifest error not surfaced: %+v", st)
@@ -274,7 +274,7 @@ func useManifest(t *testing.T, m *DownloadManifest) {
 	if err := os.WriteFile(p, body, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NOTTED_MODEL_MANIFEST", p)
+	t.Setenv("PHONON_MODEL_MANIFEST", p)
 }
 
 var (

@@ -37,7 +37,7 @@ type ProjectDeleteDeps struct {
 	Emit     port.EventEmitter
 }
 
-// ProjectDeleteService deletes a project: its files and meetings folder in the archive, its meetings in Notted and its root setting.
+// ProjectDeleteService deletes a project: its files and meetings folder in the archive, its meetings in Phonon and its root setting.
 type ProjectDeleteService struct{ d ProjectDeleteDeps }
 
 // NewProjectDeleteService builds the project delete service.
@@ -187,7 +187,7 @@ func confineMeetings(checkout, key string) (realRoot string, err error) {
 		case fi.Mode()&fs.ModeSymlink != 0:
 			return "", errOutside
 		case !fi.IsDir():
-			return "", fmt.Errorf("Notted cannot delete %s: it is not a folder.", rel)
+			return "", fmt.Errorf("Phonon cannot delete %s: it is not a folder.", rel)
 		}
 	}
 	return realRoot, nil
@@ -223,7 +223,7 @@ func (s *ProjectDeleteService) Delete(ctx context.Context, key string, plan doma
 		}
 		if err := s.d.Meetings.Delete(ctx, m.ID); err != nil {
 			if !errors.Is(err, ErrAudioLeft) {
-				return domain.ProjectDeleteResult{}, fmt.Errorf("Notted could not delete the meeting %q: %s"+msgProjectFinish, m.Title, err.Error())
+				return domain.ProjectDeleteResult{}, fmt.Errorf("Phonon could not delete the meeting %q: %s"+msgProjectFinish, m.Title, err.Error())
 			}
 			log.Printf("project delete: %v", err)
 		}

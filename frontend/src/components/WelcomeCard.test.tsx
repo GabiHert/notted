@@ -11,8 +11,8 @@ function items() {
 
 test("shows the header, the body and the three steps in order", () => {
   render(<WelcomeCard saved={{ profile: "", checkoutPath: "", projectRoots: {} }} />);
-  expect(screen.getByText("Set up Notted")).toBeInTheDocument();
-  expect(screen.getByText("Notted needs your meetings archive and your profile in it before it can write a summary.")).toBeInTheDocument();
+  expect(screen.getByText("Set up Phonon")).toBeInTheDocument();
+  expect(screen.getByText("Phonon needs your meetings archive and your profile in it before it can write a summary.")).toBeInTheDocument();
   const li = items();
   expect(li).toHaveLength(3);
   expect(li[0]).toHaveTextContent(STEP1);

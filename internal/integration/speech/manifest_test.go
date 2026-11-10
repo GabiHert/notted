@@ -17,7 +17,7 @@ func names(as []ModelArtifact) []string {
 }
 
 func TestEmbeddedManifestListsThreeArtifacts(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	m, err := loadManifest()
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +33,7 @@ func TestEmbeddedManifestListsThreeArtifacts(t *testing.T) {
 }
 
 func TestNeededForSelectsByLanguage(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	m, err := loadManifest()
 	if err != nil {
 		t.Fatal(err)
@@ -49,7 +49,7 @@ func TestNeededForSelectsByLanguage(t *testing.T) {
 }
 
 func TestEmbeddedManifestPinsTurboForPortuguese(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	m, err := loadManifest()
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestEmbeddedManifestPinsTurboForPortuguese(t *testing.T) {
 }
 
 func TestEmbeddedManifestKeepsEnglishAndDetector(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	m, err := loadManifest()
 	if err != nil {
 		t.Fatal(err)
@@ -106,7 +106,7 @@ func TestManifestOverrideReplacesEmbedded(t *testing.T) {
 	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("NOTTED_MODEL_MANIFEST", p)
+	t.Setenv("PHONON_MODEL_MANIFEST", p)
 	m, err := loadManifest()
 	if err != nil {
 		t.Fatal(err)

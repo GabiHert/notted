@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 function setup(over: Record<string, unknown> = {}) {
-  const props = { title: "Delete profile bruno?", body: "Notted deletes these files:", cancelLabel: "Keep profile", confirmLabel: "Delete profile", onCancel: vi.fn(), onConfirm: vi.fn(), ...over };
+  const props = { title: "Delete profile bruno?", body: "Phonon deletes these files:", cancelLabel: "Keep profile", confirmLabel: "Delete profile", onCancel: vi.fn(), onConfirm: vi.fn(), ...over };
   render(<ConfirmDialog {...(props as any)} />);
   return props;
 }
@@ -10,7 +10,7 @@ function setup(over: Record<string, unknown> = {}) {
 test("shows the title, the body, every item in the given order and the hint", () => {
   setup({ items: ["b.md", "a/", "a/c.md"], hint: "Nothing is committed." });
   expect(screen.getByRole("dialog", { name: "Delete profile bruno?" })).toBeInTheDocument();
-  expect(screen.getByText("Notted deletes these files:")).toBeInTheDocument();
+  expect(screen.getByText("Phonon deletes these files:")).toBeInTheDocument();
   expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual(["b.md", "a/", "a/c.md"]);
   expect(screen.getByText("Nothing is committed.")).toHaveClass("nt-dialog__hint");
 });

@@ -10,8 +10,8 @@ cleanup() { for t in "${tmps[@]:-}"; do [ -n "$t" ] && rm -rf "$t"; done; }
 trap cleanup EXIT
 
 HASH=13696039679D3B35D7E756B113E7576F4DE421A7
-NOTFOUND='sign-bundle: no "Notted Local Signing" certificate in your keychain; signing ad hoc. macOS asks for the microphone and screen recording permissions again after each build. Run bash scripts/create-signing-identity.sh once to stop that.'
-UNTRUSTED='The certificate "Notted Local Signing" is in your keychain, but macOS does not trust it for code signing. Open Keychain Access, double-click "Notted Local Signing", open Trust, and set Code Signing to Always Trust. Then run make build.'
+NOTFOUND='sign-bundle: no "Phonon Local Signing" certificate in your keychain; signing ad hoc. macOS asks for the microphone and screen recording permissions again after each build. Run bash scripts/create-signing-identity.sh once to stop that.'
+UNTRUSTED='The certificate "Phonon Local Signing" is in your keychain, but macOS does not trust it for code signing. Open Keychain Access, double-click "Phonon Local Signing", open Trust, and set Code Signing to Always Trust. Then run make build.'
 
 # fresh <state> <sign-kind>: new temp folder with fakes and a fake bundle.
 fresh() {
@@ -24,7 +24,7 @@ fresh() {
   cat >"$tmp/bin/security" <<FAKE
 #!/bin/sh
 echo "security \$*" >>"$tmp/calls"
-line='  1) $HASH "Notted Local Signing"'
+line='  1) $HASH "Phonon Local Signing"'
 case "\$1" in
   find-identity)
     state=\$(cat "$tmp/state")
@@ -51,16 +51,16 @@ case "\$1" in
   -dv)
     for last; do :; done
     case "\$last" in
-      */audiocap) echo "Identifier=tech.bhlabs.notted.audiocap" ;;
-      *) echo "Identifier=tech.bhlabs.notted" ;;
+      */audiocap) echo "Identifier=tech.bhlabs.phonon.audiocap" ;;
+      *) echo "Identifier=tech.bhlabs.phonon" ;;
     esac
     case "\$(cat "$tmp/sign-kind")" in
       adhoc) echo "Signature=adhoc" ;;
-      local) echo "Authority=Notted Local Signing" ;;
+      local) echo "Authority=Phonon Local Signing" ;;
       mixed)
         case "\$last" in
           */audiocap) echo "Signature=adhoc" ;;
-          *) echo "Authority=Notted Local Signing" ;;
+          *) echo "Authority=Phonon Local Signing" ;;
         esac ;;
       foreign) echo "Authority=Apple Development: Ana" ;;
     esac ;;
@@ -74,13 +74,13 @@ echo "          cmd LC_RPATH"
 echo "      cmdsize 48"
 echo "         path @executable_path/../Frameworks (offset 12)"
 FAKE
-  printf '#!/bin/sh\necho tech.bhlabs.notted\n' >"$tmp/bin/plutil"
+  printf '#!/bin/sh\necho tech.bhlabs.phonon\n' >"$tmp/bin/plutil"
   chmod +x "$tmp/bin/"*
-  local c="$tmp/Notted.app/Contents"
+  local c="$tmp/Phonon.app/Contents"
   mkdir -p "$c/MacOS" "$c/Frameworks"
-  printf '#!/bin/sh\n' >"$c/MacOS/Notted"
+  printf '#!/bin/sh\n' >"$c/MacOS/Phonon"
   printf '#!/bin/sh\n' >"$c/MacOS/audiocap"
-  chmod +x "$c/MacOS/Notted" "$c/MacOS/audiocap"
+  chmod +x "$c/MacOS/Phonon" "$c/MacOS/audiocap"
   : >"$c/Frameworks/libonnxruntime.1.17.1.dylib"
   : >"$c/Frameworks/libsherpa-onnx-c-api.dylib"
   : >"$c/Info.plist"
@@ -88,7 +88,7 @@ FAKE
 
 # run <script> [args...]: runs a script with the fakes first on PATH; sets out and rc.
 run() {
-  out=$(PATH="$tmp/bin:$PATH" NOTTED_KEYCHAIN="$tmp/test.keychain-db" TMPDIR="$tmp/tmpdir" bash "$@" 2>&1)
+  out=$(PATH="$tmp/bin:$PATH" PHONON_KEYCHAIN="$tmp/test.keychain-db" TMPDIR="$tmp/tmpdir" bash "$@" 2>&1)
   rc=$?
 }
 
@@ -123,44 +123,44 @@ run scripts/signing-identity.sh
 verdict identity-missing $?
 
 fresh valid
-app="$tmp/Notted.app"
+app="$tmp/Phonon.app"
 run scripts/sign-bundle.sh "$app"
 want="codesign -f -s $HASH $app/Contents/Frameworks/libonnxruntime.1.17.1.dylib
 codesign -f -s $HASH $app/Contents/Frameworks/libsherpa-onnx-c-api.dylib
-codesign -f -s $HASH --identifier tech.bhlabs.notted.audiocap $app/Contents/MacOS/audiocap
+codesign -f -s $HASH --identifier tech.bhlabs.phonon.audiocap $app/Contents/MacOS/audiocap
 codesign -f -s $HASH $app"
-[ "$rc" -eq 0 ] && has 'sign-bundle: signing with "Notted Local Signing"' && [ "$(grep '^codesign' "$tmp/calls")" = "$want" ]
+[ "$rc" -eq 0 ] && has 'sign-bundle: signing with "Phonon Local Signing"' && [ "$(grep '^codesign' "$tmp/calls")" = "$want" ]
 verdict sign-local $?
 
 fresh none
-app="$tmp/Notted.app"
+app="$tmp/Phonon.app"
 run scripts/sign-bundle.sh "$app"
 [ "$rc" -eq 0 ] && has "$NOTFOUND" && [ "$(grep -c '^codesign' "$tmp/calls")" -eq 4 ] && [ "$(grep '^codesign' "$tmp/calls" | grep -c -- ' -s - ')" -eq 4 ]
 verdict sign-adhoc $?
 
 fresh none adhoc
-run scripts/check-bundle.sh "$tmp/Notted.app"
+run scripts/check-bundle.sh "$tmp/Phonon.app"
 [ "$rc" -eq 0 ] && has 'check-bundle: OK (signed ad hoc)'
 verdict check-adhoc $?
 
 fresh none local
-run scripts/check-bundle.sh "$tmp/Notted.app"
-[ "$rc" -eq 0 ] && has 'check-bundle: OK (signed with Notted Local Signing)'
+run scripts/check-bundle.sh "$tmp/Phonon.app"
+[ "$rc" -eq 0 ] && has 'check-bundle: OK (signed with Phonon Local Signing)'
 verdict check-local $?
 
 fresh none mixed
-run scripts/check-bundle.sh "$tmp/Notted.app"
-[ "$rc" -eq 1 ] && has 'check-bundle: FAIL MacOS/audiocap is signed differently from Notted.app'
+run scripts/check-bundle.sh "$tmp/Phonon.app"
+[ "$rc" -eq 1 ] && has 'check-bundle: FAIL MacOS/audiocap is signed differently from Phonon.app'
 verdict check-mixed $?
 
 fresh none foreign
-run scripts/check-bundle.sh "$tmp/Notted.app"
-[ "$rc" -eq 1 ] && has 'check-bundle: FAIL Notted.app is signed neither ad hoc nor with Notted Local Signing'
+run scripts/check-bundle.sh "$tmp/Phonon.app"
+[ "$rc" -eq 1 ] && has 'check-bundle: FAIL Phonon.app is signed neither ad hoc nor with Phonon Local Signing'
 verdict check-foreign $?
 
 fresh valid
 run scripts/create-signing-identity.sh
-[ "$rc" -eq 0 ] && has 'The code-signing identity "Notted Local Signing" already exists. Nothing to do.' && ! called 'security import'
+[ "$rc" -eq 0 ] && has 'The code-signing identity "Phonon Local Signing" already exists. Nothing to do.' && ! called 'security import'
 verdict create-exists $?
 
 fresh untrusted
@@ -172,9 +172,9 @@ fresh none
 run scripts/create-signing-identity.sh
 kc="$tmp/test.keychain-db"
 [ "$rc" -eq 0 ] &&
-  has "Creating the code-signing identity \"Notted Local Signing\" in $kc." &&
+  has "Creating the code-signing identity \"Phonon Local Signing\" in $kc." &&
   has 'macOS now asks for your login password to trust the certificate for code signing.' &&
-  has 'Created the code-signing identity "Notted Local Signing". Run make build: macOS asks for the microphone and Screen & System Audio Recording permissions once more, then keeps them across builds and updates.' &&
+  has 'Created the code-signing identity "Phonon Local Signing". Run make build: macOS asks for the microphone and Screen & System Audio Recording permissions once more, then keeps them across builds and updates.' &&
   grep -Eq "^security import [^ ]+/id\.p12 -k $kc -P [A-Za-z0-9]{24} -T /usr/bin/codesign\$" "$tmp/calls" &&
   grep -Eq "^security add-trusted-cert -r trustRoot -p codeSign -k $kc [^ ]+/cert\.pem\$" "$tmp/calls" &&
   [ -z "$(grep '^security' "$tmp/calls" | grep -E ' -d |login\.keychain')" ] &&

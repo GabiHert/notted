@@ -29,7 +29,7 @@ type FormDeps struct {
 	Notify      port.Notifier // nil: no notifications
 	Visible     func() bool   // nil: always visible
 	SessionsDir string        // paths.SessionsDir()
-	Executable  string        // the Notted binary (os.Executable())
+	Executable  string        // the Phonon binary (os.Executable())
 	Socket      string        // paths.AskSocket()
 	NewToken    func() string // nil: 32 bytes from crypto/rand, hex (64 characters)
 	NewID       func() string // nil: uuid.NewString
@@ -166,7 +166,7 @@ func (s *FormService) Handle(ctx context.Context, req port.FormRequest) (domain.
 	want, ok := s.tokens[req.MeetingID]
 	s.mu.Unlock()
 	if !ok || subtle.ConstantTimeCompare([]byte(want), []byte(req.Token)) != 1 {
-		return domain.FormAnswer{}, errors.New("Notted did not recognize this session. Start it again from Notted.")
+		return domain.FormAnswer{}, errors.New("Phonon did not recognize this session. Start it again from Phonon.")
 	}
 	s.mu.Lock()
 	closed := s.closed
@@ -176,7 +176,7 @@ func (s *FormService) Handle(ctx context.Context, req port.FormRequest) (domain.
 	}
 	m, err := s.d.Meetings.GetMeeting(ctx, req.MeetingID)
 	if errors.Is(err, domain.ErrNotFound) {
-		return domain.FormAnswer{}, errors.New("This meeting no longer exists in Notted.")
+		return domain.FormAnswer{}, errors.New("This meeting no longer exists in Phonon.")
 	}
 	if err != nil {
 		return domain.FormAnswer{}, err
@@ -341,7 +341,7 @@ type mcpServerConfig struct {
 
 type mcpConfig struct {
 	MCPServers struct {
-		Notted mcpServerConfig `json:"notted"`
+		Phonon mcpServerConfig `json:"phonon"`
 	} `json:"mcpServers"`
 }
 
@@ -351,7 +351,7 @@ func (s *FormService) SessionConfig(meetingID string) (string, error) {
 		return "", errors.New("Meeting not found.")
 	}
 	if s.d.Executable == "" {
-		return "", errors.New("Notted could not find its own program file.")
+		return "", errors.New("Phonon could not find its own program file.")
 	}
 	s.mu.Lock()
 	tok, ok := s.tokens[meetingID]
@@ -362,7 +362,7 @@ func (s *FormService) SessionConfig(meetingID string) (string, error) {
 	s.mu.Unlock()
 
 	var cfg mcpConfig
-	cfg.MCPServers.Notted = mcpServerConfig{Command: s.d.Executable, Args: []string{"mcp", "--meeting", meetingID, "--socket", s.d.Socket, "--token", tok}}
+	cfg.MCPServers.Phonon = mcpServerConfig{Command: s.d.Executable, Args: []string{"mcp", "--meeting", meetingID, "--socket", s.d.Socket, "--token", tok}}
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return "", err

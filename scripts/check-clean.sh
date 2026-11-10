@@ -68,7 +68,7 @@ else
 fi
 
 # bundle-id
-want=tech.bhlabs.notted
+want=tech.bhlabs.phonon
 plist=build/darwin/Info.plist
 if [ ! -f "$plist" ]; then
   report bundle-id "$plist" 0 "missing"
@@ -81,7 +81,7 @@ else
     [ "$got" = "$want" ] || report bundle-id "$plist" 0 "CFBundleIdentifier is '$got', want $want"
   fi
 fi
-built=build/bin/Notted.app/Contents/Info.plist
+built=build/bin/Phonon.app/Contents/Info.plist
 if [ -f "$built" ]; then
   got=$(plutil -extract CFBundleIdentifier raw "$built" 2>/dev/null)
   [ "$got" = "$want" ] || report bundle-id "$built" 0 "CFBundleIdentifier is '$got', want $want"

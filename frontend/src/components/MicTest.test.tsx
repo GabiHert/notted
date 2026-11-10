@@ -104,10 +104,10 @@ test("the test turns on again when the recording ends", async () => {
 });
 
 test("a refused start shows the app's message, such as the microphone permission", async () => {
-  StartMicTest.mockRejectedValue(new Error("Microphone access is off for Notted. Allow it in the Permissions card (Ask, or Open System Settings), then test again."));
+  StartMicTest.mockRejectedValue(new Error("Microphone access is off for Phonon. Allow it in the Permissions card (Ask, or Open System Settings), then test again."));
   await idle();
   fireEvent.click(startButton());
-  expect(await screen.findByRole("alert")).toHaveTextContent("Microphone access is off for Notted.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Microphone access is off for Phonon.");
   expect(screen.queryByRole("meter")).not.toBeInTheDocument();
   expect(startButton()).toBeEnabled();
 });

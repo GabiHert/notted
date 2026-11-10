@@ -62,11 +62,11 @@ func TestReviewSwitchBoundMethods(t *testing.T) {
 		t.Fatalf("set = %v, %v", mode.sets, err)
 	}
 	mode.err = errors.New("boom")
-	if _, err := a.GetReviewActWithoutAsking(); err == nil || err.Error() != "Notted could not read the review setting: boom" {
+	if _, err := a.GetReviewActWithoutAsking(); err == nil || err.Error() != "Phonon could not read the review setting: boom" {
 		t.Fatalf("get err = %v", err)
 	}
 	mode.setErr = errors.New("locked")
-	if err := a.SetReviewActWithoutAsking(false); err == nil || err.Error() != "Notted could not save the review setting: locked" {
+	if err := a.SetReviewActWithoutAsking(false); err == nil || err.Error() != "Phonon could not save the review setting: locked" {
 		t.Fatalf("set err = %v", err)
 	}
 }

@@ -3,11 +3,11 @@ import { ChooseFolder, EventsOn, GetUpdateStatus, SetUpdateSource, StartUpdate }
 import { errorMessage } from "../format";
 import "./UpdateCard.css";
 
-const HELP = "Notted pulls the main branch of your Notted source folder, builds it, and reopens as the new version. Nothing runs until you click Update Notted.";
-const SIGNED = 'Builds are signed with your "Notted Local Signing" certificate, so macOS keeps the microphone and screen recording permissions after an update.';
-const UNSIGNED = 'No "Notted Local Signing" certificate in your keychain, so builds are signed ad hoc and macOS asks for the microphone and screen recording permissions again after each update. To stop that, run bash scripts/create-signing-identity.sh once in your Notted source folder.';
-const NOT_BUNDLE = "Notted is not running from an app bundle, so it cannot update itself.";
-const PICKER_TITLE = "Choose the Notted source folder";
+const HELP = "Phonon pulls the main branch of your Phonon source folder, builds it, and reopens as the new version. Nothing runs until you click Update Phonon.";
+const SIGNED = 'Builds are signed with your "Phonon Local Signing" certificate, so macOS keeps the microphone and screen recording permissions after an update.';
+const UNSIGNED = 'No "Phonon Local Signing" certificate in your keychain, so builds are signed ad hoc and macOS asks for the microphone and screen recording permissions again after each update. To stop that, run bash scripts/create-signing-identity.sh once in your Phonon source folder.';
+const NOT_BUNDLE = "Phonon is not running from an app bundle, so it cannot update itself.";
+const PICKER_TITLE = "Choose the Phonon source folder";
 const MAX_LINES = 5000;
 
 type OutputEvent = { seq: number; line: string };
@@ -160,20 +160,20 @@ export function UpdateCard() {
 
   return (
     <section className="nt-card nt-update">
-      <div className="nt-card__header">Update Notted</div>
+      <div className="nt-card__header">Update Phonon</div>
       <p className="nt-update__help">{HELP}</p>
-      <label htmlFor="nt-update-source">Notted source folder</label>
+      <label htmlFor="nt-update-source">Phonon source folder</label>
       <div className="nt-update__path">
-        <input id="nt-update-source" readOnly value={source} placeholder="Choose the folder of your Notted clone" />
+        <input id="nt-update-source" readOnly value={source} placeholder="Choose the folder of your Phonon clone" />
         <button type="button" className="nt-btn" aria-label={PICKER_TITLE} onClick={choose} disabled={!loaded || busy || running}>
           Choose…
         </button>
       </div>
       {loaded && <p className="nt-update__help">{signing ? SIGNED : UNSIGNED}</p>}
-      {loaded && <p className="nt-update__help">{installedApp ? `Notted replaces ${installedApp} and reopens it.` : NOT_BUNDLE}</p>}
+      {loaded && <p className="nt-update__help">{installedApp ? `Phonon replaces ${installedApp} and reopens it.` : NOT_BUNDLE}</p>}
       <div className="nt-update__actions">
         <button type="button" className="nt-btn nt-btn--primary" onClick={start} disabled={!loaded || busy || running || !source || !installedApp}>
-          {running ? "Updating…" : "Update Notted"}
+          {running ? "Updating…" : "Update Phonon"}
         </button>
         <span className="nt-update__status" role="status">
           {statusText}

@@ -18,7 +18,7 @@ import (
 const (
 	msgAlreadyRecording = "A recording is already running. Stop it first."
 	msgMeetingNotFound  = "Meeting not found."
-	msgSilentSystem     = "No system audio was heard in the last minute. If the other side was talking, check that Notted is allowed in System Settings > Privacy & Security > Screen & System Audio Recording."
+	msgSilentSystem     = "No system audio was heard in the last minute. If the other side was talking, check that Phonon is allowed in System Settings > Privacy & Security > Screen & System Audio Recording."
 	silentChunksToWarn  = 2
 )
 

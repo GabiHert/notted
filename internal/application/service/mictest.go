@@ -14,7 +14,7 @@ const (
 	quietPeakBelowDB     = -40.0
 	msgMicTestRecording  = "Stop the recording to test the microphone."
 	msgMicTestRunning    = "The microphone test is already running."
-	msgMicTestNotAllowed = "Microphone access is off for Notted. Allow it in the Permissions card (Ask, or Open System Settings), then test again."
+	msgMicTestNotAllowed = "Microphone access is off for Phonon. Allow it in the Permissions card (Ask, or Open System Settings), then test again."
 	msgMicWorks          = "The microphone works."
 	// msgLidClosed ends both silent-microphone messages: the mic test's and the recording warning's.
 	msgLidClosed = "If your MacBook's lid is closed, its built-in microphone is off: open the lid, or choose another input in System Settings > Sound > Input."

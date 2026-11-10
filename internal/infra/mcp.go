@@ -32,11 +32,11 @@ func runMCP(ctx context.Context, args []string, t mcp.Transport, stderr io.Write
 		return 2
 	}
 	if *meeting == "" || *socket == "" || *token == "" {
-		fmt.Fprintln(stderr, "notted mcp: --meeting, --socket and --token are required")
+		fmt.Fprintln(stderr, "phonon mcp: --meeting, --socket and --token are required")
 		return 2
 	}
 	if !domain.ValidMeetingID(*meeting) {
-		fmt.Fprintln(stderr, "notted mcp: the meeting id is not valid")
+		fmt.Fprintln(stderr, "phonon mcp: the meeting id is not valid")
 		return 2
 	}
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
@@ -46,6 +46,6 @@ func runMCP(ctx context.Context, args []string, t mcp.Transport, stderr io.Write
 	if err == nil || errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 		return 0
 	}
-	fmt.Fprintf(stderr, "notted mcp: %v\n", err)
+	fmt.Fprintf(stderr, "phonon mcp: %v\n", err)
 	return 1
 }

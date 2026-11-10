@@ -19,7 +19,7 @@ test("shows the Settings heading, one selected Instructions tab and the cards in
   expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   await screen.findByLabelText("Profile");
   const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Set up Notted", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Suggestion reviews", "Update Notted", "Permissions"]);
+  expect(headers).toEqual(["Set up Phonon", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Suggestion reviews", "Update Phonon", "Permissions"]);
   expect(GetUpdateStatus).toHaveBeenCalledTimes(1);
   expect(GetPermissions).toHaveBeenCalledTimes(1);
 });
@@ -62,18 +62,18 @@ test("there is no model, provider or API key control or text", async () => {
 test("the welcome card shows while the profile is unset and hides when archive and profile are set", async () => {
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "/archive", projectRoots: {} });
   const { unmount } = render(<SettingsView />);
-  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+  expect(await screen.findByText("Set up Phonon")).toBeInTheDocument();
   unmount();
   GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "/archive", projectRoots: {} });
   render(<SettingsView />);
   await screen.findByLabelText("Profile");
-  expect(screen.queryByText("Set up Notted")).not.toBeInTheDocument();
+  expect(screen.queryByText("Set up Phonon")).not.toBeInTheDocument();
 });
 
 test("the welcome card shows while the archive is unset, and no list is requested", async () => {
   GetSettings.mockResolvedValue({ profile: "ana", checkoutPath: "", projectRoots: {} });
   render(<SettingsView />);
-  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+  expect(await screen.findByText("Set up Phonon")).toBeInTheDocument();
   await screen.findByLabelText("Profile");
   expect(ListProjects).not.toHaveBeenCalled();
   expect(ListProfiles).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (internal/application/service/file_service.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
 package service
 
@@ -226,7 +226,7 @@ func writeInstruction(checkout, p, text string) error {
 	if _, err := rand.Read(suffix[:]); err != nil {
 		return err
 	}
-	tmp := filepath.Join(dir, ".notted-"+hex.EncodeToString(suffix[:])+".tmp")
+	tmp := filepath.Join(dir, ".phonon-"+hex.EncodeToString(suffix[:])+".tmp")
 	f, err := root.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		return mapRootErr(err)
@@ -250,9 +250,9 @@ func readOnlyError(rel string, readOnly bool) error {
 		return nil
 	}
 	if rel == "prompts/base.md" {
-		return errors.New("prompts/base.md is read-only in Notted. Change it through the archive repository.")
+		return errors.New("prompts/base.md is read-only in Phonon. Change it through the archive repository.")
 	}
-	return errors.New("instructions/README.md is read-only in Notted.")
+	return errors.New("instructions/README.md is read-only in Phonon.")
 }
 
 // listInstructions returns the existing regular files that match an instruction pattern; links are skipped.
@@ -390,7 +390,7 @@ func instructionExists(checkout, rel string) (bool, error) {
 }
 
 func notRegularErr(rel string) error {
-	return fmt.Errorf("Notted cannot delete %s: it is not a regular file.", rel)
+	return fmt.Errorf("Phonon cannot delete %s: it is not a regular file.", rel)
 }
 
 // profileFiles lists every file and folder of the person name under instructions/people/, sorted;
@@ -437,7 +437,7 @@ func profileFiles(checkout, name string) ([]string, error) {
 			return nil, errOutside
 		}
 		if !fi.IsDir() {
-			return nil, fmt.Errorf("Notted cannot delete %s: it is not a folder.", d)
+			return nil, fmt.Errorf("Phonon cannot delete %s: it is not a folder.", d)
 		}
 		list = append(list, d+"/")
 		list, err = walkProfileDir(root, d, list)
@@ -498,7 +498,7 @@ func removeListed(checkout string, list []string) error {
 	defer root.Close()
 	rm := func(rel string) error {
 		if err := root.Remove(filepath.FromSlash(strings.TrimSuffix(rel, "/"))); err != nil {
-			return fmt.Errorf("Notted could not delete %s: %v. The files listed before it are already deleted.", rel, mapRootErr(err))
+			return fmt.Errorf("Phonon could not delete %s: %v. The files listed before it are already deleted.", rel, mapRootErr(err))
 		}
 		return nil
 	}

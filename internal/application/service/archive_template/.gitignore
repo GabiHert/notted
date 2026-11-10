@@ -1,4 +1,4 @@
-# Notted: recordings and session logs never enter git
+# Phonon: recordings and session logs never enter git
 *.wav
 *.mp3
 *.m4a

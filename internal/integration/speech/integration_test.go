@@ -16,14 +16,14 @@ import (
 
 func modelsCache(t *testing.T) string {
 	t.Helper()
-	if v := os.Getenv("NOTTED_TEST_MODELS"); v != "" {
+	if v := os.Getenv("PHONON_TEST_MODELS"); v != "" {
 		return v
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(home, ".cache", "notted-test-models")
+	return filepath.Join(home, ".cache", "phonon-test-models")
 }
 
 func transcribeFixture(t *testing.T, e *Engine, d *Detector, name string, lang domain.Language) string {
@@ -55,7 +55,7 @@ func transcribeFixture(t *testing.T, e *Engine, d *Detector, name string, lang d
 }
 
 func TestIntegration(t *testing.T) {
-	t.Setenv("NOTTED_MODEL_MANIFEST", "")
+	t.Setenv("PHONON_MODEL_MANIFEST", "")
 	dir := modelsCache(t)
 	e := New(Config{ModelsDir: dir})
 	defer e.Unload()
@@ -96,8 +96,8 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("portuguese sample", func(t *testing.T) {
 		if ok, _ := e.ReadyFor(domain.LangPTBR); !ok {
-			if os.Getenv("NOTTED_TEST_DOWNLOAD_PT") != "1" {
-				t.Skip("whisper turbo not in the cache; set NOTTED_TEST_DOWNLOAD_PT=1 to download it")
+			if os.Getenv("PHONON_TEST_DOWNLOAD_PT") != "1" {
+				t.Skip("whisper turbo not in the cache; set PHONON_TEST_DOWNLOAD_PT=1 to download it")
 			}
 			begin := time.Now()
 			t.Logf("downloading whisper turbo: %d bytes", mgr.Status(domain.LangPTBR).DownloadBytes)

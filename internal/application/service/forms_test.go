@@ -19,7 +19,7 @@ import (
 const (
 	testMeeting  = "11111111-1111-4111-8111-111111111111"
 	testMeeting2 = "22222222-2222-4222-8222-222222222222"
-	msgNoToken   = "Notted did not recognize this session. Start it again from Notted."
+	msgNoToken   = "Phonon did not recognize this session. Start it again from Phonon."
 )
 
 type formStore struct {
@@ -125,7 +125,7 @@ func newFormRig(t *testing.T) *formRig {
 			return r.visible
 		},
 		SessionsDir: r.sessions,
-		Executable:  "/Applications/Notted.app/Contents/MacOS/Notted",
+		Executable:  "/Applications/Phonon.app/Contents/MacOS/Phonon",
 		Socket:      "/tmp/ask.sock",
 		NewToken:    func() string { tokN++; return fmt.Sprintf("tok%d", tokN) },
 		NewID:       func() string { idN++; return fmt.Sprintf("f%d", idN) },
@@ -245,7 +245,7 @@ func TestHandleMeetingGone(t *testing.T) {
 	tok := r.token(t, testMeeting)
 	delete(r.store.meetings, testMeeting)
 	_, err := r.svc.Handle(context.Background(), port.FormRequest{MeetingID: testMeeting, Token: tok, Form: askForm("t")})
-	if err == nil || err.Error() != "This meeting no longer exists in Notted." {
+	if err == nil || err.Error() != "This meeting no longer exists in Phonon." {
 		t.Fatalf("%v", err)
 	}
 	boom := errors.New("db down")
@@ -614,8 +614,8 @@ func TestSessionConfigContentAndModes(t *testing.T) {
 	}
 	want := `{
   "mcpServers": {
-    "notted": {
-      "command": "/Applications/Notted.app/Contents/MacOS/Notted",
+    "phonon": {
+      "command": "/Applications/Phonon.app/Contents/MacOS/Phonon",
       "args": [
         "mcp",
         "--meeting",
@@ -668,7 +668,7 @@ func TestSessionConfigRefusals(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 	svc := NewFormService(FormDeps{Meetings: r.store, SessionsDir: t.TempDir()})
-	if _, err := svc.SessionConfig(testMeeting); err == nil || err.Error() != "Notted could not find its own program file." {
+	if _, err := svc.SessionConfig(testMeeting); err == nil || err.Error() != "Phonon could not find its own program file." {
 		t.Fatalf("%v", err)
 	}
 }

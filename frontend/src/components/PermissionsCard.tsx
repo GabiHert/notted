@@ -4,8 +4,8 @@ import { errorMessage } from "../format";
 import { MicTest } from "./MicTest";
 import "./PermissionsCard.css";
 
-const HELP = "Notted needs both to record a meeting: the microphone for your voice, and screen and system audio recording for everyone else. Checking never asks; only Ask can.";
-const HINT = "If it is already on in System Settings, select Notted there, remove it with the minus button, then click Check again.";
+const HELP = "Phonon needs both to record a meeting: the microphone for your voice, and screen and system audio recording for everyone else. Checking never asks; only Ask can.";
+const HINT = "If it is already on in System Settings, select Phonon there, remove it with the minus button, then click Check again.";
 
 const ROWS = [
   { kind: "microphone", name: "Microphone" },

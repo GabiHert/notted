@@ -18,7 +18,7 @@ import (
 
 // An empty folder becomes an archive: profile and project files go in, and the folder's own bin/meeting builds the prompt.
 func TestPreparedEmptyFolderBuildsAPrompt(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	ctx := context.Background()
 	dir := t.TempDir()
 	st, err := store.Open(filepath.Join(t.TempDir(), "meetings.sqlite"))
@@ -59,7 +59,7 @@ func TestPreparedEmptyFolderBuildsAPrompt(t *testing.T) {
 }
 
 func TestPreparedBinMeetingRefusesOtherCommands(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	dir := t.TempDir()
 	setup := service.NewSetupService(nil, git.New(os.Environ))
 	if err := setup.PrepareArchive(context.Background(), dir); err != nil {
@@ -69,7 +69,7 @@ func TestPreparedBinMeetingRefusesOtherCommands(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"new", "--project", "acme"}, "bin/meeting new is not in this version. Start meetings from Notted."},
+		{[]string{"new", "--project", "acme"}, "bin/meeting new is not in this version. Start meetings from Phonon."},
 		{nil, "usage: bin/meeting prompt --project <key>"},
 	} {
 		cmd := exec.Command(filepath.Join(dir, "bin", "meeting"), c.args...)

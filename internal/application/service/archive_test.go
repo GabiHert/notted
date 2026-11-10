@@ -39,7 +39,7 @@ func runGit(t *testing.T, dir string, args ...string) string {
 
 func newArchFixture(t *testing.T) *archFixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	root := t.TempDir()
 	remote := filepath.Join(root, "remote.git")
 	archive := filepath.Join(root, "archive")
@@ -187,7 +187,7 @@ session_owner: "ana"
 
 # Weekly sync — Q4
 
-Participants are typed into ` + "`participants`" + ` above by hand. Notted gives only ` + "`mic`" + ` (the person
+Participants are typed into ` + "`participants`" + ` above by hand. Phonon gives only ` + "`mic`" + ` (the person
 who recorded) and ` + "`others`" + `.
 `
 
@@ -491,7 +491,7 @@ func TestCommitProjectDeletionRefusesBadInput(t *testing.T) {
 	paths := f.deletionSetup()
 	nothing := `There is nothing to commit for project "acme".`
 	notOne := func(p string) string {
-		return `Notted can commit only the deleted files of project "acme". ` + p + ` is not one of them.`
+		return `Phonon can commit only the deleted files of project "acme". ` + p + ` is not one of them.`
 	}
 	cases := []struct {
 		name, key string

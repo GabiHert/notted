@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (internal/application/service/job_manager.go), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 
 package claude
 
@@ -16,7 +16,7 @@ import (
 	"github.com/GabiHert/phonon/internal/domain"
 )
 
-const envMarker = "__NOTTED_ENV_BEGIN__"
+const envMarker = "__PHONON_ENV_BEGIN__"
 
 var (
 	shellTimeout = 10 * time.Second

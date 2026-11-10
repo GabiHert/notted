@@ -1,4 +1,4 @@
-// Package install puts a newly built Notted.app in place of the installed one.
+// Package install puts a newly built Phonon.app in place of the installed one.
 package install
 
 import (
@@ -18,9 +18,9 @@ var script []byte
 
 var _ port.AppInstaller = (*Installer)(nil)
 
-// Installer starts install.sh detached, so it outlives Notted.
+// Installer starts install.sh detached, so it outlives Phonon.
 type Installer struct {
-	// Env is added to the script's environment; tests set the NOTTED_* overrides here.
+	// Env is added to the script's environment; tests set the PHONON_* overrides here.
 	Env []string
 }
 
@@ -35,7 +35,7 @@ func (i *Installer) Start(pid int, newApp, installedApp, logPath string) error {
 	}
 	defer logf.Close()
 
-	dir, err := os.MkdirTemp("", "notted-install-")
+	dir, err := os.MkdirTemp("", "phonon-install-")
 	if err != nil {
 		return err
 	}

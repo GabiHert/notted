@@ -9,7 +9,7 @@ type LineStreamer interface {
 	Stream(ctx context.Context, dir string, argv []string, extraEnv []string, onLine func(line string)) error
 }
 
-// AppInstaller puts a new app bundle in place of the installed one after Notted quits.
+// AppInstaller puts a new app bundle in place of the installed one after Phonon quits.
 type AppInstaller interface {
 	// Start launches the installer detached and returns at once. It waits for pid to exit,
 	// replaces installedApp with newApp, reopens installedApp, and logs to logPath.

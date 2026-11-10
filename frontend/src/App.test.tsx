@@ -9,7 +9,7 @@ beforeEach(resetBindings);
 
 test("shows the title bar, the sidebar and the new-recording view when there are no meetings", async () => {
   render(<App />);
-  expect(screen.getByText("Notted")).toBeInTheDocument();
+  expect(screen.getByText("Phonon")).toBeInTheDocument();
   expect(await screen.findByRole("heading", { level: 1, name: "New recording" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
 });
@@ -21,12 +21,12 @@ test("opens the newest meeting on launch", async () => {
   expect(await screen.findByRole("heading", { level: 1, name: "Newest" })).toBeInTheDocument();
 });
 
-test("an empty saved archive opens Settings with the Set up Notted card, even when meetings exist", async () => {
+test("an empty saved archive opens Settings with the Set up Phonon card, even when meetings exist", async () => {
   ListMeetings.mockResolvedValue([meeting({ id: "m2", title: "Newest" })]);
   GetSettings.mockResolvedValue({ profile: "", checkoutPath: "", projectRoots: {} });
   render(<App />);
   expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
-  expect(await screen.findByText("Set up Notted")).toBeInTheDocument();
+  expect(await screen.findByText("Set up Phonon")).toBeInTheDocument();
 });
 
 test("a GetSettings rejection falls back to the newest meeting", async () => {

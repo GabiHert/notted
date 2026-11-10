@@ -1,5 +1,5 @@
 #!/bin/bash
-# Puts a newly built Notted.app in place of the installed one after the running Notted quits.
+# Puts a newly built Phonon.app in place of the installed one after the running Phonon quits.
 # Usage: install.sh <pid> <new-app> <installed-app>
 # It copies the new app beside the installed one, swaps the two with renames, and keeps the old
 # copy until the new one is running. Every failure leaves an app at <installed-app> that opens.
@@ -7,19 +7,19 @@ set -u
 pid=$1
 new=$2
 dest=$3
-open_cmd=${NOTTED_OPEN:-/usr/bin/open}
-mv_cmd=${NOTTED_MV:-/bin/mv}
-codesign_cmd=${NOTTED_CODESIGN:-/usr/bin/codesign}
-tccutil_cmd=${NOTTED_TCCUTIL:-/usr/bin/tccutil}
-plistbuddy_cmd=${NOTTED_PLISTBUDDY:-/usr/libexec/PlistBuddy}
-quit_wait=${NOTTED_QUIT_WAIT:-60}
-launch_wait=${NOTTED_LAUNCH_WAIT:-20}
-settle=${NOTTED_LAUNCH_SETTLE:-2}
+open_cmd=${PHONON_OPEN:-/usr/bin/open}
+mv_cmd=${PHONON_MV:-/bin/mv}
+codesign_cmd=${PHONON_CODESIGN:-/usr/bin/codesign}
+tccutil_cmd=${PHONON_TCCUTIL:-/usr/bin/tccutil}
+plistbuddy_cmd=${PHONON_PLISTBUDDY:-/usr/libexec/PlistBuddy}
+quit_wait=${PHONON_QUIT_WAIT:-60}
+launch_wait=${PHONON_LAUNCH_WAIT:-20}
+settle=${PHONON_LAUNCH_SETTLE:-2}
 staged="$dest.new"
 old="$dest.old"
-exe="$dest/Contents/MacOS/Notted"
+exe="$dest/Contents/MacOS/Phonon"
 here=$(cd "$(dirname "$0")" && pwd)
-cleanup() { case "$here" in */notted-install-*) rm -rf "$here" ;; esac; }
+cleanup() { case "$here" in */phonon-install-*) rm -rf "$here" ;; esac; }
 trap cleanup EXIT
 
 log() { echo "install: $*"; }
@@ -92,9 +92,9 @@ wait_until() {
   "$@"
 }
 
-log "waiting for Notted (pid $pid) to quit"
+log "waiting for Phonon (pid $pid) to quit"
 if ! wait_until "$quit_wait" gone; then
-  log "Notted did not quit within $quit_wait seconds; nothing changed"
+  log "Phonon did not quit within $quit_wait seconds; nothing changed"
   exit 1
 fi
 if [ -e "$old" ]; then
@@ -145,6 +145,6 @@ rm -rf "$staged"
 put_back "$dest" "$staged" || restore_failed
 put_back "$old" "$dest" || restore_failed
 rm -rf "$staged"
-log "the new Notted did not start within $launch_wait seconds; restored the previous version"
+log "the new Phonon did not start within $launch_wait seconds; restored the previous version"
 reopen
 exit 1

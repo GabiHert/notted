@@ -140,7 +140,7 @@ export async function GetSettings() {
 }
 export async function GetSetupPrompt() {
   return [
-    "You are helping me finish setting up Notted, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.",
+    "You are helping me finish setting up Phonon, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.",
     "",
     "## My current state",
     "",
@@ -162,7 +162,7 @@ export async function SetSettings(_s: unknown) {
   if (screen === "settings-save-failed") throw new Error("The archive folder does not exist: /archive");
 }
 
-const SOURCE = "/Users/ana/code/notted";
+const SOURCE = "/Users/ana/code/phonon";
 const updateLines = [
   "$ git pull --ff-only --no-rebase --no-autostash",
   "Updating 2a8d067..47d92f5",
@@ -171,23 +171,23 @@ const updateLines = [
   " 1 file changed, 120 insertions(+)",
   "$ make build",
   "bash helpers/audiocap/build.sh",
-  "built /Users/ana/code/notted/helpers/audiocap/build/audiocap",
+  "built /Users/ana/code/phonon/helpers/audiocap/build/audiocap",
   "Wails CLI v2.12.0",
   "• Generating bindings: Done.",
   "• Compiling frontend: Done.",
   "• Compiling application: Done.",
   "• Packaging application: Done.",
-  'sign-bundle: signing with "Notted Local Signing"',
-  "check-bundle: OK (signed with Notted Local Signing)",
+  'sign-bundle: signing with "Phonon Local Signing"',
+  "check-bundle: OK (signed with Phonon Local Signing)",
 ];
 const failedLines = [...updateLines.slice(0, 11), "go: github.com/acme/widgets@v1.2.0: module lookup disabled by GOPROXY=off", "make: *** [build] Error 1"];
 export async function GetUpdateStatus() {
-  const base = { sourcePath: SOURCE, installedApp: "/Applications/Notted.app", signing: true, state: "idle", message: "", lines: [] as string[], seq: 0 };
+  const base = { sourcePath: SOURCE, installedApp: "/Applications/Phonon.app", signing: true, state: "idle", message: "", lines: [] as string[], seq: 0 };
   if (screen === "update-no-source") return { ...base, sourcePath: "", signing: false };
   if (screen === "update-running") return { ...base, state: "building", lines: updateLines.slice(0, 11), seq: 11 };
   if (screen === "update-failed")
-    return { ...base, state: "failed", message: "make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again.", lines: failedLines, seq: failedLines.length };
-  if (screen === "update-installing") return { ...base, state: "installing", message: "Notted quits now and reopens when the new version is in place.", lines: updateLines, seq: updateLines.length };
+    return { ...base, state: "failed", message: "make build failed. Phonon did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Phonon source folder, then update again.", lines: failedLines, seq: failedLines.length };
+  if (screen === "update-installing") return { ...base, state: "installing", message: "Phonon quits now and reopens when the new version is in place.", lines: updateLines, seq: updateLines.length };
   return base;
 }
 export async function SetUpdateSource(_path: string) {}
@@ -195,7 +195,7 @@ export async function StartUpdate() {}
 
 let micAsked = false;
 export async function GetPermissions() {
-  if (screen === "permissions-error") throw new Error("Notted could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Notted if this keeps happening.");
+  if (screen === "permissions-error") throw new Error("Phonon could not read the permissions: the audio recorder did not answer. Try Check again, or reinstall Phonon if this keeps happening.");
   if (screen === "permissions-denied") return { microphone: "denied", screen: "denied" };
   if (screen === "permissions-mixed") return { microphone: micAsked ? "allowed" : "not_asked", screen: "denied" };
   return { microphone: "allowed", screen: "allowed" };
@@ -345,7 +345,7 @@ export async function GetReviewActWithoutAsking() {
   return screen === "review-mode-on";
 }
 export async function SetReviewActWithoutAsking(_on: boolean) {
-  if (screen === "review-mode-save-failed") throw new Error("Notted could not save the review setting: database is locked");
+  if (screen === "review-mode-save-failed") throw new Error("Phonon could not save the review setting: database is locked");
 }
 export async function CommitAndPushMeeting(_id: string) {
   if (screen === "save-failed") throw new Error("The commit was rejected:\npre-commit hook failed: trailing whitespace in summary.md");

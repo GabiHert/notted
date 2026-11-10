@@ -21,7 +21,7 @@ func TestRunMCPMissingFlags(t *testing.T) {
 		if code := runMCP(context.Background(), args, ct, &stderr); code != 2 {
 			t.Fatalf("%v: code %d", args, code)
 		}
-		if !strings.Contains(stderr.String(), "notted mcp: --meeting, --socket and --token are required") {
+		if !strings.Contains(stderr.String(), "phonon mcp: --meeting, --socket and --token are required") {
 			t.Fatalf("stderr %q", stderr.String())
 		}
 	}
@@ -39,7 +39,7 @@ func TestRunMCPInvalidMeetingID(t *testing.T) {
 	var stderr bytes.Buffer
 	ct, _ := mcp.NewInMemoryTransports()
 	code := runMCP(context.Background(), []string{"--meeting", "../x", "--socket", "/tmp/s", "--token", "t"}, ct, &stderr)
-	if code != 2 || !strings.Contains(stderr.String(), "notted mcp: the meeting id is not valid") {
+	if code != 2 || !strings.Contains(stderr.String(), "phonon mcp: the meeting id is not valid") {
 		t.Fatalf("code %d stderr %q", code, stderr.String())
 	}
 }

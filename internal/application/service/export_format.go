@@ -30,7 +30,7 @@ func meetingFile(date string, m domain.Meeting, profile string) string {
 		"session_owner: " + jsonString(profile) + "\n" +
 		"---\n\n" +
 		"# " + m.Title + "\n\n" +
-		"Participants are typed into `participants` above by hand. Notted gives only `mic` (the person\n" +
+		"Participants are typed into `participants` above by hand. Phonon gives only `mic` (the person\n" +
 		"who recorded) and `others`.\n"
 }
 

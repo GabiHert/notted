@@ -70,7 +70,7 @@ func (s *Store) SaveSettings(ctx context.Context, st domain.Settings) error {
 	return tx.Commit()
 }
 
-// GetSourcePath returns the saved Notted source folder, or "" when none is saved.
+// GetSourcePath returns the saved Phonon source folder, or "" when none is saved.
 func (s *Store) GetSourcePath(ctx context.Context) (string, error) {
 	var v string
 	err := s.db.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = ?`, keySourcePath).Scan(&v)
@@ -80,7 +80,7 @@ func (s *Store) GetSourcePath(ctx context.Context) (string, error) {
 	return v, err
 }
 
-// SetSourcePath saves the Notted source folder.
+// SetSourcePath saves the Phonon source folder.
 func (s *Store) SetSourcePath(ctx context.Context, path string) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, keySourcePath, path)
 	return err

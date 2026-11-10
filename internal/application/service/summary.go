@@ -26,7 +26,7 @@ type SummaryService struct {
 	emit     port.EventEmitter
 	newID    func() string
 
-	mcpConfig func(meetingID string) (string, error) // nil = no Notted tools
+	mcpConfig func(meetingID string) (string, error) // nil = no Phonon tools
 	busy      func(meetingID string) string          // nil = never busy; "" = free
 
 	mu     sync.Mutex
@@ -191,7 +191,7 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 	if s.mcpConfig != nil {
 		mcpFile, err = s.mcpConfig(id)
 		if err != nil {
-			s.state(ctx, id, "summary", "error", "Notted could not prepare the session's tools: "+err.Error())
+			s.state(ctx, id, "summary", "error", "Phonon could not prepare the session's tools: "+err.Error())
 			return
 		}
 	}
@@ -247,6 +247,6 @@ func (s *SummaryService) run(ctx context.Context, m domain.Meeting, st domain.Se
 	}
 	s.state(ctx, id, "suggestions", "done", "")
 	if _, err := s.export.ExportMeeting(ctx, id); err != nil {
-		s.state(ctx, id, "suggestions", "error", "The summary is saved in Notted, but writing the files failed: "+err.Error())
+		s.state(ctx, id, "suggestions", "error", "The summary is saved in Phonon, but writing the files failed: "+err.Error())
 	}
 }

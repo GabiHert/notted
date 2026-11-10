@@ -32,10 +32,10 @@ test("shows Starting… while pending, then opens the meeting", async () => {
 });
 
 test("shows a rejection verbatim and re-enables the button", async () => {
-  StartRecording.mockRejectedValue(new Error("Microphone access is off for Notted."));
+  StartRecording.mockRejectedValue(new Error("Microphone access is off for Phonon."));
   render(<NewRecording onStarted={() => {}} />);
   await act(async () => {});
   fireEvent.click(screen.getByRole("button", { name: "Start recording" }));
-  expect(await screen.findByText("Microphone access is off for Notted.")).toBeInTheDocument();
+  expect(await screen.findByText("Microphone access is off for Phonon.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Start recording" })).toBeEnabled();
 });

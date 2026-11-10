@@ -126,7 +126,7 @@ export function resetBindings() {
   WriteSession.mockResolvedValue(undefined);
   ResizeSession.mockResolvedValue(undefined);
   StopSession.mockResolvedValue(undefined);
-  GetUpdateStatus.mockResolvedValue({ sourcePath: "", installedApp: "/Applications/Notted.app", signing: false, state: "idle", message: "", lines: [], seq: 0 });
+  GetUpdateStatus.mockResolvedValue({ sourcePath: "", installedApp: "/Applications/Phonon.app", signing: false, state: "idle", message: "", lines: [], seq: 0 });
   SetUpdateSource.mockResolvedValue(undefined);
   StartUpdate.mockResolvedValue(undefined);
   GetPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });

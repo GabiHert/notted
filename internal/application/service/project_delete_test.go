@@ -46,7 +46,7 @@ type pdFixture struct {
 
 func newPDFixture(t *testing.T) *pdFixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	archive := t.TempDir()
 	for _, rel := range []string{
 		"instructions/projects/acme.md", "instructions/projects/globex.md",
@@ -397,7 +397,7 @@ func TestProjectDeleteRefusesLinksAndSpecialFiles(t *testing.T) {
 		if err := syscall.Mkfifo(f.abs("meetings/acme/2026/pipe"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		f.refused(t, "acme", "Notted cannot delete meetings/acme/2026/pipe: it is not a regular file.")
+		f.refused(t, "acme", "Phonon cannot delete meetings/acme/2026/pipe: it is not a regular file.")
 	})
 	t.Run("meetings key is a file", func(t *testing.T) {
 		f := newPDFixture(t)
@@ -405,7 +405,7 @@ func TestProjectDeleteRefusesLinksAndSpecialFiles(t *testing.T) {
 			t.Fatal(err)
 		}
 		put(t, f.abs("meetings/acme"), "x")
-		f.refused(t, "acme", "Notted cannot delete meetings/acme: it is not a folder.")
+		f.refused(t, "acme", "Phonon cannot delete meetings/acme: it is not a folder.")
 	})
 }
 
@@ -455,7 +455,7 @@ func TestProjectDeleteMeetingFailureMessage(t *testing.T) {
 	f := newPDFixture(t)
 	f.svc.d.Meetings = failingDeleter{}
 	_, err := f.svc.Delete(f.ctx, "acme", f.plan("acme"))
-	if err == nil || !strings.HasPrefix(err.Error(), `Notted could not delete the meeting "Sync m`) || !strings.HasSuffix(err.Error(), " Delete the project again to finish.") {
+	if err == nil || !strings.HasPrefix(err.Error(), `Phonon could not delete the meeting "Sync m`) || !strings.HasSuffix(err.Error(), " Delete the project again to finish.") {
 		t.Fatalf("error = %v", err)
 	}
 }

@@ -9,26 +9,26 @@ import (
 
 func TestHomeUsesEnvOverride(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("NOTTED_HOME", dir)
+	t.Setenv("PHONON_HOME", dir)
 	if got := Home(); got != dir {
 		t.Fatalf("Home() = %q, want %q", got, dir)
 	}
 }
 
-func TestHomeDefaultsToDotNotted(t *testing.T) {
-	t.Setenv("NOTTED_HOME", "")
+func TestHomeDefaultsToDotPhonon(t *testing.T) {
+	t.Setenv("PHONON_HOME", "")
 	got := Home()
-	if !strings.HasSuffix(got, "/.notted") {
-		t.Fatalf("Home() = %q, want suffix /.notted", got)
+	if !strings.HasSuffix(got, "/.phonon") {
+		t.Fatalf("Home() = %q, want suffix /.phonon", got)
 	}
-	if h, err := os.UserHomeDir(); err == nil && got != filepath.Join(h, ".notted") {
+	if h, err := os.UserHomeDir(); err == nil && got != filepath.Join(h, ".phonon") {
 		t.Fatalf("Home() = %q, want under %q", got, h)
 	}
 }
 
 func TestHelpersJoinUnderHome(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("NOTTED_HOME", dir)
+	t.Setenv("PHONON_HOME", dir)
 	if got, want := DBPath(), filepath.Join(dir, "meetings.sqlite"); got != want {
 		t.Fatalf("DBPath() = %q, want %q", got, want)
 	}
@@ -42,7 +42,7 @@ func TestHelpersJoinUnderHome(t *testing.T) {
 
 func TestInstallSourceUnderHome(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("NOTTED_HOME", dir)
+	t.Setenv("PHONON_HOME", dir)
 	if got, want := InstallSource(), filepath.Join(dir, "install-source"); got != want {
 		t.Fatalf("InstallSource() = %q, want %q", got, want)
 	}
@@ -50,7 +50,7 @@ func TestInstallSourceUnderHome(t *testing.T) {
 
 func TestAskPathsUnderHome(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("NOTTED_HOME", dir)
+	t.Setenv("PHONON_HOME", dir)
 	if got, want := RunDir(), filepath.Join(dir, "run"); got != want {
 		t.Fatalf("RunDir() = %q, want %q", got, want)
 	}

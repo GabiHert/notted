@@ -270,9 +270,9 @@ func TestMicTestHelperFailureEmitsTheErrorAndNoVerdict(t *testing.T) {
 	f := newMicFixture(t, port.PermissionAllowed)
 	_ = f.svc.Start(context.Background())
 	f.device("Studio Mic")
-	f.exit(port.RecorderExit{Code: 2, Message: "Microphone access is off for Notted."})
+	f.exit(port.RecorderExit{Code: 2, Message: "Microphone access is off for Phonon."})
 	eventually(t, func() bool { return len(f.emit.named("mictest:error")) == 1 })
-	if got := f.emit.named("mictest:error")[0].payload["message"]; got != "Microphone access is off for Notted." {
+	if got := f.emit.named("mictest:error")[0].payload["message"]; got != "Microphone access is off for Phonon." {
 		t.Fatalf("message = %v", got)
 	}
 	if len(f.emit.named("mictest:done")) != 0 {

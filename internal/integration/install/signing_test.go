@@ -22,7 +22,7 @@ func fakeSecurity(t *testing.T, body string) (tool, argsFile string) {
 }
 
 func TestSigningPresentWhenListed(t *testing.T) {
-	tool, argsFile := fakeSecurity(t, `echo '  1) 13696039679D3B35D7E756B113E7576F4DE421A7 "Notted Local Signing"'`)
+	tool, argsFile := fakeSecurity(t, `echo '  1) 13696039679D3B35D7E756B113E7576F4DE421A7 "Phonon Local Signing"'`)
 	if !(Signing{Security: tool}).Present(context.Background()) {
 		t.Fatal("Present = false, want true")
 	}

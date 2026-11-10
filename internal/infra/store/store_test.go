@@ -23,7 +23,7 @@ var (
 
 func openTemp(t *testing.T) (*Store, string) {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	path := filepath.Join(t.TempDir(), "sub", "meetings.sqlite")
 	s, err := Open(path)
 	if err != nil {
@@ -389,7 +389,7 @@ func versions(t *testing.T, s *Store) []int {
 }
 
 func TestMigration2RenamesMeetingKeyColumn(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	path := filepath.Join(t.TempDir(), "meetings.sqlite")
 	old, err := sql.Open("sqlite3", path)
 	if err != nil {
@@ -469,7 +469,7 @@ func TestSourcePathRoundTrip(t *testing.T) {
 }
 
 func TestMigration3KeepsSettings(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	all := migrations
 	t.Cleanup(func() { migrations = all })
 	migrations = all[:2]
@@ -610,7 +610,7 @@ func TestReviewActWithoutAskingRoundTrip(t *testing.T) {
 }
 
 func TestMigration4KeepsSettings(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	all := migrations
 	t.Cleanup(func() { migrations = all })
 	migrations = all[:3]

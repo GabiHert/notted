@@ -204,7 +204,7 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	f := &fixture{t: t, store: newMemStore(), rec: &fakeRecorder{}, emit: &recEmitter{}, root: t.TempDir(),
 		now: time.Date(2026, 10, 23, 14, 5, 0, 0, time.Local)}
 	f.svc = NewRecordingService(f.store, f.rec, f.emit, func(id string) string { return filepath.Join(f.root, id) }, zeroInspector{})
@@ -281,9 +281,9 @@ func TestStartCreatesMeetingOnlyAfterStarted(t *testing.T) {
 
 func TestStartFailureCreatesNoRowAndRemovesEmptyFolder(t *testing.T) {
 	f := newFixture(t)
-	f.rec.err = errors.New("Microphone access is off for Notted.")
+	f.rec.err = errors.New("Microphone access is off for Phonon.")
 	_, err := f.svc.Start(context.Background(), "x", domain.LangEN)
-	if err == nil || err.Error() != "Microphone access is off for Notted." {
+	if err == nil || err.Error() != "Microphone access is off for Phonon." {
 		t.Fatalf("err = %v", err)
 	}
 	if f.store.created != 0 {
@@ -374,7 +374,7 @@ func TestSilentSystemAudioWarnsOnceAfterTwoChunks(t *testing.T) {
 			if w, ok := e.payload["warning"]; ok {
 				n++
 				if e.payload["state"] != "recording" || e.payload["meetingId"] != m.ID ||
-					w != "No system audio was heard in the last minute. If the other side was talking, check that Notted is allowed in System Settings > Privacy & Security > Screen & System Audio Recording." {
+					w != "No system audio was heard in the last minute. If the other side was talking, check that Phonon is allowed in System Settings > Privacy & Security > Screen & System Audio Recording." {
 					t.Fatalf("warning payload = %+v", e.payload)
 				}
 			}

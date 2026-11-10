@@ -1,5 +1,5 @@
 // Copied from github.com/brienze1/quant (frontend/src/components/TerminalPane.tsx), MIT License,
-// Copyright (c) 2026 Luis Brienze. Modified for Notted; see NOTICE.md.
+// Copyright (c) 2026 Luis Brienze. Modified for Phonon; see NOTICE.md.
 import { useEffect, useId, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";

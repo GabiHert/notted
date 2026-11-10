@@ -20,7 +20,7 @@ cmd="$1"
 case $cmd in
   prompt) shift ;;
   "") usage ;;
-  *) die "bin/meeting $cmd is not in this version. Start meetings from Notted." ;;
+  *) die "bin/meeting $cmd is not in this version. Start meetings from Phonon." ;;
 esac
 
 project=""

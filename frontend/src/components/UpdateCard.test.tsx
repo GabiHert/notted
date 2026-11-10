@@ -4,17 +4,17 @@ import { ChooseFolder, GetUpdateStatus, SetUpdateSource, StartUpdate, emit, list
 
 vi.mock("../api/bindings", () => import("../test/bindingsMock"));
 
-const SOURCE = "/Users/ana/code/notted";
-const status = (over: Record<string, unknown> = {}) => ({ sourcePath: SOURCE, installedApp: "/Applications/Notted.app", signing: false, state: "idle", message: "", lines: [] as string[], seq: 0, ...over });
+const SOURCE = "/Users/ana/code/phonon";
+const status = (over: Record<string, unknown> = {}) => ({ sourcePath: SOURCE, installedApp: "/Applications/Phonon.app", signing: false, state: "idle", message: "", lines: [] as string[], seq: 0, ...over });
 
-const updateBtn = () => screen.getByRole("button", { name: /^(Update Notted|Updating…)$/ });
-const chooseBtn = () => screen.getByRole("button", { name: "Choose the Notted source folder" });
+const updateBtn = () => screen.getByRole("button", { name: /^(Update Phonon|Updating…)$/ });
+const chooseBtn = () => screen.getByRole("button", { name: "Choose the Phonon source folder" });
 const out = () => screen.getByTestId("update-output");
 
 async function loaded(over: Record<string, unknown> = {}) {
   GetUpdateStatus.mockResolvedValue(status(over));
   const r = render(<UpdateCard />);
-  await screen.findByText(/Notted replaces|not running from an app bundle/);
+  await screen.findByText(/Phonon replaces|not running from an app bundle/);
   return r;
 }
 
@@ -24,34 +24,34 @@ beforeEach(() => {
 
 test("renders the header, help, label, empty read-only input, placeholder and Choose…", async () => {
   await loaded({ sourcePath: "" });
-  expect(screen.getByText("Update Notted", { selector: ".nt-card__header" })).toBeInTheDocument();
-  expect(screen.getByText("Notted pulls the main branch of your Notted source folder, builds it, and reopens as the new version. Nothing runs until you click Update Notted.")).toBeInTheDocument();
-  const input = screen.getByLabelText("Notted source folder");
+  expect(screen.getByText("Update Phonon", { selector: ".nt-card__header" })).toBeInTheDocument();
+  expect(screen.getByText("Phonon pulls the main branch of your Phonon source folder, builds it, and reopens as the new version. Nothing runs until you click Update Phonon.")).toBeInTheDocument();
+  const input = screen.getByLabelText("Phonon source folder");
   expect(input).toHaveValue("");
   expect(input).toHaveAttribute("readonly");
-  expect(input).toHaveAttribute("placeholder", "Choose the folder of your Notted clone");
+  expect(input).toHaveAttribute("placeholder", "Choose the folder of your Phonon clone");
   expect(chooseBtn()).toHaveTextContent("Choose…");
-  expect(screen.getByText(/^No "Notted Local Signing" certificate in your keychain, so builds are signed ad hoc and macOS asks for the microphone and screen recording permissions again after each update\. To stop that, run bash scripts\/create-signing-identity\.sh once in your Notted source folder\.$/)).toBeInTheDocument();
-  expect(screen.getByText("Notted replaces /Applications/Notted.app and reopens it.")).toBeInTheDocument();
+  expect(screen.getByText(/^No "Phonon Local Signing" certificate in your keychain, so builds are signed ad hoc and macOS asks for the microphone and screen recording permissions again after each update\. To stop that, run bash scripts\/create-signing-identity\.sh once in your Phonon source folder\.$/)).toBeInTheDocument();
+  expect(screen.getByText("Phonon replaces /Applications/Phonon.app and reopens it.")).toBeInTheDocument();
   expect(updateBtn()).toBeDisabled();
 });
 
 test("signing present shows its line", async () => {
   await loaded({ signing: true });
-  expect(screen.getByText('Builds are signed with your "Notted Local Signing" certificate, so macOS keeps the microphone and screen recording permissions after an update.')).toBeInTheDocument();
+  expect(screen.getByText('Builds are signed with your "Phonon Local Signing" certificate, so macOS keeps the microphone and screen recording permissions after an update.')).toBeInTheDocument();
   expect(updateBtn()).toBeEnabled();
 });
 
 test("outside an app bundle: the not-in-a-bundle line and a disabled button", async () => {
   await loaded({ installedApp: "" });
-  expect(screen.getByText("Notted is not running from an app bundle, so it cannot update itself.")).toBeInTheDocument();
+  expect(screen.getByText("Phonon is not running from an app bundle, so it cannot update itself.")).toBeInTheDocument();
   expect(updateBtn()).toBeDisabled();
 });
 
 test("nothing about the app or signing shows before the status loads, and the buttons are disabled", () => {
   GetUpdateStatus.mockReturnValue(new Promise(() => {}));
   render(<UpdateCard />);
-  expect(screen.queryByText(/Notted replaces/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Phonon replaces/)).not.toBeInTheDocument();
   expect(updateBtn()).toBeDisabled();
   expect(chooseBtn()).toBeDisabled();
 });
@@ -61,8 +61,8 @@ test("Choose… passes the title and the current source, then saves and reloads"
   ChooseFolder.mockResolvedValue(SOURCE);
   GetUpdateStatus.mockResolvedValue(status());
   fireEvent.click(chooseBtn());
-  await waitFor(() => expect(screen.getByLabelText("Notted source folder")).toHaveValue(SOURCE));
-  expect(ChooseFolder).toHaveBeenCalledWith("Choose the Notted source folder", "");
+  await waitFor(() => expect(screen.getByLabelText("Phonon source folder")).toHaveValue(SOURCE));
+  expect(ChooseFolder).toHaveBeenCalledWith("Choose the Phonon source folder", "");
   expect(SetUpdateSource).toHaveBeenCalledWith(SOURCE);
   expect(GetUpdateStatus).toHaveBeenCalledTimes(2);
   expect(chooseBtn()).toBeEnabled();
@@ -80,9 +80,9 @@ test("a cancelled picker does nothing", async () => {
 test("a SetUpdateSource rejection shows verbatim and re-enables Choose…", async () => {
   await loaded({ sourcePath: "" });
   ChooseFolder.mockResolvedValue("/x");
-  SetUpdateSource.mockRejectedValue(new Error("That folder is not a Notted source clone: Makefile is missing."));
+  SetUpdateSource.mockRejectedValue(new Error("That folder is not a Phonon source clone: Makefile is missing."));
   fireEvent.click(chooseBtn());
-  expect((await screen.findByRole("alert")).textContent).toBe("That folder is not a Notted source clone: Makefile is missing.");
+  expect((await screen.findByRole("alert")).textContent).toBe("That folder is not a Phonon source clone: Makefile is missing.");
   expect(chooseBtn()).toBeEnabled();
 });
 
@@ -100,7 +100,7 @@ test("a GetUpdateStatus rejection shows verbatim", async () => {
   expect((await screen.findByRole("alert")).textContent).toBe("Cannot read the update status.");
 });
 
-test("Update Notted calls StartUpdate once", async () => {
+test("Update Phonon calls StartUpdate once", async () => {
   await loaded({ signing: true });
   fireEvent.click(updateBtn());
   await waitFor(() => expect(StartUpdate).toHaveBeenCalledTimes(1));
@@ -109,14 +109,14 @@ test("Update Notted calls StartUpdate once", async () => {
 
 test("a StartUpdate rejection shows verbatim, the button is enabled again and nothing else changes", async () => {
   await loaded();
-  const msg = "The Notted source folder is on feature-x, not main. Switch it to main in Terminal, then update again.";
+  const msg = "The Phonon source folder is on feature-x, not main. Switch it to main in Terminal, then update again.";
   StartUpdate.mockRejectedValue(new Error(msg));
   fireEvent.click(updateBtn());
   expect((await screen.findByRole("alert")).textContent).toBe(msg);
   await waitFor(() => expect(updateBtn()).toBeEnabled());
-  expect(updateBtn()).toHaveTextContent("Update Notted");
+  expect(updateBtn()).toHaveTextContent("Update Phonon");
   expect(chooseBtn()).toBeEnabled();
-  expect(screen.getByLabelText("Notted source folder")).toHaveValue(SOURCE);
+  expect(screen.getByLabelText("Phonon source folder")).toHaveValue(SOURCE);
   expect(screen.queryByTestId("update-output")).not.toBeInTheDocument();
 });
 
@@ -141,12 +141,12 @@ test("state and output events drive the card", async () => {
   act(() => emit("update:state", { state: "building", message: "" }));
   expect(screen.getByRole("status")).toHaveTextContent("Building… This takes a few minutes.");
 
-  const failed = "make build failed. Notted did not change. The output below shows why.";
+  const failed = "make build failed. Phonon did not change. The output below shows why.";
   act(() => emit("update:state", { state: "failed", message: failed }));
   expect(screen.getByRole("alert").textContent).toBe(failed);
   expect(out().textContent).toBe("one\ntwo\nthree");
   expect(updateBtn()).toBeEnabled();
-  expect(updateBtn()).toHaveTextContent("Update Notted");
+  expect(updateBtn()).toHaveTextContent("Update Phonon");
   expect(document.querySelector(".nt-bar--indeterminate")).not.toBeInTheDocument();
 
   act(() => emit("update:state", { state: "pulling", message: "" }));
@@ -173,7 +173,7 @@ test("a malformed output event is ignored", async () => {
 
 test("installing shows its message in the status line with both buttons disabled", async () => {
   await loaded();
-  const m = "Notted quits now and reopens when the new version is in place.";
+  const m = "Phonon quits now and reopens when the new version is in place.";
   act(() => emit("update:state", { state: "installing", message: m }));
   expect(screen.getByRole("status")).toHaveTextContent(m);
   expect(updateBtn()).toBeDisabled();

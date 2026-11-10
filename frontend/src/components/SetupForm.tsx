@@ -497,13 +497,13 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
               <input id="nt-checkout" ref={archiveInput} value={checkoutPath} onChange={(e) => setCheckoutPath(e.target.value)} />
               <Choose label={ARCHIVE_TITLE} onClick={pickArchive} disabled={busy !== ""} />
             </div>
-            <span className="nt-setup__help">The full path of your meetings archive folder. Any folder works: Notted sets it up.</span>
+            <span className="nt-setup__help">The full path of your meetings archive folder. Any folder works: Phonon sets it up.</span>
             {setupPanel && (
               <section className="nt-setup__inline" role="region" aria-labelledby="nt-archive-setup-title">
                 <h3 id="nt-archive-setup-title" ref={setupHeading} tabIndex={-1} className="nt-setup__sub">
                   Set up this folder as your meetings archive?
                 </h3>
-                <p className="nt-setup__help nt-setup__help--block">{`Notted adds these files to ${setupPanel.check.path}. It does not change or remove anything already there.`}</p>
+                <p className="nt-setup__help nt-setup__help--block">{`Phonon adds these files to ${setupPanel.check.path}. It does not change or remove anything already there.`}</p>
                 <ul className="nt-setup__files">
                   {setupPanel.check.missing.map((f) => (
                     <li key={f}>
@@ -512,7 +512,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
                   ))}
                 </ul>
                 {!setupPanel.check.inRepo && (
-                  <p className="nt-setup__help nt-setup__help--block">This folder is not a git repository yet. Notted runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.</p>
+                  <p className="nt-setup__help nt-setup__help--block">This folder is not a git repository yet. Phonon runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.</p>
                 )}
                 {setupPanel.check.nested && (
                   <p className="nt-setup__help nt-setup__help--block">{`This folder is inside the git repository at ${setupPanel.check.repoRoot}. Meetings are committed there.`}</p>
@@ -545,13 +545,13 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
               <div className="nt-setup__inline">
                 <label htmlFor="nt-clone-address">GitHub address</label>
                 <input id="nt-clone-address" autoFocus value={cloneAddress} onChange={(e) => setCloneAddress(e.target.value)} />
-                <span className="nt-setup__help">The address you would give to git clone, from the Code button on the archive's GitHub page. Notted runs your own git with your own login.</span>
+                <span className="nt-setup__help">The address you would give to git clone, from the Code button on the archive's GitHub page. Phonon runs your own git with your own login.</span>
                 <label htmlFor="nt-clone-parent">Clone into</label>
                 <div className="nt-setup__path">
                   <input id="nt-clone-parent" value={cloneParent} onChange={(e) => setCloneParent(e.target.value)} />
                   <Choose label={CLONE_TITLE} onClick={pickCloneParent} disabled={busy !== ""} />
                 </div>
-                <span className="nt-setup__help">Notted creates the archive folder inside this folder.</span>
+                <span className="nt-setup__help">Phonon creates the archive folder inside this folder.</span>
                 {cloneError && <ErrorCard text={cloneError} />}
                 <div className="nt-setup__actions">
                   <button type="button" className="nt-btn nt-btn--primary" onClick={clone} disabled={busy !== "" || !cloneAddress.trim() || !cloneParent.trim()}>
@@ -598,7 +598,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
             {hasArchive && deleteOpen && (
               <div className="nt-setup__inline">
                 <div className="nt-setup__sub">Delete a profile</div>
-                <span className="nt-setup__help">Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.</span>
+                <span className="nt-setup__help">Deleting a profile removes that person's files from your archive folder. Phonon does not commit the deletion.</span>
                 {profiles.map((name) => {
                   const inUse = name === saved?.profile;
                   return (
@@ -669,7 +669,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
             {hasArchive && projectDeleteOpen && (
               <div className="nt-setup__inline">
                 <div className="nt-setup__sub">Delete a project</div>
-                <span className="nt-setup__help">Deleting a project removes its files and its meetings from your archive folder, and its meetings from Notted.</span>
+                <span className="nt-setup__help">Deleting a project removes its files and its meetings from your archive folder, and its meetings from Phonon.</span>
                 {projects.map((key) => {
                   const recording = recordingKeys.includes(key);
                   return (
@@ -700,7 +700,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
               <div className="nt-setup__inline">
                 <label htmlFor="nt-new-project">New project key</label>
                 <input id="nt-new-project" autoFocus value={newProject} onChange={(e) => setNewProject(e.target.value)} />
-                <span className="nt-setup__help">Use lowercase letters, digits and dashes, for example acme or acme-web. Notted creates the project's file and your own file for it.</span>
+                <span className="nt-setup__help">Use lowercase letters, digits and dashes, for example acme or acme-web. Phonon creates the project's file and your own file for it.</span>
                 {projectError && <ErrorCard text={projectError} />}
                 <div className="nt-setup__actions">
                   <button type="button" className="nt-btn nt-btn--primary" onClick={createProject} disabled={busy !== "" || !newProject.trim()}>
@@ -726,7 +726,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
       {confirm && (
         <ConfirmDialog
           title={`Delete profile ${confirm.name}?`}
-          body="Notted deletes these files and folders from your archive folder:"
+          body="Phonon deletes these files and folders from your archive folder:"
           items={confirm.files}
           hint="Nothing is committed. The deletion shows in the archive's working tree, like an edit."
           cancelLabel="Keep profile"
@@ -738,11 +738,11 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
       {projectConfirm && (
         <ConfirmDialog
           title={`Delete project ${projectConfirm.key}?`}
-          body="Notted deletes these files and folders from your archive folder:"
+          body="Phonon deletes these files and folders from your archive folder:"
           items={[
             ...projectConfirm.files,
             ...[...projectConfirm.folders].sort(),
-            ...(projectConfirm.localMeetings > 0 ? [`${projectConfirm.localMeetings} meetings in Notted (${projectConfirm.unsavedMeetings} not saved to the archive)`] : []),
+            ...(projectConfirm.localMeetings > 0 ? [`${projectConfirm.localMeetings} meetings in Phonon (${projectConfirm.unsavedMeetings} not saved to the archive)`] : []),
           ]}
           hint="Meetings not saved to the archive are gone for good. Everything else stays in the archive's git history."
           cancelLabel="Keep project"
@@ -756,7 +756,7 @@ export function SetupForm({ saved, settingsError, projects, projectsError, profi
       {projectCommit && (
         <ConfirmDialog
           title="Commit and push the deletion?"
-          body={`Notted commits only the removed files, with the message "project(${projectCommit.key}): delete", and pushes to origin.`}
+          body={`Phonon commits only the removed files, with the message "project(${projectCommit.key}): delete", and pushes to origin.`}
           cancelLabel="Not now"
           confirmLabel="Commit and push"
           busy={busy !== ""}

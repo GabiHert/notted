@@ -18,7 +18,7 @@ import (
 // UpdateStatus is what the update card shows.
 type UpdateStatus struct {
 	SourcePath   string
-	InstalledApp string // "" when Notted does not run from an app bundle
+	InstalledApp string // "" when Phonon does not run from an app bundle
 	Signing      bool
 	State        string // "idle", "pulling", "building", "installing" or "failed"
 	Message      string
@@ -43,7 +43,7 @@ type UpdateDeps struct {
 	Emit          port.EventEmitter
 }
 
-// UpdateService pulls the person's Notted clone, builds it and hands the new app to the installer.
+// UpdateService pulls the person's Phonon clone, builds it and hands the new app to the installer.
 type UpdateService struct {
 	d     UpdateDeps
 	mu    sync.Mutex
@@ -74,10 +74,10 @@ var (
 
 var (
 	errUpdateBusy = errors.New("An update is already running.")
-	errNoSource   = errors.New("Choose your Notted source folder first.")
+	errNoSource   = errors.New("Choose your Phonon source folder first.")
 )
 
-const notSourceClone = "That folder is not a Notted source clone: "
+const notSourceClone = "That folder is not a Phonon source clone: "
 
 type updateJob struct{ src, app string }
 
@@ -100,7 +100,7 @@ func (s *UpdateService) GetStatus(ctx context.Context) (UpdateStatus, error) {
 		Lines: append([]string{}, s.lines...), Seq: s.seq}, nil
 }
 
-// SetSource checks the folder and saves it as the Notted source; it never runs git.
+// SetSource checks the folder and saves it as the Phonon source; it never runs git.
 func (s *UpdateService) SetSource(ctx context.Context, path string) error {
 	// Hold the lock throughout so a Start cannot begin between the busy check and the save.
 	// Nothing below calls back into the service or emits an event.
@@ -148,8 +148,8 @@ func checkSource(p string) error {
 		Name string `json:"name"`
 	}
 	b, err := os.ReadFile(filepath.Join(p, "wails.json"))
-	if err != nil || json.Unmarshal(b, &w) != nil || w.Name != "Notted" {
-		return errors.New(notSourceClone + "wails.json is missing or does not name Notted.")
+	if err != nil || json.Unmarshal(b, &w) != nil || w.Name != "Phonon" {
+		return errors.New(notSourceClone + "wails.json is missing or does not name Phonon.")
 	}
 	if fi, err := os.Stat(filepath.Join(p, "Makefile")); err != nil || !fi.Mode().IsRegular() {
 		return errors.New(notSourceClone + "Makefile is missing.")
@@ -160,7 +160,7 @@ func checkSource(p string) error {
 	return nil
 }
 
-// installedApp returns the .app bundle Notted runs from.
+// installedApp returns the .app bundle Phonon runs from.
 func (s *UpdateService) installedApp() (string, bool) {
 	exe, err := s.d.Executable()
 	if err != nil {
@@ -213,38 +213,38 @@ func (s *UpdateService) preflight(ctx context.Context) (updateJob, error) {
 		return updateJob{}, err
 	}
 	if s.d.Recording() {
-		return updateJob{}, errors.New("Stop the recording first. Notted quits and reopens to finish the update.")
+		return updateJob{}, errors.New("Stop the recording first. Phonon quits and reopens to finish the update.")
 	}
 	app, ok := s.installedApp()
 	if !ok {
-		return updateJob{}, errors.New("Notted is not running from an app bundle, so it cannot replace itself. Run make build in your Notted source folder, copy build/bin/Notted.app to your Applications folder, and open that copy.")
+		return updateJob{}, errors.New("Phonon is not running from an app bundle, so it cannot replace itself. Run make build in your Phonon source folder, copy build/bin/Phonon.app to your Applications folder, and open that copy.")
 	}
 	srcReal := src
 	if r, err := filepath.EvalSymlinks(src); err == nil {
 		srcReal = r
 	}
 	if rel, err := filepath.Rel(srcReal, app); err == nil && (rel == "." || (rel != ".." && !strings.HasPrefix(rel, "../"))) {
-		return updateJob{}, fmt.Errorf("Notted is running from %s, inside its own source folder. Copy that app to your Applications folder, open the copy, and update from there.", app)
+		return updateJob{}, fmt.Errorf("Phonon is running from %s, inside its own source folder. Copy that app to your Applications folder, open the copy, and update from there.", app)
 	}
 	if _, err := os.Lstat(app + ".old"); err == nil {
-		return updateJob{}, fmt.Errorf("A previous update left %s.old. Check that Notted opens, delete %s.old, then update again.", app, app)
+		return updateJob{}, fmt.Errorf("A previous update left %s.old. Check that Phonon opens, delete %s.old, then update again.", app, app)
 	}
 	if dir := filepath.Dir(app); syscall.Access(dir, wOK) != nil {
-		return updateJob{}, fmt.Errorf("Notted cannot write to %s, so it cannot replace %s. Move Notted to a folder you can write to, such as Applications.", dir, app)
+		return updateJob{}, fmt.Errorf("Phonon cannot write to %s, so it cannot replace %s. Move Phonon to a folder you can write to, such as Applications.", dir, app)
 	}
 	out, err := s.d.Git.Run(ctx, src, "symbolic-ref", "--quiet", "--short", "HEAD")
 	if err != nil {
-		return updateJob{}, errors.New("The Notted source folder is not on a branch. Switch it to main in Terminal, then update again.")
+		return updateJob{}, errors.New("The Phonon source folder is not on a branch. Switch it to main in Terminal, then update again.")
 	}
 	if b := strings.TrimSpace(out); b != "main" {
-		return updateJob{}, fmt.Errorf("The Notted source folder is on %s, not main. Switch it to main in Terminal, then update again.", b)
+		return updateJob{}, fmt.Errorf("The Phonon source folder is on %s, not main. Switch it to main in Terminal, then update again.", b)
 	}
 	out, err = s.d.Git.Run(ctx, src, "status", "--porcelain", "--untracked-files=no")
 	if err != nil {
 		return updateJob{}, fmt.Errorf("git status failed in %s:\n%s", src, strings.TrimSpace(out))
 	}
 	if t := strings.TrimSpace(out); t != "" {
-		return updateJob{}, fmt.Errorf("The Notted source folder has uncommitted changes. Commit them, or undo them, in Terminal, then update again:\n%s", t)
+		return updateJob{}, fmt.Errorf("The Phonon source folder has uncommitted changes. Commit them, or undo them, in Terminal, then update again:\n%s", t)
 	}
 	return updateJob{src: src, app: app}, nil
 }
@@ -253,9 +253,9 @@ func (s *UpdateService) run(j updateJob) {
 	s.out("$ git pull --ff-only --no-rebase --no-autostash")
 	if timedOut, err := s.stream(j.src, pullTimeout, pullArgv, pullEnv); err != nil {
 		if timedOut {
-			s.fail("git pull did not finish within 5 minutes. Notted did not change.")
+			s.fail("git pull did not finish within 5 minutes. Phonon did not change.")
 		} else {
-			s.fail("git pull failed. Notted did not change. The output below shows why.")
+			s.fail("git pull failed. Phonon did not change. The output below shows why.")
 		}
 		return
 	}
@@ -263,24 +263,24 @@ func (s *UpdateService) run(j updateJob) {
 	s.out("$ make build")
 	if timedOut, err := s.stream(j.src, buildTimeout, buildArgv, buildEnv); err != nil {
 		if timedOut {
-			s.fail("make build did not finish within 30 minutes. Notted did not change.")
+			s.fail("make build did not finish within 30 minutes. Phonon did not change.")
 		} else {
-			s.fail("make build failed. Notted did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Notted source folder, then update again.")
+			s.fail("make build failed. Phonon did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Phonon source folder, then update again.")
 		}
 		return
 	}
-	newApp := filepath.Join(j.src, "build", "bin", "Notted.app")
+	newApp := filepath.Join(j.src, "build", "bin", "Phonon.app")
 	if !isDir(filepath.Join(newApp, "Contents", "MacOS")) {
-		s.fail(fmt.Sprintf("make build finished, but %s is missing. Notted did not change.", newApp))
+		s.fail(fmt.Sprintf("make build finished, but %s is missing. Phonon did not change.", newApp))
 		return
 	}
 	if s.d.Recording() {
-		s.fail("The new Notted is built, but a recording is running. Stop the recording and click Update Notted again. Notted did not change.")
+		s.fail("The new Phonon is built, but a recording is running. Stop the recording and click Update Phonon again. Phonon did not change.")
 		return
 	}
-	s.setState("installing", "Notted quits now and reopens when the new version is in place.")
+	s.setState("installing", "Phonon quits now and reopens when the new version is in place.")
 	if err := s.d.Install.Start(s.d.Pid(), newApp, j.app, s.d.LogPath()); err != nil {
-		s.fail(fmt.Sprintf("Notted could not start the installer: %v. Notted did not change.", err))
+		s.fail(fmt.Sprintf("Phonon could not start the installer: %v. Phonon did not change.", err))
 		return
 	}
 	time.Sleep(quitDelay)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Source check: Notted holds no project knowledge, never writes the permission-skipping flag, and names Claude Code's bypass mode in one file only (the review switch, off by default).
+# Source check: Phonon holds no project knowledge, never writes the permission-skipping flag, and names Claude Code's bypass mode in one file only (the review switch, off by default).
 set -uo pipefail
 export LC_ALL=C
 cd "$(dirname "$0")/.."

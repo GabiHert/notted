@@ -107,19 +107,19 @@ func TestPermissionResult(t *testing.T) {
 		t.Fatal(got)
 	}
 	deny := FormAnswer{Status: StatusAnswered, Answers: map[string]any{"allow": "no"}}
-	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Notted."}` {
+	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Phonon."}` {
 		t.Fatal(got)
 	}
 	deny.Note = "  too risky "
-	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Notted. Their note: `+"  too risky "+`"}` {
+	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Phonon. Their note: `+"  too risky "+`"}` {
 		t.Fatal(got)
 	}
 	deny.Note = "   "
-	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Notted."}` {
+	if got := PermissionResult(in, deny); got != `{"behavior":"deny","message":"The person denied this in Phonon."}` {
 		t.Fatal(got)
 	}
 	dis := Dismissed("x")
-	if got := PermissionResult(in, dis); got != `{"behavior":"deny","message":"The person dismissed this request in Notted (Not now). Do not try it again unless they ask."}` {
+	if got := PermissionResult(in, dis); got != `{"behavior":"deny","message":"The person dismissed this request in Phonon (Not now). Do not try it again unless they ask."}` {
 		t.Fatal(got)
 	}
 }

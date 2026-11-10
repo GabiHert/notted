@@ -43,7 +43,7 @@ describe("fields and typed save", () => {
     expect(screen.getByLabelText("acme")).toHaveValue("/work/acme");
     expect(screen.getByLabelText("globex")).toHaveValue("");
     expect(screen.getByLabelText("globex")).toHaveAttribute("placeholder", "/full/path/to/the/project");
-    expect(screen.getByText("The full path of your meetings archive folder. Any folder works: Notted sets it up.")).toBeInTheDocument();
+    expect(screen.getByText("The full path of your meetings archive folder. Any folder works: Phonon sets it up.")).toBeInTheDocument();
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Optional. A folder per project that Claude Code may read during that project's meetings.")).toBeInTheDocument();
     expect(screen.getByText("Your file in instructions/people/ of the archive.")).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe("archive folder picker", () => {
 
 const NEEDS = ["bin/meeting", "prompts/base.md", ".gitignore (adds the recording rules)"];
 const check = (over: Record<string, unknown> = {}) => ({ path: "/picked", missing: NEEDS, inRepo: false, nested: false, repoRoot: "", ready: false, ...over });
-const GIT_INIT_LINE = "This folder is not a git repository yet. Notted runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.";
+const GIT_INIT_LINE = "This folder is not a git repository yet. Phonon runs git init in it so you can commit meetings. It has no remote, so meetings are committed on this Mac only until you add one.";
 
 describe("a folder that is not set up as an archive yet", () => {
   test("a ready folder is inspected and saved with no panel", async () => {
@@ -205,7 +205,7 @@ describe("a folder that is not set up as an archive yet", () => {
     const region = await screen.findByRole("region", { name: "Set up this folder as your meetings archive?" });
     const heading = within(region).getByRole("heading", { name: "Set up this folder as your meetings archive?" });
     expect(heading).toHaveFocus();
-    expect(within(region).getByText("Notted adds these files to /picked. It does not change or remove anything already there.")).toBeInTheDocument();
+    expect(within(region).getByText("Phonon adds these files to /picked. It does not change or remove anything already there.")).toBeInTheDocument();
     for (const f of NEEDS) expect(within(region).getByText(f).tagName).toBe("CODE");
     expect(within(region).getByText(GIT_INIT_LINE)).toBeInTheDocument();
     expect(within(region).queryByText(/is inside the git repository/)).not.toBeInTheDocument();
@@ -324,8 +324,8 @@ describe("clone panel", () => {
     open();
     expect(screen.queryByRole("button", { name: "Clone the archive from GitHub instead" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("GitHub address")).toHaveFocus();
-    expect(screen.getByText("The address you would give to git clone, from the Code button on the archive's GitHub page. Notted runs your own git with your own login.")).toBeInTheDocument();
-    expect(screen.getByText("Notted creates the archive folder inside this folder.")).toBeInTheDocument();
+    expect(screen.getByText("The address you would give to git clone, from the Code button on the archive's GitHub page. Phonon runs your own git with your own login.")).toBeInTheDocument();
+    expect(screen.getByText("Phonon creates the archive folder inside this folder.")).toBeInTheDocument();
     click("Cancel");
     expect(screen.queryByLabelText("GitHub address")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Clone the archive from GitHub instead" })).toHaveFocus();
@@ -586,7 +586,7 @@ describe("projects", () => {
     const { onOpen, onSaved } = setup();
     click("New project…");
     expect(screen.getByLabelText("New project key")).toHaveFocus();
-    expect(screen.getByText("Use lowercase letters, digits and dashes, for example acme or acme-web. Notted creates the project's file and your own file for it.")).toBeInTheDocument();
+    expect(screen.getByText("Use lowercase letters, digits and dashes, for example acme or acme-web. Phonon creates the project's file and your own file for it.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create project" })).toBeDisabled();
     type("New project key", "initech-web");
     click("Create project");
@@ -753,7 +753,7 @@ describe("delete a profile", () => {
     openPanel();
     expect(screen.queryByRole("button", { name: "Delete a profile…" })).not.toBeInTheDocument();
     expect(screen.getByText("Delete a profile")).toBeInTheDocument();
-    expect(screen.getByText("Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.")).toBeInTheDocument();
+    expect(screen.getByText("Deleting a profile removes that person's files from your archive folder. Phonon does not commit the deletion.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete profile ana" })).toBeDisabled();
     expect(screen.getByText("In use. Choose another profile above first.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete profile bruno" })).toBeEnabled();
@@ -766,7 +766,7 @@ describe("delete a profile", () => {
     click("Delete profile bruno");
     const dialog = await screen.findByRole("dialog", { name: "Delete profile bruno?" });
     expect(ListProfileFiles).toHaveBeenCalledWith("bruno");
-    expect(within(dialog).getByText("Notted deletes these files and folders from your archive folder:")).toBeInTheDocument();
+    expect(within(dialog).getByText("Phonon deletes these files and folders from your archive folder:")).toBeInTheDocument();
     expect(within(dialog).getAllByRole("listitem").map((li) => li.textContent)).toEqual(BRUNO_FILES);
     expect(within(dialog).getByText("Nothing is committed. The deletion shows in the archive's working tree, like an edit.")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Keep profile" }));
@@ -783,7 +783,7 @@ describe("delete a profile", () => {
     expect(await screen.findByText("Deleted profile bruno from the archive folder.")).toBeInTheDocument();
     expect(DeleteProfile).toHaveBeenCalledWith("bruno", BRUNO_FILES);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByText("Deleting a profile removes that person's files from your archive folder. Notted does not commit the deletion.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Deleting a profile removes that person's files from your archive folder. Phonon does not commit the deletion.")).not.toBeInTheDocument();
     expect(onDeleted).toHaveBeenCalledTimes(1);
     expect(SetSettings).not.toHaveBeenCalled();
   });
@@ -856,7 +856,7 @@ describe("delete a project", () => {
     await openPanel();
     expect(screen.queryByRole("button", { name: "Delete a project…" })).not.toBeInTheDocument();
     expect(screen.getByText("Delete a project")).toBeInTheDocument();
-    expect(screen.getByText("Deleting a project removes its files and its meetings from your archive folder, and its meetings from Notted.")).toBeInTheDocument();
+    expect(screen.getByText("Deleting a project removes its files and its meetings from your archive folder, and its meetings from Phonon.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete project acme" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Delete project globex" })).toBeEnabled();
     expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
@@ -888,7 +888,7 @@ describe("delete a project", () => {
   test("the confirm lists files, folders ascending and the meeting line", async () => {
     setup();
     const dialog = await askAcme();
-    expect(within(dialog).getByText("Notted deletes these files and folders from your archive folder:")).toBeInTheDocument();
+    expect(within(dialog).getByText("Phonon deletes these files and folders from your archive folder:")).toBeInTheDocument();
     expect(within(dialog).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
       "instructions/projects/acme.md",
       "instructions/people/ana/acme.md",
@@ -896,7 +896,7 @@ describe("delete a project", () => {
       "meetings/acme/",
       "meetings/acme/2026/",
       "meetings/acme/2026/2026-10-01-sync/",
-      "2 meetings in Notted (1 not saved to the archive)",
+      "2 meetings in Phonon (1 not saved to the archive)",
     ]);
     expect(within(dialog).getByText("Meetings not saved to the archive are gone for good. Everything else stays in the archive's git history.")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Keep project" })).toBeInTheDocument();
@@ -909,7 +909,7 @@ describe("delete a project", () => {
     const dialog = await askAcme();
     const items = within(dialog).getAllByRole("listitem").map((li) => li.textContent);
     expect(items).toHaveLength(6);
-    expect(items.some((t) => t?.includes("in Notted"))).toBe(false);
+    expect(items.some((t) => t?.includes("in Phonon"))).toBe(false);
   });
 
   test("Keep project and Escape each close the dialog and delete nothing", async () => {
@@ -957,7 +957,7 @@ describe("delete a project", () => {
     CommitProjectDeletion.mockReturnValue(d.promise);
     await openCommit();
     const dialog = screen.getByRole("dialog", { name: "Commit and push the deletion?" });
-    expect(within(dialog).getByText('Notted commits only the removed files, with the message "project(acme): delete", and pushes to origin.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Phonon commits only the removed files, with the message "project(acme): delete", and pushes to origin.')).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Commit and push" })).toHaveClass("nt-btn--primary");
     fireEvent.click(within(dialog).getByRole("button", { name: "Commit and push" }));
     await waitFor(() => expect(within(dialog).getByRole("button", { name: "Not now" })).toBeDisabled());

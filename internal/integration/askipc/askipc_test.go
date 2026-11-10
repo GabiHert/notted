@@ -326,7 +326,7 @@ func TestServerClosingEarly(t *testing.T) {
 		c.Close()
 	}()
 	_, err = Client{Socket: path}.Ask(context.Background(), domain.FormAsk, parse(t))
-	if err == nil || err.Error() != "Notted stopped before the form was answered." {
+	if err == nil || err.Error() != "Phonon stopped before the form was answered." {
 		t.Fatalf("err %v", err)
 	}
 }

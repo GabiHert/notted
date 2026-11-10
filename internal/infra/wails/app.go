@@ -61,4 +61,4 @@ func New(e *Emitter, d Deps) *App {
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.
-func (a *App) AppName() string { return "Notted" }
+func (a *App) AppName() string { return "Phonon" }

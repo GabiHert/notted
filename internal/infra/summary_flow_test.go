@@ -45,7 +45,7 @@ func copyFile(t *testing.T, src, dst string) {
 }
 
 func TestSummaryFlowWithStubClaude(t *testing.T) {
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	root := t.TempDir()
 	archive := filepath.Join(root, "archive")
 	sh(t, root, "init", "-q", "-b", "main", archive)

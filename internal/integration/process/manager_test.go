@@ -82,7 +82,7 @@ func stub(t *testing.T) string {
 
 func newMgr(t *testing.T) (*Manager, *rec) {
 	t.Helper()
-	t.Setenv("NOTTED_HOME", t.TempDir())
+	t.Setenv("PHONON_HOME", t.TempDir())
 	r := &rec{}
 	m := NewManager(r)
 	t.Cleanup(m.StopAll)

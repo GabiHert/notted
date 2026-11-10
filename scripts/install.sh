@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# make install: checks the Mac, signs, builds and installs Notted, then opens it.
-# Environment (all optional): NOTTED_INSTALL_DIR (default /Applications), NOTTED_HOME (default
-# ~/.notted), NOTTED_SKIP_SIGNING_SETUP=1, NOTTED_NO_OPEN=1, NOTTED_QUIT_WAIT (seconds, default 15),
-# NOTTED_MV (the rename command, default mv), NOTTED_CODESIGN, NOTTED_TCCUTIL, NOTTED_PLISTBUDDY
+# make install: checks the Mac, signs, builds and installs Phonon, then opens it.
+# Environment (all optional): PHONON_INSTALL_DIR (default /Applications), PHONON_HOME (default
+# ~/.phonon), PHONON_SKIP_SIGNING_SETUP=1, PHONON_NO_OPEN=1, PHONON_QUIT_WAIT (seconds, default 15),
+# PHONON_MV (the rename command, default mv), PHONON_CODESIGN, PHONON_TCCUTIL, PHONON_PLISTBUDDY
 # (the macOS tools that read the signature, reset permissions and read the bundle id).
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd -P)
-install_dir=${NOTTED_INSTALL_DIR:-/Applications}
-notted_home=${NOTTED_HOME:-$HOME/.notted}
-quit_wait=${NOTTED_QUIT_WAIT:-15}
-mv_cmd=${NOTTED_MV:-mv}
-codesign_cmd=${NOTTED_CODESIGN:-/usr/bin/codesign}
-tccutil_cmd=${NOTTED_TCCUTIL:-/usr/bin/tccutil}
-plistbuddy_cmd=${NOTTED_PLISTBUDDY:-/usr/libexec/PlistBuddy}
-app="$install_dir/Notted.app"
+install_dir=${PHONON_INSTALL_DIR:-/Applications}
+phonon_home=${PHONON_HOME:-$HOME/.phonon}
+quit_wait=${PHONON_QUIT_WAIT:-15}
+mv_cmd=${PHONON_MV:-mv}
+codesign_cmd=${PHONON_CODESIGN:-/usr/bin/codesign}
+tccutil_cmd=${PHONON_TCCUTIL:-/usr/bin/tccutil}
+plistbuddy_cmd=${PHONON_PLISTBUDDY:-/usr/libexec/PlistBuddy}
+app="$install_dir/Phonon.app"
 staged="$app.new"
 old="$app.old"
 
@@ -49,7 +49,7 @@ check_macos() {
   if at_least "$v" 14 0 && [ "$arch" = arm64 ]; then
     ok "macOS $v on Apple silicon"
   else
-    need macOS "Notted needs macOS 14 or later on an Apple silicon Mac."
+    need macOS "Phonon needs macOS 14 or later on an Apple silicon Mac."
   fi
 }
 
@@ -123,7 +123,7 @@ check_claude() {
   if [ -n "$found" ]; then
     ok "claude"
   else
-    echo "warning  claude: Notted needs Claude Code for summaries. Install it from claude.com/claude-code and log in."
+    echo "warning  claude: Phonon needs Claude Code for summaries. Install it from claude.com/claude-code and log in."
   fi
 }
 
@@ -145,10 +145,10 @@ if [ -e "$old" ] || [ -L "$old" ]; then
 fi
 
 # Signing: create the local certificate once, and carry on ad hoc if that fails.
-if [ "${NOTTED_SKIP_SIGNING_SETUP:-}" != 1 ]; then
+if [ "${PHONON_SKIP_SIGNING_SETUP:-}" != 1 ]; then
   identity=$(bash "$root/scripts/signing-identity.sh" 2>/dev/null) || identity=
   if [ -z "$identity" ] || [ "$identity" = "-" ]; then
-    echo 'Creating the "Notted Local Signing" certificate. macOS asks for your login password once, so it can trust the certificate for signing Notted.'
+    echo 'Creating the "Phonon Local Signing" certificate. macOS asks for your login password once, so it can trust the certificate for signing Phonon.'
     if ! bash "$root/scripts/create-signing-identity.sh"; then
       echo 'Continuing without the certificate: this build is signed ad hoc, and macOS asks for the microphone and screen recording permissions again after each update.'
     fi
@@ -157,23 +157,40 @@ fi
 
 make -C "$root" build
 
-built="$root/build/bin/Notted.app"
+built="$root/build/bin/Phonon.app"
 if [ ! -d "$built" ]; then
   echo "make build finished, but $built is missing. Nothing was installed."
   exit 1
 fi
 
-running() { pgrep -x Notted >/dev/null 2>&1; }
+running() { pgrep -x Phonon >/dev/null 2>&1; }
 
 if running; then
-  echo "Quitting Notted to replace it."
-  osascript -e 'quit app "Notted"' >/dev/null 2>&1 || true
+  echo "Quitting Phonon to replace it."
+  osascript -e 'quit app "Phonon"' >/dev/null 2>&1 || true
   n=$((quit_wait * 5))
   while [ "$n" -gt 0 ] && running; do
     sleep 0.2
     n=$((n - 1))
   done
   if running; then
+    echo "Phonon is still running. Quit it, then run make install again."
+    exit 1
+  fi
+fi
+
+# Phonon was called Notted. Phonon copies Notted's data when it first opens, which it refuses to do
+# while Notted runs (the copy would not be consistent), so quit Notted first.
+notted_running() { pgrep -x Notted >/dev/null 2>&1; }
+if notted_running; then
+  echo "Quitting Notted, Phonon's old name, so Phonon can copy its data."
+  osascript -e 'quit app "Notted"' >/dev/null 2>&1 || true
+  n=$((quit_wait * 5))
+  while [ "$n" -gt 0 ] && notted_running; do
+    sleep 0.2
+    n=$((n - 1))
+  done
+  if notted_running; then
     echo "Notted is still running. Quit it, then run make install again."
     exit 1
   fi
@@ -186,7 +203,7 @@ rename() {
 }
 install_failed() {
   rm -rf "$staged"
-  echo "Install failed; your previous Notted is unchanged."
+  echo "Install failed; your previous Phonon is unchanged."
   exit 1
 }
 
@@ -223,7 +240,7 @@ if [ -e "$app" ] || [ -L "$app" ]; then
   if ! rename "$staged" "$app"; then
     if ! rename "$old" "$app"; then
       rm -rf "$staged"
-      echo "Install failed, and the previous Notted could not be put back. It is at $old. Move it back to $app in Finder."
+      echo "Install failed, and the previous Phonon could not be put back. It is at $old. Move it back to $app in Finder."
       exit 1
     fi
     install_failed
@@ -234,13 +251,16 @@ else
 fi
 if [ "$reset_needed" -eq 1 ]; then reset_permissions "$app"; fi
 
-# Save the clone, so Update Notted knows which folder to pull.
+# Save the clone, so Update Phonon knows which folder to pull.
 source_dir=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || source_dir=$root
-if mkdir -p "$notted_home" 2>/dev/null; then
-  printf '%s\n' "$source_dir" >"$notted_home/install-source" 2>/dev/null || true
+if mkdir -p "$phonon_home" 2>/dev/null; then
+  printf '%s\n' "$source_dir" >"$phonon_home/install-source" 2>/dev/null || true
 fi
 
 echo "Installed $app."
-if [ "${NOTTED_NO_OPEN:-}" != 1 ]; then
+
+# Notted.app, Phonon's old name, stays where it is: Phonon copies Notted's data when it first
+# opens and leaves ~/.notted as it was, so Notted still works.
+if [ "${PHONON_NO_OPEN:-}" != 1 ]; then
   open "$app"
 fi

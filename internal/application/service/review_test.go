@@ -200,7 +200,7 @@ func TestReviewRefusalsInOrder(t *testing.T) {
 	f.sum.set("m1", false)
 
 	f.cfgErr = errors.New("no space")
-	wantErr(t, f.svc.Start(ctx, "m1"), "Notted could not prepare the session's tools: no space")
+	wantErr(t, f.svc.Start(ctx, "m1"), "Phonon could not prepare the session's tools: no space")
 	f.cfgErr = nil
 	if len(f.runner.runs) != 0 || len(f.em.events) != 0 {
 		t.Fatal("a refused start ran or emitted")
@@ -258,7 +258,7 @@ func TestReviewRunsTheTurnAndReloads(t *testing.T) {
 	}
 }
 
-const wantReviewStdin = "Review this meeting's suggestions with me through Notted's ask tool (mcp__notted__ask). I am not reading a terminal, so ask me nothing outside ask.\n\n" +
+const wantReviewStdin = "Review this meeting's suggestions with me through Phonon's ask tool (mcp__phonon__ask). I am not reading a terminal, so ask me nothing outside ask.\n\n" +
 	"Meeting: Weekly sync\nMeeting folder: 2026/weekly\n\n" +
 	"1. Read 2026/weekly/suggestions.md. Take every suggestion whose Decision is undecided. If there is none, reply with the single line \"No suggestions are waiting for a decision.\" and stop.\n" +
 	"2. Call ask once. Title: \"Review suggestions: Weekly sync\". One piece: kind multi, id \"accept\", question \"Which suggestions do you accept? The ones you leave unchecked are rejected.\", and one option per undecided suggestion, in order, with label \"<id>: <task title>\" and description \"<verdict>. <why>\".\n" +
@@ -424,7 +424,7 @@ func TestReviewRunCarriesTheSwitch(t *testing.T) {
 func TestReviewRefusesWhenTheSettingCannotBeRead(t *testing.T) {
 	f := newRevFixture(t)
 	f.svc.mode = &fakeReviewMode{getErr: errors.New("boom")}
-	wantErr(t, f.svc.Start(context.Background(), "m1"), "Notted could not read the review setting: boom")
+	wantErr(t, f.svc.Start(context.Background(), "m1"), "Phonon could not read the review setting: boom")
 	if len(f.runner.runs) != 0 || len(f.em.events) != 0 || f.svc.Running("m1") {
 		t.Fatal("a refused start ran, emitted or registered")
 	}
@@ -470,7 +470,7 @@ func TestReviewSwitchGetterAndSetter(t *testing.T) {
 	if on, err := f.svc.ActWithoutAsking(ctx); err != nil || on {
 		t.Fatalf("nil store get = %v, %v", on, err)
 	}
-	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Notted could not save the review setting: no store.")
+	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Phonon could not save the review setting: no store.")
 
 	mode := &fakeReviewMode{on: true}
 	f.svc.mode = mode
@@ -481,9 +481,9 @@ func TestReviewSwitchGetterAndSetter(t *testing.T) {
 		t.Fatalf("set = %v, %v", mode.sets, err)
 	}
 	mode.getErr = errors.New("boom")
-	if _, err := f.svc.ActWithoutAsking(ctx); err == nil || err.Error() != "Notted could not read the review setting: boom" {
+	if _, err := f.svc.ActWithoutAsking(ctx); err == nil || err.Error() != "Phonon could not read the review setting: boom" {
 		t.Fatalf("get err = %v", err)
 	}
 	mode.setErr = errors.New("locked")
-	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Notted could not save the review setting: locked")
+	wantErr(t, f.svc.SetActWithoutAsking(ctx, true), "Phonon could not save the review setting: locked")
 }

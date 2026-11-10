@@ -9,15 +9,15 @@ package menubar
 */
 import "C"
 
-func install() { C.NottedMenuBarInstall() }
+func install() { C.PhononMenuBarInstall() }
 
 func setRecording(recording bool) {
 	v := C.int(0)
 	if recording {
 		v = 1
 	}
-	C.NottedMenuBarSetRecording(v)
+	C.PhononMenuBarSetRecording(v)
 }
 
-//export nottedMenuBarAction
-func nottedMenuBarAction(action C.int) { dispatchActive(int(action)) }
+//export phononMenuBarAction
+func phononMenuBarAction(action C.int) { dispatchActive(int(action)) }

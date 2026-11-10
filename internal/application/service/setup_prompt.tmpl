@@ -1,9 +1,9 @@
-You are helping me finish setting up Notted, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.
+You are helping me finish setting up Phonon, a Mac app that records my meetings and turns each one into a summary and a list of suggested tasks. Read this whole message, then talk with me to finish the setup.
 
-## How Notted works
+## How Phonon works
 
-1. I record a meeting. Notted captures my microphone and the system audio, and keeps the recording on this Mac.
-2. Notted transcribes the recording on this Mac, with no network.
+1. I record a meeting. Phonon captures my microphone and the system audio, and keeps the recording on this Mac.
+2. Phonon transcribes the recording on this Mac, with no network.
 3. I open one Claude Code session per meeting. It reads the transcript and writes the summary and the suggested tasks, following the instruction files described below.
 4. When I say yes, the meeting is saved to my archive, a git folder.
 5. I accept a suggestion to act on it. What accepting does comes from my instruction files.
@@ -14,11 +14,11 @@ You are helping me finish setting up Notted, a Mac app that records my meetings 
 - Profile: {{if .Profile}}{{.Profile}}{{else}}not chosen yet{{end}}
 {{- if .Archive}}
 {{- if .ArchiveProblem}}
-- Notted's check of the archive folder says: {{.ArchiveProblem}}
+- Phonon's check of the archive folder says: {{.ArchiveProblem}}
 {{- end}}
 {{- if .Ready}}
 {{- if .ProjectsError}}
-- Notted could not read the archive's projects: {{.ProjectsError}}
+- Phonon could not read the archive's projects: {{.ProjectsError}}
 {{- else}}
 - Projects in the archive: {{if .Projects}}{{join .Projects ", "}}{{else}}none yet{{end}}
 {{- end}}
@@ -28,7 +28,7 @@ You are helping me finish setting up Notted, a Mac app that records my meetings 
 - Projects without a file of mine: {{if .Missing}}{{join .Missing ", "}}{{else}}none{{end}}
 {{- end}}
 {{- if .ProfileProjectsError}}
-- Notted could not read my per-project files: {{.ProfileProjectsError}}
+- Phonon could not read my per-project files: {{.ProfileProjectsError}}
 {{- end}}
 {{- end}}
 {{- end}}
@@ -57,15 +57,15 @@ The schema of every instruction file (headings, order, precedence, an example of
 {{- end}}
    - my role and my style, for my person file (language, phrasing, how many suggestions I want);
    - for each project I work on: its name, the other names it appears under in meeting titles (aliases), what it is about, where its existing work lives: what the whole team can read (an issue tracker, GitHub repositories), which goes in the project file, and any folders only I can read, which go in my per-project file, and what accepting a task should do for it;
-   - for each project: the local folder of its work, which I set in Notted afterwards.
+   - for each project: the local folder of its work, which I set in Phonon afterwards.
 3. Write only under instructions/ in the archive, and only the files for my profile and the projects we talk about. Use the headings the README gives.
 4. A project file is shared by every profile that works on the project, so everything in it must be true and readable for all of them: the project's name, aliases, what it is about, and the issue tracker and GitHub repositories the whole team can read. Never write a local path, a folder on my machine or anything only I can open into a project file; put those in my per-project file. Before you write a project file, check each line against this rule.
 5. You must never edit prompts/base.md, bin/meeting or anything under meetings/.
 6. Before you write a file, show each file to me in full and wait for my yes. After I say yes, write it.
 7. You must never commit or push without my yes. Writing a file is not a commit.
-8. When we are done, tell me to open Notted's Settings and:
+8. When we are done, tell me to open Phonon's Settings and:
 {{if .Profile}}   - choose my profile;
-{{else}}   - choose the profile I just named, which Notted lists once its file exists;
+{{else}}   - choose the profile I just named, which Phonon lists once its file exists;
 {{end}}   - set each project's root folder, with Choose;
    - check the result in Prompt preview, which shows exactly what the next summary for a project receives.
 {{else if .Archive}}
@@ -73,15 +73,15 @@ The folder {{.Archive}} is not set up as a meetings archive yet.
 
 ## What I need you to do
 
-Explain, in a few sentences, that I choose this folder again in Notted's Settings, in the Instructions tab, so Notted sets it up with everything an archive needs. Then I copy this setup prompt again from the same Settings page.
+Explain, in a few sentences, that I choose this folder again in Phonon's Settings, in the Instructions tab, so Phonon sets it up with everything an archive needs. Then I copy this setup prompt again from the same Settings page.
 
 Then stop. Do not ask me questions about my projects, do not create any file or folder, and do not run any command in the folder.
 {{else}}
-The archive is a git folder where Notted keeps my instruction files and my saved meetings. I have not chosen one yet.
+The archive is a git folder where Phonon keeps my instruction files and my saved meetings. I have not chosen one yet.
 
 ## What I need you to do
 
-Explain, in a few sentences, that I first choose or clone my archive in Notted's Settings, in the Instructions tab: Choose an empty or existing folder, or clone one from its git address. Notted sets the folder up with everything it needs. Choose or clone the archive, then copy this setup prompt again from the same Settings page.
+Explain, in a few sentences, that I first choose or clone my archive in Phonon's Settings, in the Instructions tab: Choose an empty or existing folder, or clone one from its git address. Phonon sets the folder up with everything it needs. Choose or clone the archive, then copy this setup prompt again from the same Settings page.
 
 Then stop. Do not ask me questions about my projects and do not create any file or folder yet.
 {{end}}

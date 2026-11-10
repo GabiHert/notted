@@ -26,7 +26,7 @@ test("opens only on export:ready for this meeting", async () => {
 
 test("lists the folder and the file names", async () => {
   await open();
-  expect(screen.getByText("Notted wrote these files to meetings/acme/2026/2026-10-23-weekly-sync in the archive folder:")).toBeInTheDocument();
+  expect(screen.getByText("Phonon wrote these files to meetings/acme/2026/2026-10-23-weekly-sync in the archive folder:")).toBeInTheDocument();
   expect(screen.getByText("transcript.md")).toBeInTheDocument();
   expect(screen.getByText("summary.md")).toBeInTheDocument();
   expect(screen.getByText("Nothing is staged or committed until you choose.")).toBeInTheDocument();

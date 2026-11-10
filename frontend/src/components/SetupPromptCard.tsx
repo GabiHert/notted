@@ -3,7 +3,7 @@ import { ClipboardSetText, GetSetupPrompt } from "../api/bindings";
 import { errorMessage } from "../format";
 import "./SetupPromptCard.css";
 
-const NOTE = "Paste a prompt into Claude Code and it will explain how Notted works, then ask you the questions that fill in your profile and project files.";
+const NOTE = "Paste a prompt into Claude Code and it will explain how Phonon works, then ask you the questions that fill in your profile and project files.";
 const COPIED = "Copied. Paste it into Claude Code.";
 const FAILED = "Could not copy.";
 const COPIED_MS = 4000;

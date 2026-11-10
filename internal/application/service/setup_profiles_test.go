@@ -126,16 +126,16 @@ func TestListProfileFilesRefusals(t *testing.T) {
 			if err := os.MkdirAll(filepath.Join(f.root, "instructions", "people", "bruno.md"), 0o755); err != nil {
 				t.Fatal(err)
 			}
-		}, "Notted cannot delete instructions/people/bruno.md: it is not a regular file."},
+		}, "Phonon cannot delete instructions/people/bruno.md: it is not a regular file."},
 		{"folder is file", func(t *testing.T, f *setupFx, out string) {
 			put(t, filepath.Join(f.root, "instructions", "people", "bruno"), "x")
-		}, "Notted cannot delete instructions/people/bruno: it is not a folder."},
+		}, "Phonon cannot delete instructions/people/bruno: it is not a folder."},
 		{"fifo", func(t *testing.T, f *setupFx, out string) {
 			put(t, filepath.Join(f.root, "instructions", "people", "bruno", "ok.md"), "x")
 			if err := syscall.Mkfifo(filepath.Join(f.root, "instructions", "people", "bruno", "pipe"), 0o644); err != nil {
 				t.Fatal(err)
 			}
-		}, "Notted cannot delete instructions/people/bruno/pipe: it is not a regular file."},
+		}, "Phonon cannot delete instructions/people/bruno/pipe: it is not a regular file."},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -244,7 +244,7 @@ func TestDeleteProfilePartialFailure(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(filepath.Join(ppl, "bruno"), 0o755) })
 	err = f.svc.DeleteProfile(f.ctx, "bruno", list)
-	if err == nil || !strings.HasPrefix(err.Error(), "Notted could not delete instructions/people/bruno/acme.md: ") ||
+	if err == nil || !strings.HasPrefix(err.Error(), "Phonon could not delete instructions/people/bruno/acme.md: ") ||
 		!strings.HasSuffix(err.Error(), ". The files listed before it are already deleted.") {
 		t.Fatalf("err %v", err)
 	}

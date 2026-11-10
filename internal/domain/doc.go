@@ -1,2 +1,2 @@
-// Package domain holds Notted's entities and errors.
+// Package domain holds Phonon's entities and errors.
 package domain

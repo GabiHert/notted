@@ -19,13 +19,13 @@
 ## Recording
 Two runs, both from Terminal.app by the user.
 
-Run 1 (20:14): `audiocap record --out /tmp/notted-spike`, Ctrl-C after about 23 s; nothing was playing.
-Event log `/tmp/notted-spike-events.jsonl`, verbatim:
+Run 1 (20:14): `audiocap record --out /tmp/phonon-spike`, Ctrl-C after about 23 s; nothing was playing.
+Event log `/tmp/phonon-spike-events.jsonl`, verbatim:
 
 ```
 {"event":"started","t0_ms":1792797238545}
-{"end_ms":23172,"event":"chunk","index":1,"path":"/tmp/notted-spike/mic-000001.wav","start_ms":0,"track":"mic"}
-{"end_ms":23172,"event":"chunk","index":1,"path":"/tmp/notted-spike/others-000001.wav","start_ms":0,"track":"others"}
+{"end_ms":23172,"event":"chunk","index":1,"path":"/tmp/phonon-spike/mic-000001.wav","start_ms":0,"track":"mic"}
+{"end_ms":23172,"event":"chunk","index":1,"path":"/tmp/phonon-spike/others-000001.wav","start_ms":0,"track":"others"}
 {"event":"stopped"}
 ```
 
@@ -33,27 +33,27 @@ Mic -42.5 dBFS (`silent=false`), and the user heard their voice. Others -120.0 d
 because ScreenCaptureKit delivers zero buffers when nothing plays.
 
 Run 2 (20:22): an `afplay /System/Library/Sounds/Glass.aiff` loop (×15) while recording into
-`/tmp/notted-spike2`, then `pkill -INT -f 'audiocap record'`. Event log `/tmp/notted-spike2-events.jsonl`, verbatim:
+`/tmp/phonon-spike2`, then `pkill -INT -f 'audiocap record'`. Event log `/tmp/phonon-spike2-events.jsonl`, verbatim:
 
 ```
 {"event":"started","t0_ms":1792797712968}
-{"end_ms":30000,"event":"chunk","index":1,"path":"/tmp/notted-spike2/mic-000001.wav","start_ms":0,"track":"mic"}
-{"end_ms":30000,"event":"chunk","index":1,"path":"/tmp/notted-spike2/others-000001.wav","start_ms":0,"track":"others"}
-{"end_ms":34006,"event":"chunk","index":2,"path":"/tmp/notted-spike2/mic-000002.wav","start_ms":30000,"track":"mic"}
-{"end_ms":34006,"event":"chunk","index":2,"path":"/tmp/notted-spike2/others-000002.wav","start_ms":30000,"track":"others"}
+{"end_ms":30000,"event":"chunk","index":1,"path":"/tmp/phonon-spike2/mic-000001.wav","start_ms":0,"track":"mic"}
+{"end_ms":30000,"event":"chunk","index":1,"path":"/tmp/phonon-spike2/others-000001.wav","start_ms":0,"track":"others"}
+{"end_ms":34006,"event":"chunk","index":2,"path":"/tmp/phonon-spike2/mic-000002.wav","start_ms":30000,"track":"mic"}
+{"end_ms":34006,"event":"chunk","index":2,"path":"/tmp/phonon-spike2/others-000002.wav","start_ms":30000,"track":"others"}
 {"event":"stopped"}
 ```
 
 Both tracks rotated on the same 30 s boundary with identical byte sizes, and SIGINT stopped the helper cleanly.
 
 ## WAV check
-Run 2, `go run ./scripts/wavcheck -expect-chunk 30 /tmp/notted-spike2/*.wav`, output verbatim (re-run by the conductor on the same files):
+Run 2, `go run ./scripts/wavcheck -expect-chunk 30 /tmp/phonon-spike2/*.wav`, output verbatim (re-run by the conductor on the same files):
 
 ```
-/tmp/notted-spike2/mic-000001.wav  rate=16000 channels=1 bits=16 duration=30.00s rms_dbfs=-36.1 silent=false
-/tmp/notted-spike2/mic-000002.wav  rate=16000 channels=1 bits=16 duration=4.01s rms_dbfs=-47.1 silent=false
-/tmp/notted-spike2/others-000001.wav  rate=16000 channels=1 bits=16 duration=30.00s rms_dbfs=-32.4 silent=false
-/tmp/notted-spike2/others-000002.wav  rate=16000 channels=1 bits=16 duration=4.01s rms_dbfs=-34.8 silent=false
+/tmp/phonon-spike2/mic-000001.wav  rate=16000 channels=1 bits=16 duration=30.00s rms_dbfs=-36.1 silent=false
+/tmp/phonon-spike2/mic-000002.wav  rate=16000 channels=1 bits=16 duration=4.01s rms_dbfs=-47.1 silent=false
+/tmp/phonon-spike2/others-000001.wav  rate=16000 channels=1 bits=16 duration=30.00s rms_dbfs=-32.4 silent=false
+/tmp/phonon-spike2/others-000002.wav  rate=16000 channels=1 bits=16 duration=4.01s rms_dbfs=-34.8 silent=false
 OK 4 files
 ```
 
@@ -75,7 +75,7 @@ between -31 and -48 dBFS (room sound and the chime through the microphone).
 ## Notes for the app
 - When nothing plays, `others` is exact zeros (-120.0 dBFS, `silent=true`), because
   ScreenCaptureKit delivers no buffers. Transcription should skip silent chunks (VAD).
-- The permissions belong to the app that runs the helper: Terminal in this spike, Notted.app in
-  production. The user re-grants both permissions for Notted on first run.
-- The audio files from both runs are in `/tmp` (`/tmp/notted-spike`, `/tmp/notted-spike2`) and
+- The permissions belong to the app that runs the helper: Terminal in this spike, Phonon.app in
+  production. The user re-grants both permissions for Phonon on first run.
+- The audio files from both runs are in `/tmp` (`/tmp/phonon-spike`, `/tmp/phonon-spike2`) and
   are not committed.

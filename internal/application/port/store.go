@@ -36,7 +36,7 @@ type SettingsStore interface {
 	SaveSettings(ctx context.Context, s domain.Settings) error // writes all three keys
 }
 
-// SourceStore persists the Notted source folder the update pulls and builds.
+// SourceStore persists the Phonon source folder the update pulls and builds.
 type SourceStore interface {
 	GetSourcePath(ctx context.Context) (string, error)
 	SetSourcePath(ctx context.Context, path string) error
