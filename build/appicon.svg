@@ -1,11 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Notted app icon, option A "Serif N" (chosen 2026-10-24). The N is Newsreader 500 at opsz 72, converted to outlines. -->
+  <!-- Phonon app icon, concept P1 "Waveform" (chosen 2026-11-10): five sound bars, the last amber, on the shared family orbit with an amber and a white particle. Matches Boson E1 and Positron J6. -->
   <defs>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
-      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1d2330" flood-opacity="0.28"/>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity=".38"/>
     </filter>
   </defs>
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="#24408e" filter="url(#shadow)"/>
-  <path fill="#fbfbf8" d="M335.85334900390626 689.1401795410156V334.9060225976562L280.1575444238281 317.3118754199218V309.1312H412.1140158984375L638.8188073339843 623.8624207519531L623.8582564941406 671.5450405859375V329.8070558789062L570.4599041308594 317.8161941992187V309.1312H692.3293502343749V317.8161941992187L643.6376311523438 329.8070558789062V714.2424916015625H618.0300940332031L347.22788946289063 339.44451541992186L354.73615694335933 330.47949801757807V689.1401795410156L408.1345093066406 701.1310412207031V709.76H287.161629921875V701.1310412207031Z"/>
-  <circle cx="763.3" cy="268.9" r="51.1" fill="#d9574d"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#0d0f17" filter="url(#sh)"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="rgba(143,163,232,.12)" stroke-width="1"/>
+  <g transform="translate(212 212) scale(9.375)">
+    <ellipse cx="32" cy="32" rx="27" ry="12" transform="rotate(-24 32 32)" fill="none" stroke="#eef0f7" stroke-width="3.2" opacity="0.45"/>
+    <rect x="12" y="18" width="40" height="28" rx="8" fill="#0d0f17"/>
+    <path d="M19 28v8" stroke="#eef0f7" stroke-width="4" stroke-linecap="round"/>
+    <path d="M25.5 24v16" stroke="#eef0f7" stroke-width="4" stroke-linecap="round"/>
+    <path d="M32 21v22" stroke="#eef0f7" stroke-width="4" stroke-linecap="round"/>
+    <path d="M38.5 25v14" stroke="#eef0f7" stroke-width="4" stroke-linecap="round"/>
+    <path d="M45 28v8" stroke="#f5a524" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="56.67" cy="21.02" r="4.6" fill="#f5a524"/>
+    <circle cx="7.33" cy="42.98" r="4.6" fill="#eef0f7"/>
+  </g>
 </svg>

@@ -25,19 +25,17 @@ static NSMenuItem *menuItem(NSString *title, NSInteger tag) {
 	return mi;
 }
 
-// The serif N and the dot of build/appicon.svg, in its 1024-unit space (y down).
-static const CGFloat nPoints[][2] = {
-	{335.85, 689.14}, {335.85, 334.91}, {280.16, 317.31}, {280.16, 309.13}, {412.11, 309.13},
-	{638.82, 623.86}, {623.86, 671.55}, {623.86, 329.81}, {570.46, 317.82}, {570.46, 309.13},
-	{692.33, 309.13}, {692.33, 317.82}, {643.64, 329.81}, {643.64, 714.24}, {618.03, 714.24},
-	{347.23, 339.44}, {354.74, 330.48}, {354.74, 689.14}, {408.13, 701.13}, {408.13, 709.76},
-	{287.16, 709.76}, {287.16, 701.13},
+// The five sound bars of build/appicon.svg (concept P1 Waveform), in its 64-unit glyph space
+// (y down): x, top, bottom. Strokes are 4 units wide with round caps, as in the app icon.
+static const CGFloat bars[][3] = {
+	{19, 28, 36}, {25.5, 24, 40}, {32, 21, 43}, {38.5, 25, 39}, {45, 28, 36},
 };
-static const NSRect iconBox = {{270, 210}, {550, 510}};
-static const CGFloat dotX = 763.3, dotY = 268.9, dotR = 51.1;
+static const CGFloat barWidth = 4;
+static const NSRect iconBox = {{13, 16}, {39, 32}};
+static const CGFloat dotX = 47.5, dotY = 20.5, dotR = 3.8;
 
-// icon draws the N as a template image, with the app icon's dot while recording.
-// Both states share one frame, so the N does not move when the dot appears.
+// icon draws the bars as a template image, with a particle dot above the last bar while
+// recording. Both states share one frame, so the bars do not move when the dot appears.
 static NSImage *icon(BOOL recording, NSString *label) {
 	CGFloat scale = 18.0 / iconBox.size.height;
 	NSSize size = NSMakeSize(iconBox.size.width * scale, 18.0);
@@ -45,19 +43,20 @@ static NSImage *icon(BOOL recording, NSString *label) {
 		NSAffineTransform *t = [NSAffineTransform transform];
 		[t scaleBy:scale];
 		[t translateXBy:-iconBox.origin.x yBy:-iconBox.origin.y];
+		[t concat];
+		[[NSColor blackColor] set];
 		NSBezierPath *path = [NSBezierPath bezierPath];
-		size_t n = sizeof(nPoints) / sizeof(nPoints[0]);
-		[path moveToPoint:NSMakePoint(nPoints[0][0], nPoints[0][1])];
-		for (size_t i = 1; i < n; i++) {
-			[path lineToPoint:NSMakePoint(nPoints[i][0], nPoints[i][1])];
+		path.lineWidth = barWidth;
+		path.lineCapStyle = NSLineCapStyleRound;
+		size_t n = sizeof(bars) / sizeof(bars[0]);
+		for (size_t i = 0; i < n; i++) {
+			[path moveToPoint:NSMakePoint(bars[i][0], bars[i][1])];
+			[path lineToPoint:NSMakePoint(bars[i][0], bars[i][2])];
 		}
-		[path closePath];
+		[path stroke];
 		if (recording) {
-			[path appendBezierPathWithOvalInRect:NSMakeRect(dotX - dotR, dotY - dotR, 2 * dotR, 2 * dotR)];
+			[[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(dotX - dotR, dotY - dotR, 2 * dotR, 2 * dotR)] fill];
 		}
-		[path transformUsingAffineTransform:t];
-		[[NSColor blackColor] setFill];
-		[path fill];
 		return YES;
 	}];
 	image.template = YES;

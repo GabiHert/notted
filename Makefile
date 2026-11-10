@@ -11,6 +11,7 @@ build: helper
 	MACOSX_DEPLOYMENT_TARGET=14.0 CGO_CFLAGS=-mmacosx-version-min=14.0 CGO_LDFLAGS=-mmacosx-version-min=14.0 wails build -platform darwin/arm64
 	touch frontend/dist/.gitkeep
 	cp helpers/audiocap/build/audiocap $(APP)/Contents/MacOS/audiocap
+	cp build/darwin/iconfile.icns $(APP)/Contents/Resources/iconfile.icns
 	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Phonon
 	bash scripts/sign-bundle.sh $(APP)
 	bash scripts/check-bundle.sh
