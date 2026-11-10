@@ -9,6 +9,7 @@ import (
 
 	"github.com/GabiHert/phonon/internal/application/service"
 	"github.com/GabiHert/phonon/internal/domain"
+	"github.com/GabiHert/phonon/internal/infra/migrate"
 	"github.com/GabiHert/phonon/internal/infra/paths"
 	"github.com/GabiHert/phonon/internal/infra/store"
 	"github.com/GabiHert/phonon/internal/infra/wails"
@@ -48,6 +49,11 @@ func Run(assets embed.FS) error {
 		return err
 	}
 	defer cleanup()
+	// Phonon was called Notted: bring Notted's data over once, before anything opens it.
+	plan, on := migrate.Default()
+	if err := migrateNotted(plan, on, system.Alert); err != nil {
+		return err
+	}
 	st, err := store.Open(paths.DBPath())
 	if err != nil {
 		return err
