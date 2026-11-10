@@ -6,6 +6,7 @@ import { NewRecording } from "./components/NewRecording";
 import { SettingsView } from "./components/SettingsView";
 import { Sidebar, type View } from "./components/Sidebar";
 import { TitleBar } from "./components/TitleBar";
+import { loadSelectedTheme } from "./theme";
 import "./App.css";
 
 export function App({ initialView }: { initialView?: View }) {
@@ -13,6 +14,11 @@ export function App({ initialView }: { initialView?: View }) {
   const [dirtyPath, setDirtyPath] = useState<string | null>(null);
   const [pendingView, setPendingView] = useState<View | null>(null);
   const [menuError, setMenuError] = useState("");
+
+  // Paint the chosen colour theme; until it answers, tokens.css follows macOS.
+  useEffect(() => {
+    void loadSelectedTheme();
+  }, []);
 
   // A start or stop from the menu bar: show its failure, and follow a start into its meeting. The sidebar refreshes the list itself.
   useEffect(() => {

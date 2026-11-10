@@ -5,6 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { EventsOff, EventsOn, ResizeSession, WriteSession } from "../api/bindings";
+import { THEME_EVENT } from "../theme";
 import "./TerminalPane.css";
 
 type Props = {
@@ -93,9 +94,12 @@ export function TerminalPane({ meetingId, sizeSyncKey, onExit, accepts }: Props)
       term.options.theme = readTheme();
     };
     media?.addEventListener?.("change", onScheme);
+    // A theme picked in Settings changes the tokens without a colour-scheme change.
+    window.addEventListener(THEME_EVENT, onScheme);
 
     return () => {
       media?.removeEventListener?.("change", onScheme);
+      window.removeEventListener(THEME_EVENT, onScheme);
       observer.disconnect();
       EventsOff(dataEvent);
       EventsOff(exitEvent);

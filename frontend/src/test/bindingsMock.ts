@@ -75,10 +75,25 @@ export const CommitProjectDeletion = vi.fn();
 export const DeleteMeeting = vi.fn();
 export const GetSetupPrompt = vi.fn();
 export const ClipboardSetText = vi.fn();
+export const ListThemes = vi.fn();
+export const GetSelectedTheme = vi.fn();
+export const SelectTheme = vi.fn();
+export const ImportVSCodeTheme = vi.fn();
+export const DeleteTheme = vi.fn();
+export const ExportTheme = vi.fn();
+
+const darkTokens = { bg: "#111214", bar: "#0b0c0d", side: "#0b0c0d", card: "#18191c", fg: "#ecebe7", fg2: "#b6b3ab", fg3: "#8d8a83", "fg3-text": "#9a978f", border: "#2a2b2f", sel: "#2c2416", dot: "#3a3b40", accent: "#f2a93b", "on-accent": "#1b1204", rec: "#ff7b6b", "rec-bg": "#3b1d18", wave: "#a8742a", speaker: "#f2b55a" };
+const lightTokens = { bg: "#f4f3f0", bar: "#ebe9e4", side: "#ebe9e4", card: "#fbfaf8", fg: "#1b1a17", fg2: "#4f4b43", fg3: "#736e64", "fg3-text": "#6a655b", border: "#dcd8d0", sel: "#f3e3c6", dot: "#cdc8be", accent: "#9a5600", "on-accent": "#ffffff", rec: "#b8321f", "rec-bg": "#f5e0d9", wave: "#d8a75e", speaker: "#9a5600" };
+/** The themes a fresh data folder lists: the three built-ins. */
+export const builtinThemes = () => [
+  { id: "system", name: "Oscilloscope (match system)", mode: "system", builtin: true, tokens: {} },
+  { id: "oscilloscope-dark", name: "Oscilloscope Dark", mode: "dark", builtin: true, tokens: { ...darkTokens } },
+  { id: "oscilloscope-light", name: "Oscilloscope Light", mode: "light", builtin: true, tokens: { ...lightTokens } },
+];
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, ListThemes, GetSelectedTheme, SelectTheme, ImportVSCodeTheme, DeleteTheme, ExportTheme, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -142,6 +157,12 @@ export function resetBindings() {
   GetSetupPrompt.mockResolvedValue("SETUP PROMPT TEXT");
   ClipboardSetText.mockResolvedValue(true);
   GetModelStatus.mockResolvedValue({ language: "pt-BR", ready: true, missing: "", downloadBytes: 0, downloading: false });
+  ListThemes.mockImplementation(async () => builtinThemes());
+  GetSelectedTheme.mockImplementation(async () => builtinThemes()[0]);
+  SelectTheme.mockImplementation(async (id: string) => builtinThemes().find((t) => t.id === id) ?? builtinThemes()[0]);
+  ImportVSCodeTheme.mockResolvedValue({ id: "", name: "", mode: "", builtin: false, tokens: {} });
+  DeleteTheme.mockResolvedValue(undefined);
+  ExportTheme.mockResolvedValue("");
 }
 
 export function meeting(over: Record<string, unknown> = {}) {
