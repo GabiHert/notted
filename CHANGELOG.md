@@ -8,6 +8,7 @@ version and uses it as the release notes.
 
 ### Changed
 - Notted is now Phonon. On first launch Phonon copies Notted's data (meetings, recordings, transcripts, speech models and settings) from `~/.notted` to `~/.phonon` and leaves the original and Notted.app untouched. macOS asks again for the microphone and for Screen & System Audio Recording.
+- Notted's **Update Notted** button now lands on Phonon. The update replaces Notted.app with Phonon.app in the same folder and opens it; Phonon then copies Notted's data as above. If Phonon cannot be installed, Notted.app stays and says so, and opening it again retries.
 - New look, Oscilloscope: graphite and phosphor amber, dark first, with a warm-grey light variant. Geist replaces the serif and Plex fonts, and Geist Mono sets timestamps, the recording timer and code.
 - New app icon: five sound bars, the last one amber, on the orbit Phonon shares with Boson and Positron. The menu bar icon is the same five bars, with a dot while recording.
 
