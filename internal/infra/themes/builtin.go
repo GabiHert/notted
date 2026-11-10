@@ -19,3 +19,20 @@ var OscilloscopeLight = Theme{ID: "oscilloscope-light", Name: "Oscilloscope Ligh
 
 // Builtins are the read-only themes Phonon ships, the default first.
 var Builtins = []Theme{System, OscilloscopeDark, OscilloscopeLight}
+
+// WindowBackground is the colour the native window shows before the page paints: the chosen
+// theme's bg, or for the system theme the Oscilloscope variant macOS currently asks for.
+func WindowBackground(t Theme, systemDark bool) (r, g, b uint8) {
+	bg := t.Tokens["bg"]
+	if t.ID == SystemID || bg == "" {
+		bg = OscilloscopeLight.Tokens["bg"]
+		if systemDark {
+			bg = OscilloscopeDark.Tokens["bg"]
+		}
+	}
+	c, err := parseHex(bg)
+	if err != nil {
+		c, _ = parseHex(OscilloscopeDark.Tokens["bg"])
+	}
+	return uint8(c.r), uint8(c.g), uint8(c.b)
+}
