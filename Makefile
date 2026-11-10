@@ -15,6 +15,7 @@ build: helper
 	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Phonon
 	bash scripts/sign-bundle.sh $(APP)
 	bash scripts/check-bundle.sh
+	bash scripts/make-notted-bridge.sh
 install:
 	bash scripts/install.sh
 test-go:
