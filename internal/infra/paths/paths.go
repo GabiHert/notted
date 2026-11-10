@@ -55,3 +55,6 @@ func AskSocket() string { return filepath.Join(RunDir(), "ask.sock") }
 
 // SessionsDir returns the directory holding one folder of session files per meeting.
 func SessionsDir() string { return filepath.Join(Home(), "sessions") }
+
+// ThemesDir returns the directory holding custom colour themes and the chosen theme's id.
+func ThemesDir() string { return filepath.Join(Home(), "themes") }

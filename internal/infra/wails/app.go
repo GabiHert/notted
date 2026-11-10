@@ -3,6 +3,7 @@ package wails
 import (
 	"github.com/GabiHert/phonon/internal/application/port"
 	"github.com/GabiHert/phonon/internal/application/service"
+	"github.com/GabiHert/phonon/internal/infra/themes"
 )
 
 // App holds every method bound to the frontend.
@@ -23,6 +24,7 @@ type App struct {
 	forms        *service.FormService
 	review       *service.ReviewService
 	visibility   *Visibility
+	themes       *themes.Store
 	meetings     port.MeetingStore
 	models       port.ModelManager
 	events       port.EventEmitter
@@ -47,6 +49,7 @@ type Deps struct {
 	Forms         *service.FormService
 	Review        *service.ReviewService
 	Visibility    *Visibility
+	Themes        *themes.Store
 	// Events overrides the event sink; it defaults to the emitter given to New.
 	Events port.EventEmitter
 }
@@ -57,7 +60,7 @@ func New(e *Emitter, d Deps) *App {
 	if events == nil {
 		events = e
 	}
-	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, permissions: d.Permissions, micTest: d.MicTest, deleter: d.Delete, projects: d.Projects, meetings: d.Meetings, models: d.Models, forms: d.Forms, review: d.Review, visibility: d.Visibility, events: events}
+	return &App{emitter: e, recording: d.Recording, transcr: d.Transcription, archive: d.Archive, summary: d.Summary, session: d.Session, instructions: d.Instructions, setup: d.Setup, update: d.Update, permissions: d.Permissions, micTest: d.MicTest, deleter: d.Delete, projects: d.Projects, meetings: d.Meetings, models: d.Models, forms: d.Forms, review: d.Review, visibility: d.Visibility, themes: d.Themes, events: events}
 }
 
 // AppName is bound so the generated bindings and the build have one method from the start.

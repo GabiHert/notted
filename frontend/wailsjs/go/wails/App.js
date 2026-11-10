@@ -54,6 +54,10 @@ export function DeleteProject(arg1, arg2) {
   return window['go']['wails']['App']['DeleteProject'](arg1, arg2);
 }
 
+export function DeleteTheme(arg1) {
+  return window['go']['wails']['App']['DeleteTheme'](arg1);
+}
+
 export function DismissForm(arg1, arg2) {
   return window['go']['wails']['App']['DismissForm'](arg1, arg2);
 }
@@ -64,6 +68,10 @@ export function DownloadModels(arg1) {
 
 export function ExportMeeting(arg1) {
   return window['go']['wails']['App']['ExportMeeting'](arg1);
+}
+
+export function ExportTheme(arg1) {
+  return window['go']['wails']['App']['ExportTheme'](arg1);
 }
 
 export function GenerateSummary(arg1) {
@@ -98,6 +106,10 @@ export function GetReviewState(arg1) {
   return window['go']['wails']['App']['GetReviewState'](arg1);
 }
 
+export function GetSelectedTheme() {
+  return window['go']['wails']['App']['GetSelectedTheme']();
+}
+
 export function GetSettings() {
   return window['go']['wails']['App']['GetSettings']();
 }
@@ -112,6 +124,10 @@ export function GetTranscript(arg1) {
 
 export function GetUpdateStatus() {
   return window['go']['wails']['App']['GetUpdateStatus']();
+}
+
+export function ImportVSCodeTheme() {
+  return window['go']['wails']['App']['ImportVSCodeTheme']();
 }
 
 export function InspectArchive(arg1) {
@@ -146,6 +162,10 @@ export function ListProjects() {
   return window['go']['wails']['App']['ListProjects']();
 }
 
+export function ListThemes() {
+  return window['go']['wails']['App']['ListThemes']();
+}
+
 export function OpenPermissionSettings(arg1) {
   return window['go']['wails']['App']['OpenPermissionSettings'](arg1);
 }
@@ -168,6 +188,10 @@ export function ResizeSession(arg1, arg2, arg3) {
 
 export function ReviewSuggestions(arg1) {
   return window['go']['wails']['App']['ReviewSuggestions'](arg1);
+}
+
+export function SelectTheme(arg1) {
+  return window['go']['wails']['App']['SelectTheme'](arg1);
 }
 
 export function SetMeetingProject(arg1, arg2) {

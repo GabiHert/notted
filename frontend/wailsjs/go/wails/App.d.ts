@@ -28,11 +28,15 @@ export function DeleteProfile(arg1:string,arg2:Array<string>):Promise<void>;
 
 export function DeleteProject(arg1:string,arg2:wails.ProjectDeletePlanDTO):Promise<wails.ProjectDeleteResultDTO>;
 
+export function DeleteTheme(arg1:string):Promise<void>;
+
 export function DismissForm(arg1:string,arg2:string):Promise<void>;
 
 export function DownloadModels(arg1:string):Promise<void>;
 
 export function ExportMeeting(arg1:string):Promise<wails.ExportDTO>;
+
+export function ExportTheme(arg1:string):Promise<string>;
 
 export function GenerateSummary(arg1:string):Promise<void>;
 
@@ -50,6 +54,8 @@ export function GetReviewActWithoutAsking():Promise<boolean>;
 
 export function GetReviewState(arg1:string):Promise<wails.ReviewStateDTO>;
 
+export function GetSelectedTheme():Promise<wails.ThemeDTO>;
+
 export function GetSettings():Promise<wails.SettingsDTO>;
 
 export function GetSetupPrompt():Promise<string>;
@@ -57,6 +63,8 @@ export function GetSetupPrompt():Promise<string>;
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
 export function GetUpdateStatus():Promise<wails.UpdateStatusDTO>;
+
+export function ImportVSCodeTheme():Promise<wails.ThemeDTO>;
 
 export function InspectArchive(arg1:string):Promise<wails.ArchiveCheckDTO>;
 
@@ -74,6 +82,8 @@ export function ListProfiles():Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<string>>;
 
+export function ListThemes():Promise<Array<wails.ThemeDTO>>;
+
 export function OpenPermissionSettings(arg1:string):Promise<void>;
 
 export function PrepareArchive(arg1:string):Promise<void>;
@@ -85,6 +95,8 @@ export function ReadInstructionFile(arg1:string):Promise<string>;
 export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>;
 
 export function ReviewSuggestions(arg1:string):Promise<void>;
+
+export function SelectTheme(arg1:string):Promise<wails.ThemeDTO>;
 
 export function SetMeetingProject(arg1:string,arg2:string):Promise<void>;
 

@@ -348,6 +348,26 @@ export namespace wails {
 	        this.projectRoots = source["projectRoots"];
 	    }
 	}
+	export class ThemeDTO {
+	    id: string;
+	    name: string;
+	    mode: string;
+	    builtin: boolean;
+	    tokens: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new ThemeDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.mode = source["mode"];
+	        this.builtin = source["builtin"];
+	        this.tokens = source["tokens"];
+	    }
+	}
 	export class UpdateStatusDTO {
 	    sourcePath: string;
 	    installedApp: string;
