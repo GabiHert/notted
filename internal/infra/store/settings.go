@@ -13,7 +13,6 @@ const (
 	keyProfile      = "profile"
 	keyCheckoutPath = "checkout_path"
 	keyProjectRoots = "project_roots"
-	keySourcePath   = "source_path"
 
 	keyReviewActWithoutAsking = "review_act_without_asking"
 )
@@ -68,22 +67,6 @@ func (s *Store) SaveSettings(ctx context.Context, st domain.Settings) error {
 		}
 	}
 	return tx.Commit()
-}
-
-// GetSourcePath returns the saved Phonon source folder, or "" when none is saved.
-func (s *Store) GetSourcePath(ctx context.Context) (string, error) {
-	var v string
-	err := s.db.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = ?`, keySourcePath).Scan(&v)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	return v, err
-}
-
-// SetSourcePath saves the Phonon source folder.
-func (s *Store) SetSourcePath(ctx context.Context, path string) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, keySourcePath, path)
-	return err
 }
 
 // GetReviewActWithoutAsking says whether review turns run without permission prompts; false when never saved.

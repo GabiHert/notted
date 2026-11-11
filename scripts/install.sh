@@ -8,7 +8,6 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd -P)
 install_dir=${PHONON_INSTALL_DIR:-/Applications}
-phonon_home=${PHONON_HOME:-$HOME/.phonon}
 quit_wait=${PHONON_QUIT_WAIT:-15}
 mv_cmd=${PHONON_MV:-mv}
 codesign_cmd=${PHONON_CODESIGN:-/usr/bin/codesign}
@@ -250,12 +249,6 @@ else
   rename "$staged" "$app" || install_failed
 fi
 if [ "$reset_needed" -eq 1 ]; then reset_permissions "$app"; fi
-
-# Save the clone, so Update Phonon knows which folder to pull.
-source_dir=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || source_dir=$root
-if mkdir -p "$phonon_home" 2>/dev/null; then
-  printf '%s\n' "$source_dir" >"$phonon_home/install-source" 2>/dev/null || true
-fi
 
 echo "Installed $app."
 

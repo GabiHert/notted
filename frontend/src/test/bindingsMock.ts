@@ -61,7 +61,8 @@ export const WriteSession = vi.fn();
 export const ResizeSession = vi.fn();
 export const StopSession = vi.fn();
 export const GetUpdateStatus = vi.fn();
-export const SetUpdateSource = vi.fn();
+export const CheckForUpdate = vi.fn();
+export const SetUpdateToken = vi.fn();
 export const StartUpdate = vi.fn();
 export const GetPermissions = vi.fn();
 export const AskPermissions = vi.fn();
@@ -93,7 +94,7 @@ export const builtinThemes = () => [
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, SetUpdateSource, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, ListThemes, GetSelectedTheme, SelectTheme, ImportVSCodeTheme, DeleteTheme, ExportTheme, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, CheckForUpdate, SetUpdateToken, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, ListThemes, GetSelectedTheme, SelectTheme, ImportVSCodeTheme, DeleteTheme, ExportTheme, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -141,8 +142,10 @@ export function resetBindings() {
   WriteSession.mockResolvedValue(undefined);
   ResizeSession.mockResolvedValue(undefined);
   StopSession.mockResolvedValue(undefined);
-  GetUpdateStatus.mockResolvedValue({ sourcePath: "", installedApp: "/Applications/Phonon.app", signing: false, state: "idle", message: "", lines: [], seq: 0 });
-  SetUpdateSource.mockResolvedValue(undefined);
+  const updateStatus = { version: "v0.1.0", repo: "GabiHert/notted", latest: null, upToDate: false, hasToken: false, state: "idle", message: "", lines: [], seq: 0, installedApp: "/Applications/Phonon.app" };
+  GetUpdateStatus.mockResolvedValue(updateStatus);
+  CheckForUpdate.mockResolvedValue(updateStatus);
+  SetUpdateToken.mockResolvedValue(updateStatus);
   StartUpdate.mockResolvedValue(undefined);
   GetPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });
   AskPermissions.mockResolvedValue({ microphone: "allowed", screen: "allowed" });

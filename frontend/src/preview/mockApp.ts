@@ -162,35 +162,34 @@ export async function SetSettings(_s: unknown) {
   if (screen === "settings-save-failed") throw new Error("The archive folder does not exist: /archive");
 }
 
-const SOURCE = "/Users/ana/code/phonon";
 const updateLines = [
-  "$ git pull --ff-only --no-rebase --no-autostash",
-  "Updating 2a8d067..47d92f5",
-  "Fast-forward",
-  " frontend/src/components/UpdateCard.tsx | 120 ++++++++++",
-  " 1 file changed, 120 insertions(+)",
-  "$ make build",
-  "bash helpers/audiocap/build.sh",
-  "built /Users/ana/code/phonon/helpers/audiocap/build/audiocap",
-  "Wails CLI v2.12.0",
-  "• Generating bindings: Done.",
-  "• Compiling frontend: Done.",
-  "• Compiling application: Done.",
-  "• Packaging application: Done.",
-  'sign-bundle: signing with "Phonon Local Signing"',
-  "check-bundle: OK (signed with Phonon Local Signing)",
+  "Downloading Phonon-v0.2.0-darwin-arm64.zip (48.1 MB)",
+  "Checksum OK: 9f2c…e41a",
+  "Unzipping",
+  "Signature OK: tech.bhlabs.phonon",
+  "Staged /Users/ana/Library/Application Support/Phonon/update/Phonon.app",
 ];
-const failedLines = [...updateLines.slice(0, 11), "go: github.com/acme/widgets@v1.2.0: module lookup disabled by GOPROXY=off", "make: *** [build] Error 1"];
-export async function GetUpdateStatus() {
-  const base = { sourcePath: SOURCE, installedApp: "/Applications/Phonon.app", signing: true, state: "idle", message: "", lines: [] as string[], seq: 0 };
-  if (screen === "update-no-source") return { ...base, sourcePath: "", signing: false };
-  if (screen === "update-running") return { ...base, state: "building", lines: updateLines.slice(0, 11), seq: 11 };
+const latest = { tag: "v0.2.0", name: "Phonon v0.2.0", notes: "", date: Date.UTC(2026, 10, 11), url: "https://github.com/GabiHert/notted/releases/tag/v0.2.0" };
+function updateStatus() {
+  const base = { version: "v0.1.0", repo: "GabiHert/notted", latest: null as typeof latest | null, upToDate: false, hasToken: false,
+    state: "idle", message: "", lines: [] as string[], seq: 0, installedApp: "/Applications/Phonon.app" };
+  if (screen === "update-current") return { ...base, latest: { ...latest, tag: "v0.1.0", name: "Phonon v0.1.0" }, upToDate: true };
+  if (screen === "update-available") return { ...base, latest };
+  if (screen === "update-running") return { ...base, latest, state: "downloading", lines: updateLines.slice(0, 1), seq: 1 };
   if (screen === "update-failed")
-    return { ...base, state: "failed", message: "make build failed. Phonon did not change. The output below shows why. The build runs without the network: if this update added dependencies, run make build once in Terminal in the Phonon source folder, then update again.", lines: failedLines, seq: failedLines.length };
-  if (screen === "update-installing") return { ...base, state: "installing", message: "Phonon quits now and reopens when the new version is in place.", lines: updateLines, seq: updateLines.length };
+    return { ...base, latest, state: "failed", message: "The download's checksum does not match SHA256SUMS, so Phonon refused it. Phonon did not change.", lines: updateLines.slice(0, 2), seq: 2 };
+  if (screen === "update-installing") return { ...base, latest, state: "installing", message: "Phonon quits now and reopens when the new version is in place.", lines: updateLines, seq: updateLines.length };
   return base;
 }
-export async function SetUpdateSource(_path: string) {}
+export async function GetUpdateStatus() {
+  return updateStatus();
+}
+export async function CheckForUpdate() {
+  return updateStatus();
+}
+export async function SetUpdateToken(_token: string) {
+  return updateStatus();
+}
 export async function StartUpdate() {}
 
 let micAsked = false;

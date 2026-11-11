@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GetSettings, ListMyProjectKeys, ListProfiles, ListProjects, type wails } from "../api/bindings";
+import { CheckForUpdate, EventsOn, GetSettings, GetUpdateStatus, ListMyProjectKeys, ListProfiles, ListProjects, SetUpdateToken, StartUpdate, type wails } from "../api/bindings";
 import { errorMessage } from "../format";
 import { AppearanceCard } from "./AppearanceCard";
 import { InstructionFiles } from "./InstructionFiles";
@@ -8,11 +8,18 @@ import { PromptPreview } from "./PromptPreview";
 import { ReviewModeCard } from "./ReviewModeCard";
 import { SetupForm } from "./SetupForm";
 import { SetupPromptCard } from "./SetupPromptCard";
-import { UpdateCard } from "./UpdateCard";
+import { UpdatesCard, type UpdatesAPI, type UpdateStatus } from "./UpdatesCard";
 import { WelcomeCard } from "./WelcomeCard";
 import "./SettingsView.css";
 
 type OpenRequest = { path: string; seq: number };
+
+const updatesAPI: UpdatesAPI = {
+  getStatus: () => GetUpdateStatus() as Promise<UpdateStatus>,
+  check: () => CheckForUpdate() as Promise<UpdateStatus>,
+  start: () => StartUpdate(),
+  setToken: (t) => SetUpdateToken(t) as Promise<UpdateStatus>,
+};
 
 export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | null) => void } = {}) {
   const [saved, setSaved] = useState<wails.SettingsDTO | null>(null);
@@ -25,8 +32,19 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
   const [myProjectsError, setMyProjectsError] = useState("");
   const [filesRefresh, setFilesRefresh] = useState(0);
   const [openRequest, setOpenRequest] = useState<OpenRequest | null>(null);
+  const [version, setVersion] = useState("");
   const request = useRef(0);
   const seq = useRef(0);
+
+  useEffect(() => {
+    let live = true;
+    GetUpdateStatus()
+      .then((s) => live && setVersion(s.version))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // Every result is checked against the newest request, so a late answer never overwrites newer data.
   const reload = useCallback(() => {
@@ -114,7 +132,14 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
 
   return (
     <div className="nt-settings">
-      <h1>Settings</h1>
+      <div className="nt-settings__title">
+        <h1>Settings</h1>
+        {version && (
+          <span className="nt-settings__version" aria-label={`Phonon version ${version}`} title="The running version of Phonon">
+            {version}
+          </span>
+        )}
+      </div>
       <div className="nt-tabs" role="tablist">
         <button className="nt-tabs__tab nt-tabs__tab--selected" role="tab" aria-selected="true" id="nt-tab-instructions" aria-controls="nt-panel-instructions">
           Instructions
@@ -128,7 +153,7 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         <PromptPreview projects={projects} projectsError={projectsError} />
         <ReviewModeCard />
         <AppearanceCard />
-        <UpdateCard />
+        <UpdatesCard appName="Phonon" api={updatesAPI} on={EventsOn} />
         <PermissionsCard />
       </div>
     </div>

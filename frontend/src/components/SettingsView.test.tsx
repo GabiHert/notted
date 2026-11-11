@@ -19,9 +19,20 @@ test("shows the Settings heading, one selected Instructions tab and the cards in
   expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   await screen.findByLabelText("Profile");
   const headers = [...document.querySelectorAll("section > .nt-card__header")].map((e) => e.textContent);
-  expect(headers).toEqual(["Set up Phonon", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Suggestion reviews", "Appearance", "Update Phonon", "Permissions"]);
-  expect(GetUpdateStatus).toHaveBeenCalledTimes(1);
+  expect(headers).toEqual(["Set up Phonon", "Set up with Claude Code", "Your setup", "Instruction files", "Prompt preview", "Suggestion reviews", "Appearance", "Updates", "Permissions"]);
+  expect(GetUpdateStatus).toHaveBeenCalled();
   expect(GetPermissions).toHaveBeenCalledTimes(1);
+});
+
+test("shows the running version beside the Settings title", async () => {
+  render(<SettingsView />);
+  expect(await screen.findByLabelText("Phonon version v0.1.0")).toHaveTextContent("v0.1.0");
+});
+
+test("does not ask for a Phonon source folder any more", async () => {
+  render(<SettingsView />);
+  await screen.findByLabelText("Profile");
+  expect(screen.queryByText(/source folder/i)).not.toBeInTheDocument();
 });
 
 test("the Claude Code card is always shown, directly above the setup form, also when the first-run checklist is hidden", async () => {

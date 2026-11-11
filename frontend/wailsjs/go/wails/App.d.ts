@@ -8,6 +8,8 @@ export function AppName():Promise<string>;
 
 export function AskPermissions():Promise<wails.PermissionsDTO>;
 
+export function CheckForUpdate():Promise<wails.UpdateStatusDTO>;
+
 export function ChooseFolder(arg1:string,arg2:string):Promise<string>;
 
 export function CloneArchive(arg1:string,arg2:string):Promise<string>;
@@ -104,7 +106,7 @@ export function SetReviewActWithoutAsking(arg1:boolean):Promise<void>;
 
 export function SetSettings(arg1:wails.SettingsDTO):Promise<void>;
 
-export function SetUpdateSource(arg1:string):Promise<void>;
+export function SetUpdateToken(arg1:string):Promise<wails.UpdateStatusDTO>;
 
 export function SetWindowVisible(arg1:boolean):Promise<void>;
 

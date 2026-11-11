@@ -178,7 +178,7 @@ test_script_exists() {
 }
 
 test_replace_existing() {
-  begin "everything present: an existing app is replaced, .old is removed, install-source is written"
+  begin "everything present: an existing app is replaced, .old is removed"
   fresh
   existing_app old-build
   run_install
@@ -193,7 +193,6 @@ test_replace_existing() {
   check "new build in place" file_is "$APPS/Phonon.app/Contents/MacOS/Phonon" new-build
   check "no .old" absent "$APPS/Phonon.app.old"
   check "no .new" absent "$APPS/Phonon.app.new"
-  check "install-source" file_is "$NHOME/install-source" "$CLONE"
   check "make build ran once in the clone" calls_have "make -C $CLONE build"
   check "did not open" calls_lack "open "
   check "did not quit" calls_lack "osascript"
@@ -210,7 +209,6 @@ test_first_install() {
   check "new build in place" file_is "$APPS/Phonon.app/Contents/MacOS/Phonon" new-build
   check "no .old" absent "$APPS/Phonon.app.old"
   check "no .new" absent "$APPS/Phonon.app.new"
-  check "install-source" file_is "$NHOME/install-source" "$CLONE"
   finish
 }
 
@@ -226,7 +224,6 @@ test_missing_item() {
   check "stop line" out_has "$STOPPED"
   check "make not run" calls_lack "make "
   check "install dir untouched" absent "$APPS"
-  check "no install-source" absent "$NHOME/install-source"
   finish
 }
 
@@ -354,7 +351,6 @@ test_still_running() {
   check "old app unchanged" file_is "$APPS/Phonon.app/Contents/MacOS/Phonon" old-build
   check "no .new" absent "$APPS/Phonon.app.new"
   check "no .old" absent "$APPS/Phonon.app.old"
-  check "no install-source" absent "$NHOME/install-source"
   finish
 }
 
@@ -428,7 +424,6 @@ test_failed_second_rename() {
   check "no .new" absent "$APPS/Phonon.app.new"
   check "no .old" absent "$APPS/Phonon.app.old"
   check "three renames tried" calls_have "mv $APPS/Phonon.app.old $APPS/Phonon.app"
-  check "no install-source" absent "$NHOME/install-source"
   finish
 }
 
@@ -474,7 +469,6 @@ test_old_without_app() {
   check "no .new" absent "$APPS/Phonon.app.new"
   check "leftover untouched" file_is "$APPS/Phonon.app.old/Contents/MacOS/Phonon" earlier
   check "make not run" calls_lack "make "
-  check "no install-source" absent "$NHOME/install-source"
   finish
 }
 
@@ -504,7 +498,6 @@ test_old_removal_fails() {
   check "exit 0" rc_is 0
   check "new build in place" file_is "$APPS/Phonon.app/Contents/MacOS/Phonon" new-build
   check "installed line" out_has "Installed $APPS/Phonon.app."
-  check "install-source" file_is "$NHOME/install-source" "$CLONE"
   check "opened" calls_have "open $APPS/Phonon.app"
   finish
 }
@@ -670,142 +663,6 @@ test_reset_rollback() {
   run_install PHONON_MV="$T/bin/mvfake"
   check "exit 1" rc_is 1
   check "unchanged line" out_has "$UNCHANGED"
-  check "no tccutil" calls_lack "tccutil"
-  check "no signature line" out_lacks "$SIG_CHANGED"
-  finish
-}
-
-# ---- the Update Phonon installer (internal/integration/install/install.sh) ----
-
-SWAPPER="$root/internal/integration/install/install.sh"
-
-# upd_fresh: a temp world with fake open and permission tools; fake_exe is a signed copy of sleep.
-upd_fresh() {
-  T=$(mktemp -d)
-  T=$(cd "$T" && pwd -P)
-  tmps+=("$T")
-  UAPPS="$T/apps dir"
-  NEWAPP="$T/src/build/bin/Phonon.app"
-  mkdir -p "$T/bin" "$UAPPS"
-  export T_FAKE=$T
-  : >"$T/calls"
-  cp /bin/sleep "$T/exe"
-  /usr/bin/codesign -f -s - "$T/exe" >/dev/null 2>&1
-  fake_permission_tools
-  # open launches the app's executable (a sleep), so the installer sees it start
-  fake open 'echo "open $*" >>"$T_FAKE/calls"
-if [ ! -e "$T_FAKE/no-launch" ]; then
-  "$1/Contents/MacOS/Phonon" 30 >/dev/null 2>&1 &
-  echo $! >>"$T_FAKE/pids"
-fi'
-  fake mvfake 'n=$(cat "$T_FAKE/mvcount" 2>/dev/null || echo 0)
-n=$((n + 1))
-echo "$n" >"$T_FAKE/mvcount"
-if [ "$n" = "$(cat "$T_FAKE/mvfail-at" 2>/dev/null)" ]; then exit 1; fi
-exec /bin/mv "$@"'
-}
-
-# upd_app <dir> <marker> [requirement]
-upd_app() {
-  mkdir -p "$1/Contents/MacOS"
-  cp "$T/exe" "$1/Contents/MacOS/Phonon"
-  echo "$2" >"$1/Contents/marker"
-  echo com.example.test >"$1/Contents/Info.plist"
-  if [ -n "${3:-}" ]; then echo "$3" >"$1/Contents/req"; fi
-}
-
-# run_update [VAR=value ...]: runs the installer, with an already-gone pid to wait for.
-run_update() {
-  local dir="$T/phonon-install-x" gone
-  mkdir -p "$dir"
-  cp "$SWAPPER" "$dir/install.sh"
-  /bin/sleep 0 &
-  gone=$!
-  wait "$gone"
-  OUT=$(env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin T_FAKE="$T" PHONON_OPEN="$T/bin/open" PHONON_LAUNCH_SETTLE=0 \
-    PHONON_QUIT_WAIT=1 PHONON_LAUNCH_WAIT=2 PHONON_CODESIGN="$T/bin/codesign" PHONON_TCCUTIL="$T/bin/tccutil" \
-    PHONON_PLISTBUDDY="$T/bin/plistbuddy" "$@" /bin/bash "$dir/install.sh" "$gone" "$NEWAPP" "$UAPPS/Phonon.app" 2>&1)
-  RC=$?
-  if [ -s "$T/pids" ]; then kill -9 $(cat "$T/pids") 2>/dev/null; fi
-}
-
-# update_with <installed requirement|-> <new requirement>
-update_with() {
-  upd_fresh
-  if [ "$1" = - ]; then upd_app "$UAPPS/Phonon.app" old; else upd_app "$UAPPS/Phonon.app" old "$1"; fi
-  upd_app "$NEWAPP" new "$2"
-  run_update
-}
-
-test_update_reset_equal() {
-  begin "update installer, same requirement: no reset and no extra line"
-  update_with 'identifier "a" and anchor apple' 'identifier "a" and anchor apple'
-  check "exit 0" rc_is 0
-  check "swapped" file_is "$UAPPS/Phonon.app/Contents/marker" new
-  check "no tccutil" calls_lack "tccutil"
-  check "no signature line" out_lacks "$SIG_CHANGED"
-  finish
-}
-
-test_update_reset_different() {
-  begin "update installer, another requirement: both permissions reset, one line, before open"
-  update_with 'cdhash H"1"' 'identifier "a" and certificate leaf = H"2"'
-  check "exit 0" rc_is 0
-  check "swapped" file_is "$UAPPS/Phonon.app/Contents/marker" new
-  check "screen reset" calls_have "$RESET_SCREEN"
-  check "microphone reset" calls_have "$RESET_MIC"
-  check "the line, prefixed" out_has "install: $SIG_CHANGED"
-  check "line printed once" test "$(printf '%s\n' "$OUT" | grep -c "$SIG_CHANGED")" = 1
-  check "screen reset before open" call_before "$RESET_SCREEN" "open $UAPPS/Phonon.app"
-  check "microphone reset before open" call_before "$RESET_MIC" "open $UAPPS/Phonon.app"
-  finish
-}
-
-test_update_reset_unreadable() {
-  begin "update installer, unreadable installed requirement: reset"
-  update_with - 'identifier "a"'
-  check "exit 0" rc_is 0
-  check "screen reset" calls_have "$RESET_SCREEN"
-  check "microphone reset" calls_have "$RESET_MIC"
-  check "the line" out_has "install: $SIG_CHANGED"
-  finish
-}
-
-test_update_reset_no_installed_app() {
-  begin "update installer, no installed app: nothing reset"
-  upd_fresh
-  upd_app "$NEWAPP" new 'identifier "a"'
-  run_update
-  check "exit 1 (nothing to swap)" rc_is 1
-  check "no tccutil" calls_lack "tccutil"
-  check "no signature line" out_lacks "$SIG_CHANGED"
-  finish
-}
-
-test_update_reset_tccutil_fails() {
-  begin "update installer, tccutil fails: logged, update succeeds"
-  upd_fresh
-  upd_app "$UAPPS/Phonon.app" old 'cdhash H"1"'
-  upd_app "$NEWAPP" new 'cdhash H"2"'
-  : >"$T/tccutil-fails"
-  run_update
-  check "exit 0" rc_is 0
-  check "swapped" file_is "$UAPPS/Phonon.app/Contents/marker" new
-  check "screen failure logged" out_has "install: could not reset the ScreenCapture permission: boom"
-  check "microphone failure logged" out_has "install: could not reset the Microphone permission: boom"
-  check "opened" calls_have "open $UAPPS/Phonon.app"
-  finish
-}
-
-test_update_reset_rollback() {
-  begin "update installer, failed swap: restored and nothing reset"
-  upd_fresh
-  upd_app "$UAPPS/Phonon.app" old 'cdhash H"1"'
-  upd_app "$NEWAPP" new 'cdhash H"2"'
-  echo 2 >"$T/mvfail-at"
-  run_update PHONON_MV="$T/bin/mvfake"
-  check "exit 1" rc_is 1
-  check "old app back" file_is "$UAPPS/Phonon.app/Contents/marker" old
   check "no tccutil" calls_lack "tccutil"
   check "no signature line" out_lacks "$SIG_CHANGED"
   finish

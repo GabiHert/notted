@@ -9,3 +9,4 @@ frontend/dist/*
 !**/testdata/**/*.wav
 *.sqlite
 frontend/dist-preview/
+build/release/

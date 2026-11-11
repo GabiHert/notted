@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/GabiHert/phonon/internal/application/service"
 	"github.com/GabiHert/phonon/internal/domain"
@@ -21,11 +22,11 @@ import (
 	"github.com/GabiHert/phonon/internal/integration/audio/wavinfo"
 	"github.com/GabiHert/phonon/internal/integration/claude"
 	"github.com/GabiHert/phonon/internal/integration/git"
-	"github.com/GabiHert/phonon/internal/integration/install"
 	"github.com/GabiHert/phonon/internal/integration/menubar"
 	"github.com/GabiHert/phonon/internal/integration/process"
 	"github.com/GabiHert/phonon/internal/integration/speech"
 	"github.com/GabiHert/phonon/internal/integration/system"
+	"github.com/GabiHert/phonon/internal/update"
 	wailsv2 "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -91,20 +92,14 @@ func Run(assets embed.FS) error {
 	instructions := service.NewInstructionsService(st, claude.PromptSource{EnvFn: claude.LoginShellEnv}, archive.ListProjects)
 	term := process.NewManager(emitter)
 	setup := service.NewSetupService(st, git.New(gitEnv(claude.LoginShellEnv)))
-	update := service.NewUpdateService(service.UpdateDeps{
-		Source:        st,
-		Git:           git.New(gitEnv(claude.LoginShellEnv)),
-		Stream:        &process.Streamer{EnvFn: gitEnv(claude.LoginShellEnv)},
-		Install:       &install.Installer{},
-		Signing:       install.Signing{}.Present,
-		Recording:     recording.Recording,
-		Executable:    os.Executable,
-		Pid:           os.Getpid,
-		Quit:          emitter.Quit,
-		LogPath:       paths.UpdateLog,
-		InstallSource: paths.InstallSource,
-		Emit:          emitter,
+	upd := update.New(update.Deps{
+		Version: Version, AppName: "Phonon", Repo: "GabiHert/notted",
+		Env:  claude.LoginShellEnv,
+		Emit: emitter.Emit,
+		Dir:  paths.UpdateDir(), LogPath: paths.UpdateLog(),
+		Quit: emitter.Quit,
 	})
+	upd.CleanLeftovers()
 	permChecker := audio.NewPermissions(helperPath())
 	permissions := service.NewPermissionsService(permChecker, system.Opener{})
 	micTest := service.NewMicTestService(audio.NewMicTester(helperPath()), permChecker, recording.Recording, emitter)
@@ -118,7 +113,7 @@ func Run(assets embed.FS) error {
 	deleter := service.NewDeleteService(service.DeleteDeps{Store: st, Recorder: recording, Transcription: trans, Summary: summary, Review: review, Session: session, Forms: forms, SessionsDir: paths.SessionsDir(), AudioDir: paths.AudioDir})
 	projects := service.NewProjectDeleteService(service.ProjectDeleteDeps{Store: st, Settings: st, Recorder: recording, Meetings: deleter, Git: git.New(gitEnv(claude.LoginShellEnv)), Emit: emitter})
 	themeStore := &themes.Store{Dir: paths.ThemesDir()}
-	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: update, Permissions: permissions, MicTest: micTest, Delete: deleter, Projects: projects, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis, Themes: themeStore})
+	app := wails.New(emitter, wails.Deps{Recording: recording, Transcription: trans, Archive: archive, Summary: summary, Session: session, Instructions: instructions, Setup: setup, Update: upd, Permissions: permissions, MicTest: micTest, Delete: deleter, Projects: projects, Meetings: st, Models: models, Forms: forms, Review: review, Visibility: vis, Themes: themeStore})
 
 	statusItem := menubar.New()
 	menuBar := service.NewMenuBarService(service.MenuBarDeps{
@@ -145,6 +140,7 @@ func Run(assets embed.FS) error {
 		},
 		OnStartup: func(ctx context.Context) {
 			emitter.SetContext(ctx)
+			go upd.Watch(ctx, time.Minute, 6*time.Hour)
 			notifier.Start()
 			if err := recording.RecoverOnStartup(ctx); err != nil {
 				log.Printf("recover recordings: %v", err)

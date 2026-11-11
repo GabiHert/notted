@@ -14,6 +14,10 @@ export function AskPermissions() {
   return window['go']['wails']['App']['AskPermissions']();
 }
 
+export function CheckForUpdate() {
+  return window['go']['wails']['App']['CheckForUpdate']();
+}
+
 export function ChooseFolder(arg1, arg2) {
   return window['go']['wails']['App']['ChooseFolder'](arg1, arg2);
 }
@@ -206,8 +210,8 @@ export function SetSettings(arg1) {
   return window['go']['wails']['App']['SetSettings'](arg1);
 }
 
-export function SetUpdateSource(arg1) {
-  return window['go']['wails']['App']['SetUpdateSource'](arg1);
+export function SetUpdateToken(arg1) {
+  return window['go']['wails']['App']['SetUpdateToken'](arg1);
 }
 
 export function SetWindowVisible(arg1) {

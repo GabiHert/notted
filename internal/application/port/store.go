@@ -36,12 +36,6 @@ type SettingsStore interface {
 	SaveSettings(ctx context.Context, s domain.Settings) error // writes all three keys
 }
 
-// SourceStore persists the Phonon source folder the update pulls and builds.
-type SourceStore interface {
-	GetSourcePath(ctx context.Context) (string, error)
-	SetSourcePath(ctx context.Context, path string) error
-}
-
 // ReviewModeStore persists whether review turns run without permission prompts.
 type ReviewModeStore interface {
 	GetReviewActWithoutAsking(ctx context.Context) (bool, error) // false when never saved
