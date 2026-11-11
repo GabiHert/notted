@@ -57,7 +57,7 @@ flowchart TD
 
 *The **Set up with Claude Code** card with the prompt shown. The screenshot uses a short sample; the real prompt is longer, explains how Phonon works and lists what your own archive holds. **Copy setup prompt** copies it, and **Show prompt** lets you read it first.*
 
-![The Update Phonon and Permissions cards, with the microphone not asked yet and screen recording not allowed.](docs/screenshots/permissions.png)
+![The Updates and Permissions cards, with the microphone not asked yet and screen recording not allowed.](docs/screenshots/permissions.png)
 
 *The **Permissions** card shows the state of both permissions and links to System Settings.*
 
@@ -82,7 +82,7 @@ cd phonon
 make install
 ```
 
-`make install` checks your Mac and the tools below, and tells you how to fix anything missing before it changes anything. If your keychain has no "Phonon Local Signing" certificate, it creates one, and macOS asks for your login password once so it can trust the certificate for signing Phonon. It then builds Phonon, puts it in `/Applications`, and opens it. **Update Phonon** then uses this clone as its source folder, until you choose another one in **Settings**.
+`make install` checks your Mac and the tools below, and tells you how to fix anything missing before it changes anything. If your keychain has no "Phonon Local Signing" certificate, it creates one, and macOS asks for your login password once so it can trust the certificate for signing Phonon. It then builds Phonon, puts it in `/Applications`, and opens it. From then on Phonon updates itself from GitHub Releases (see [Updates](#updates)).
 
 ### What you need
 
@@ -232,27 +232,39 @@ Claude Code is the only model Phonon uses, and it needs no API key: `ANTHROPIC_A
 
 ### What Phonon downloads
 
-On first use per language, Phonon downloads the Whisper model (about 640 MB for English `small.en`, about 564 MB for Portuguese `turbo`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.phonon/models`. This is the only download Phonon makes itself; the `claude` program talks to Anthropic on its own. Phonon also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, **Commit and push** runs `git push`, and **Update Phonon** runs `git pull`.
+On first use per language, Phonon downloads the Whisper model (about 640 MB for English `small.en`, about 564 MB for Portuguese `turbo`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.phonon/models`. These, and the releases below, are the only downloads Phonon makes itself; the `claude` program talks to Anthropic on its own. To update, it asks `api.github.com` for this repository's newest release and downloads it from there (see [Updates](#updates)). Phonon also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, and **Commit and push** runs `git push`.
 
-## Update Phonon
+## Updates
 
-Phonon can update itself from your own clone of its source. If you installed with `make install`, that clone is already in use. Otherwise, in **Settings**, under **Update
-Phonon**, click **Choose…** and pick the folder of your Phonon clone. **Update Phonon** then:
+Phonon updates itself from the [GitHub Releases](https://github.com/GabiHert/notted/releases) of
+this repository; it no longer needs a source folder or a build. **Settings** shows the running
+version beside its title, and the **Updates** card checks for a new release a minute after launch
+and every 6 hours, or when you click **Check for updates**. When one is out, **Update Phonon**:
 
-1. checks that the clone is on `main` with no uncommitted changes, and stops if it is not;
-2. runs `git pull --ff-only` on `main`, with your own git and your own login;
-3. runs `make build` without the network (if an update adds dependencies, run `make build` once in Terminal first);
-4. quits Phonon, puts `build/bin/Phonon.app` in place of the app you are running, and reopens it.
+1. downloads `Phonon-<version>-darwin-arm64.zip` and `SHA256SUMS` from the release;
+2. checks the zip's SHA-256 against `SHA256SUMS`, unzips it, and checks the app's code signature and bundle id (`tech.bhlabs.phonon`);
+3. quits Phonon, puts the new app in place of the one you are running, and reopens it. If the new version does not start within 20 seconds, the previous one comes back.
 
-Nothing runs until you click **Update Phonon**. A failed pull or build leaves your app as it was
-and shows the output. The installer copies the new app next to the old one, swaps the two with
-renames, and keeps the old copy until the new one has started. Its log is `~/.phonon/update.log`.
+It does not start while a recording runs. Any failure leaves your app as it was and shows why. The
+download and the staged app live in `~/.phonon/update`, and the installer's log is
+`~/.phonon/update.log`. The repository is public, so no token is needed; for a private fork, the
+card saves a fine-grained GitHub token (Contents: read-only) in your login keychain.
+
+### Releasing
+
+`make release V=vX.Y.Z` (or `make release` for the next patch version) runs on your Mac: it checks
+that `main` is clean and up to date and that `CHANGELOG.md` has entries under **Unreleased**, runs
+`make test`, builds with the version baked in, signs with "Phonon Local Signing" when your keychain
+has it (ad hoc otherwise), zips the app, writes `SHA256SUMS`, moves **Unreleased** under the new
+version, tags, pushes, and publishes the GitHub Release with the changelog section as its notes. The
+settings are in `release.conf`. With `SIGN_IDENTITY` set to a Developer ID, and the `NOTARY_*`
+variables to an App Store Connect key, the build uses the hardened runtime and is notarized.
 
 ## Permissions
 
 Phonon needs two permissions to record a meeting: the microphone for your voice, and Screen & System Audio Recording for everyone else. The **Permissions** card in **Settings** shows each one as **Allowed**, **Not allowed** or **Not asked yet**. **Ask** shows the macOS prompt, **Open System Settings** opens the right pane, and **Check again** reads the state again without asking. Click **Test microphone** to check that the microphone hears you. It is off while a recording runs.
 
-macOS asks for the microphone and screen recording permissions again only when the app's signature changes. `make install` and **Update Phonon** compare the signature of the installed app with the new one, and reset the two permissions only when they differ. With the "Phonon Local Signing" certificate the signature stays the same across builds.
+macOS asks for the microphone and screen recording permissions again only when the app's signature changes. `make install` compares the signature of the installed app with the new one, and resets the two permissions only when they differ. With the "Phonon Local Signing" certificate the signature stays the same across builds and releases.
 
 ## Your data
 
@@ -262,7 +274,7 @@ Everything is under `~/.phonon`: `meetings.sqlite`, `audio/<meeting-id>/`, `mode
 
 Phonon was called Notted. The first time Phonon opens, it copies Notted's data folder `~/.notted` to `~/.phonon`, once, and points the stored audio paths in the copy at the new folder. Your meetings, recordings, transcripts, speech models and settings come with it, and your meetings archive stays where it is: Phonon keeps using the folder your settings name. On APFS the copy is a clone, so it is instant and takes no extra disk space until one side changes. `~/.notted` and `/Applications/Notted.app` are left as they were, so Notted still opens on its own data; delete them yourself once you no longer need them. Phonon copies only while `~/.phonon` holds nothing of its own yet, and never while Notted runs: if Notted is open, Phonon says so and quits, so quit Notted and open Phonon again. If the copy fails, Phonon shows why and does not start. `make install` quits Notted before it installs Phonon.
 
-**Update Notted** in an older Notted works too. It pulls this repository and runs `make build`, which also builds `build/bin/Notted.app`, a small bridge that carries the new Phonon.app (`cmd/nottedbridge`). Notted installs the bridge in its own place, the bridge puts Phonon.app in the same folder, moves itself to the Trash and opens Phonon, and Phonon copies the data as above. The original Notted.app is replaced by that update, while `~/.notted` stays. If Phonon cannot be installed, the bridge stays as Notted.app and says so, and opening it again retries. Its log is `~/Library/Logs/Phonon/notted-bridge.log`. Builds then sign ad hoc until you create the "Phonon Local Signing" certificate (`bash scripts/create-signing-identity.sh`).
+**Update Notted** in an older Notted works too, and lands on a Phonon that then updates from GitHub Releases. It pulls this repository and runs `make build`, which also builds `build/bin/Notted.app`, a small bridge that carries the new Phonon.app (`cmd/nottedbridge`). Notted installs the bridge in its own place, the bridge puts Phonon.app in the same folder, moves itself to the Trash and opens Phonon, and Phonon copies the data as above. The original Notted.app is replaced by that update, while `~/.notted` stays. If Phonon cannot be installed, the bridge stays as Notted.app and says so, and opening it again retries. Its log is `~/Library/Logs/Phonon/notted-bridge.log`. Builds then sign ad hoc until you create the "Phonon Local Signing" certificate (`bash scripts/create-signing-identity.sh`).
 
 Because Phonon is a new app to macOS, it asks for the microphone and Screen & System Audio Recording again. Its certificate is "Phonon Local Signing"; the old "Notted Local Signing" certificate can be deleted in Keychain Access. An archive set up by Notted keeps its files as they are, including the `# Notted:` line in its `.gitignore`, which Phonon accepts.
 
@@ -273,7 +285,7 @@ Because Phonon is a new app to macOS, it asks for the microphone and Screen & Sy
 | Screen recording stays **Not allowed** after a rebuild | The signature changed, so macOS keeps the old permission against it. In System Settings > Privacy & Security > Screen & System Audio Recording, select Phonon, remove it with the minus button, click **Check again**, then switch it on and reopen Phonon. Create the signing certificate once to stop this. |
 | The transcript has no lines from you, or a warning says the microphone recorded no sound | A MacBook's built-in microphone is off while the lid is closed. Open the lid, or choose another input in System Settings > Sound > Input. Then click **Test microphone** in Settings. |
 | Summary fails and `claude` is not found | Phonon looks for `claude` through your login shell, and it does not follow aliases. Make `command -v claude` work in a new Terminal window, then try again. |
-| **Update Phonon** stops before it pulls | The clone must be on `main` with no uncommitted changes. Check out `main`, commit or stash your changes, then try again. |
+| **Update Phonon** says macOS runs a temporary read-only copy | macOS opened Phonon from the folder it was unzipped in. Quit Phonon, drag Phonon.app into Applications in Finder, and open it from there. |
 | `make install` stops with a list of missing items | Fix each item as the message says, then run `make install` again. |
 
 ## Development
