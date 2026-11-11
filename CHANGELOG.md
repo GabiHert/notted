@@ -6,6 +6,8 @@ version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-11
+
 ### Changed
 - Phonon now updates from GitHub Releases instead of pulling and building its source clone, so Settings no longer asks for a Phonon source folder. The Updates card checks for a new release at launch and every 6 hours; **Update Phonon** downloads it, checks its SHA-256 and code signature, swaps the app and reopens it, and puts the previous version back if the new one does not start. It waits while a recording runs.
 - Notted is now Phonon. On first launch Phonon copies Notted's data (meetings, recordings, transcripts, speech models and settings) from `~/.notted` to `~/.phonon` and leaves the original and Notted.app untouched. macOS asks again for the microphone and for Screen & System Audio Recording.
