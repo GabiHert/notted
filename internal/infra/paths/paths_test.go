@@ -40,11 +40,11 @@ func TestHelpersJoinUnderHome(t *testing.T) {
 	}
 }
 
-func TestInstallSourceUnderHome(t *testing.T) {
+func TestUpdateDirUnderHome(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("PHONON_HOME", dir)
-	if got, want := InstallSource(), filepath.Join(dir, "install-source"); got != want {
-		t.Fatalf("InstallSource() = %q, want %q", got, want)
+	if got, want := UpdateDir(), filepath.Join(dir, "update"); got != want {
+		t.Fatalf("UpdateDir() = %q, want %q", got, want)
 	}
 }
 

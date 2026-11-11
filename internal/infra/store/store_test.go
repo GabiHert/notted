@@ -18,7 +18,6 @@ import (
 var (
 	_ port.MeetingStore  = (*Store)(nil)
 	_ port.SettingsStore = (*Store)(nil)
-	_ port.SourceStore   = (*Store)(nil)
 )
 
 func openTemp(t *testing.T) (*Store, string) {
@@ -441,31 +440,17 @@ func TestMigration2RenamesMeetingKeyColumn(t *testing.T) {
 	}
 }
 
-func TestSourcePathRoundTrip(t *testing.T) {
-	s, _ := openTemp(t)
-	ctx := context.Background()
-	if got, err := s.GetSourcePath(ctx); err != nil || got != "" {
-		t.Fatalf("first = %q, %v", got, err)
-	}
-	for _, p := range []string{"/a", "/b"} {
-		if err := s.SetSourcePath(ctx, p); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if got, _ := s.GetSourcePath(ctx); got != "/b" {
-		t.Fatalf("got %q", got)
-	}
-	want := domain.Settings{Profile: "ana", CheckoutPath: "/c", ProjectRoots: map[string]string{"acme": "/p/acme"}}
-	if err := s.SaveSettings(ctx, want); err != nil {
-		t.Fatal(err)
-	}
-	if got, _ := s.GetSourcePath(ctx); got != "/b" {
-		t.Fatalf("SaveSettings touched the source: %q", got)
-	}
-	got, err := s.GetSettings(ctx)
-	if err != nil || !reflect.DeepEqual(got, want) {
-		t.Fatalf("settings = %+v, %v", got, err)
-	}
+// The source_path key is no longer used (Phonon updates from GitHub Releases), but the settings
+// table still accepts it, so a database from an older Phonon keeps opening.
+func setSourcePath(s *Store, path string) error {
+	_, err := s.db.Exec(`INSERT INTO settings (key, value) VALUES ('source_path', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, path)
+	return err
+}
+
+func getSourcePath(s *Store) (string, error) {
+	var v string
+	err := s.db.QueryRow(`SELECT value FROM settings WHERE key = 'source_path'`).Scan(&v)
+	return v, err
 }
 
 func TestMigration3KeepsSettings(t *testing.T) {
@@ -496,7 +481,7 @@ func TestMigration3KeepsSettings(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("settings = %+v, %v", got, err)
 	}
-	if err := s.SetSourcePath(ctx, "/src"); err != nil {
+	if err := setSourcePath(s, "/src"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.db.Exec(`INSERT INTO settings (key, value) VALUES ('bogus', 'x')`); err == nil {
@@ -624,7 +609,7 @@ func TestMigration4KeepsSettings(t *testing.T) {
 	if err := s.SaveSettings(ctx, want); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetSourcePath(ctx, "/src"); err != nil {
+	if err := setSourcePath(s, "/src"); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Close(); err != nil {
@@ -640,7 +625,7 @@ func TestMigration4KeepsSettings(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("settings = %+v, %v", got, err)
 	}
-	if src, err := s.GetSourcePath(ctx); err != nil || src != "/src" {
+	if src, err := getSourcePath(s); err != nil || src != "/src" {
 		t.Fatalf("source path = %q, %v", src, err)
 	}
 	if on, err := s.GetReviewActWithoutAsking(ctx); err != nil || on {

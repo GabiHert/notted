@@ -22,3 +22,17 @@
   color: var(--fg);
   font-weight: 500;
 }
+.nt-settings__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.nt-settings__title h1 {
+  margin-bottom: 0;
+}
+.nt-settings__version {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fg3-text);
+}

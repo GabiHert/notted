@@ -38,7 +38,8 @@ export function initPreview(): View {
     case "setup-folder-new":
     case "setup-folder-in-repo":
     case "update-idle":
-    case "update-no-source":
+    case "update-current":
+    case "update-available":
     case "update-running":
     case "update-failed":
     case "update-installing":
@@ -240,7 +241,8 @@ function autoDriveSettings(screen: string) {
     appearance: [scrollTo(".nt-appearance")],
     "appearance-import-failed": [scrollTo(".nt-appearance"), open("Import VS Code theme…")],
     "update-idle": [scrollTo(".nt-update")],
-    "update-no-source": [scrollTo(".nt-update")],
+    "update-current": [scrollTo(".nt-update")],
+    "update-available": [scrollTo(".nt-update")],
     "update-running": [scrollTo(".nt-update")],
     "update-failed": [scrollTo(".nt-update")],
     "update-installing": [scrollTo(".nt-update")],

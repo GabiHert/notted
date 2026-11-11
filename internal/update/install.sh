@@ -1,25 +1,26 @@
 #!/bin/bash
-# Puts a newly built Phonon.app in place of the installed one after the running Phonon quits.
-# Usage: install.sh <pid> <new-app> <installed-app>
-# It copies the new app beside the installed one, swaps the two with renames, and keeps the old
-# copy until the new one is running. Every failure leaves an app at <installed-app> that opens.
+# Puts a new <App>.app in place of the installed one after the running app quits.
+# Usage: install.sh <pid> <new-app> <installed-app> <app-name>
+# It copies the new app beside the installed one, deletes the new app it was given, swaps the two
+# with renames, and keeps the old copy until the new one is running. Every failure leaves an app at
+# <installed-app> that opens.
+# Environment (all optional): UPDATER_OPEN, UPDATER_MV, UPDATER_QUIT_WAIT (seconds, default 60),
+# UPDATER_LAUNCH_WAIT (default 20), UPDATER_LAUNCH_SETTLE (default 2).
 set -u
 pid=$1
 new=$2
 dest=$3
-open_cmd=${PHONON_OPEN:-/usr/bin/open}
-mv_cmd=${PHONON_MV:-/bin/mv}
-codesign_cmd=${PHONON_CODESIGN:-/usr/bin/codesign}
-tccutil_cmd=${PHONON_TCCUTIL:-/usr/bin/tccutil}
-plistbuddy_cmd=${PHONON_PLISTBUDDY:-/usr/libexec/PlistBuddy}
-quit_wait=${PHONON_QUIT_WAIT:-60}
-launch_wait=${PHONON_LAUNCH_WAIT:-20}
-settle=${PHONON_LAUNCH_SETTLE:-2}
+name=${4:-$(basename "$3" .app)}
+open_cmd=${UPDATER_OPEN:-/usr/bin/open}
+mv_cmd=${UPDATER_MV:-/bin/mv}
+quit_wait=${UPDATER_QUIT_WAIT:-60}
+launch_wait=${UPDATER_LAUNCH_WAIT:-20}
+settle=${UPDATER_LAUNCH_SETTLE:-2}
 staged="$dest.new"
 old="$dest.old"
-exe="$dest/Contents/MacOS/Phonon"
+exe="$dest/Contents/MacOS/$name"
 here=$(cd "$(dirname "$0")" && pwd)
-cleanup() { case "$here" in */phonon-install-*) rm -rf "$here" ;; esac; }
+cleanup() { case "$here" in */app-install-*) rm -rf "$here" ;; esac; }
 trap cleanup EXIT
 
 log() { echo "install: $*"; }
@@ -55,25 +56,6 @@ put_back() {
   [ ! -e "$2" ] && [ ! -L "$2" ] || return 1
   "$mv_cmd" "$1" "$2"
 }
-# requirement <app>: the designated requirement macOS stores a permission against, or nothing.
-requirement() {
-  "$codesign_cmd" -d -r- "$1" 2>/dev/null | sed -n 's/^designated => //p'
-}
-# reset_permissions <app>: macOS keeps a permission with the signature that got it, so after a
-# signature change the stored one never matches and switching it on does nothing. A failure only
-# gets logged.
-reset_permissions() {
-  local id service out
-  log "the signature changed, so macOS will ask for the microphone and screen recording permissions again"
-  if ! id=$("$plistbuddy_cmd" -c 'Print :CFBundleIdentifier' "$1/Contents/Info.plist" 2>&1) || [ -z "$id" ]; then
-    log "could not read the bundle id: $id"
-    return 0
-  fi
-  for service in ScreenCapture Microphone; do
-    out=$("$tccutil_cmd" reset "$service" "$id" 2>&1) || log "could not reset the $service permission: $out"
-  done
-  return 0
-}
 gone() { ! kill -0 "$pid" 2>/dev/null; }
 reopen() {
   log "reopening $dest"
@@ -92,31 +74,28 @@ wait_until() {
   "$@"
 }
 
-log "waiting for Phonon (pid $pid) to quit"
+log "waiting for $name (pid $pid) to quit"
 if ! wait_until "$quit_wait" gone; then
-  log "Phonon did not quit within $quit_wait seconds; nothing changed"
+  log "$name did not quit within $quit_wait seconds; nothing changed"
+  rm -rf "$new"
   exit 1
 fi
 if [ -e "$old" ]; then
   log "$old is left from an earlier update; nothing changed"
+  rm -rf "$new"
   reopen
   exit 1
 fi
 rm -rf "$staged"
 log "copying $new to $staged"
 if ! /usr/bin/ditto "$new" "$staged"; then
-  rm -rf "$staged"
+  rm -rf "$staged" "$new"
   log "copy failed; nothing changed"
   reopen
   exit 1
 fi
-# Read the old signature before the swap, while the old app is still at $dest.
-reset_needed=0
-if [ -e "$dest" ]; then
-  old_req=$(requirement "$dest") || old_req=
-  new_req=$(requirement "$new") || new_req=
-  if [ -z "$old_req" ] || [ "$old_req" != "$new_req" ]; then reset_needed=1; fi
-fi
+# The copy beside the installed app is the only one needed from here on.
+rm -rf "$new"
 log "moving $dest to $old"
 if ! "$mv_cmd" "$dest" "$old"; then
   rm -rf "$staged"
@@ -132,7 +111,6 @@ if ! "$mv_cmd" "$staged" "$dest"; then
   reopen
   exit 1
 fi
-if [ "$reset_needed" -eq 1 ]; then reset_permissions "$dest"; fi
 log "opening $dest"
 before=" $(matching_pids)"
 "$open_cmd" "$dest"
@@ -145,6 +123,6 @@ rm -rf "$staged"
 put_back "$dest" "$staged" || restore_failed
 put_back "$old" "$dest" || restore_failed
 rm -rf "$staged"
-log "the new Phonon did not start within $launch_wait seconds; restored the previous version"
+log "the new $name did not start within $launch_wait seconds; restored the previous version"
 reopen
 exit 1

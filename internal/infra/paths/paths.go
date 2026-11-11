@@ -44,8 +44,8 @@ func ModelsDir() string { return filepath.Join(Home(), "models") }
 // UpdateLog returns the installer's log file under Home.
 func UpdateLog() string { return filepath.Join(Home(), "update.log") }
 
-// InstallSource returns the file make install writes with the path of the clone it ran in.
-func InstallSource() string { return filepath.Join(Home(), "install-source") }
+// UpdateDir returns the update workspace: downloaded releases and the staged app.
+func UpdateDir() string { return filepath.Join(Home(), "update") }
 
 // RunDir returns the directory holding runtime files such as the ask socket.
 func RunDir() string { return filepath.Join(Home(), "run") }

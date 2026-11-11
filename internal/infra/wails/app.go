@@ -4,6 +4,7 @@ import (
 	"github.com/GabiHert/phonon/internal/application/port"
 	"github.com/GabiHert/phonon/internal/application/service"
 	"github.com/GabiHert/phonon/internal/infra/themes"
+	"github.com/GabiHert/phonon/internal/update"
 )
 
 // App holds every method bound to the frontend.
@@ -16,7 +17,7 @@ type App struct {
 	session      *service.SessionService
 	instructions *service.InstructionsService
 	setup        *service.SetupService
-	update       *service.UpdateService
+	update       *update.Service
 	permissions  *service.PermissionsService
 	micTest      *service.MicTestService
 	deleter      *service.DeleteService
@@ -39,7 +40,7 @@ type Deps struct {
 	Session       *service.SessionService
 	Instructions  *service.InstructionsService
 	Setup         *service.SetupService
-	Update        *service.UpdateService
+	Update        *update.Service
 	Permissions   *service.PermissionsService
 	MicTest       *service.MicTestService
 	Delete        *service.DeleteService
