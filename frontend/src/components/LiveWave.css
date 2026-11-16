@@ -1,0 +1,36 @@
+/* The live wave: a small scope screen under the meeting header while it records. */
+.nt-wave {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bar);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.nt-wave__labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: none;
+  width: 52px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg3-text);
+}
+/* Generated text: the lane names stay out of the page's text (the transcript says You and Others too). */
+.nt-wave__label::before {
+  content: attr(data-label);
+}
+.nt-wave__label--mic {
+  color: var(--accent);
+}
+.nt-wave__canvas {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  height: 72px;
+}
