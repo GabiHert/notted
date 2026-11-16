@@ -6,6 +6,9 @@ version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+- A live wave while recording: your microphone (amber) and the others' audio as two oscilloscope traces under the meeting's title, driven by the real input levels. It pauses, and the app stops sending levels, while the window is hidden or minimised; with Reduce Motion on it stands still and updates twice a second.
+
 ## [1.0.0] - 2026-11-11
 
 ### Changed
