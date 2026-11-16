@@ -400,7 +400,27 @@ export async function ListOpenForms() {
 }
 export async function AnswerForm(_formId: string, _answers: Record<string, unknown>, _note: string) {}
 export async function DismissForm(_formId: string, _note: string) {}
-export async function SetWindowVisible(_visible: boolean) {}
+let windowVisible = true;
+export async function SetWindowVisible(visible: boolean) {
+  windowVisible = visible;
+}
+
+// A fake level stream for the recording meeting, shaped like the backend's: 15 levels a second per
+// track, nothing while the window is hidden. You and the others take turns, in syllable-sized bursts.
+const fakeLevel = (t: number, talking: boolean, seed: number) => {
+  if (!talking) return -62 + 4 * Math.sin(t * 0.0021 + seed);
+  const syllables = 0.5 + 0.5 * Math.sin(t * 0.019 + seed) * Math.sin(t * 0.0047 + seed * 2);
+  return -44 + 32 * Math.abs(syllables);
+};
+setInterval(() => {
+  if (!windowVisible) return;
+  const t = Date.now();
+  const turn = Math.floor(t / 3500) % 3; // 0: you, 1: the others, 2: both briefly
+  for (const [track, talking, seed] of [["mic", turn !== 1, 0.3], ["others", turn !== 0, 1.9]] as const) {
+    const rmsDb = fakeLevel(t, talking, seed);
+    emit("recording:level", { meetingId: "fx-recording", track, rmsDb, peakDb: Math.min(0, rmsDb + 9) });
+  }
+}, 1000 / 15);
 
 const darkTokens = { bg: "#111214", bar: "#0b0c0d", side: "#0b0c0d", card: "#18191c", fg: "#ecebe7", fg2: "#b6b3ab", fg3: "#8d8a83", "fg3-text": "#9a978f", border: "#2a2b2f", sel: "#2c2416", dot: "#3a3b40", accent: "#f2a93b", "on-accent": "#1b1204", rec: "#ff7b6b", "rec-bg": "#3b1d18", wave: "#a8742a", speaker: "#f2b55a" };
 const lightTokens = { bg: "#f4f3f0", bar: "#ebe9e4", side: "#ebe9e4", card: "#fbfaf8", fg: "#1b1a17", fg2: "#4f4b43", fg3: "#736e64", "fg3-text": "#6a655b", border: "#dcd8d0", sel: "#f3e3c6", dot: "#cdc8be", accent: "#9a5600", "on-accent": "#ffffff", rec: "#b8321f", "rec-bg": "#f5e0d9", wave: "#d8a75e", speaker: "#9a5600" };

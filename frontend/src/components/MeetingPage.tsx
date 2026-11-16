@@ -8,6 +8,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { FormCard } from "./FormCard";
 import { ProjectCard } from "./ProjectCard";
 import { ModelBanner } from "./ModelBanner";
+import { LiveWave } from "./LiveWave";
 import { RecordingPill } from "./RecordingPill";
 import { SessionCard } from "./SessionCard";
 import { SaveDialog } from "./SaveDialog";
@@ -213,6 +214,7 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
           </button>
         </div>
       </header>
+      <LiveWave meetingId={meetingId} recording={meeting.state === "recording"} />
       {form && <FormCard key={form.id} form={form} sectionRef={cardRef} />}
       {meeting.state === "transcribing" && (
         <div className="nt-meeting__busy">

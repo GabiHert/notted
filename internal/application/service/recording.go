@@ -39,8 +39,9 @@ type activeRecording struct {
 	stopping  bool
 	silentRun int
 	warned    bool
-	device    string // the microphone the helper recorded from, once it reported `started`
-	micSeen   bool   // the first mic chunk was checked
+	device    string                     // the microphone the helper recorded from, once it reported `started`
+	micSeen   bool                       // the first mic chunk was checked
+	lastLevel map[domain.Track]time.Time // when each track's last live level went to the window
 	once      sync.Once
 }
 
@@ -56,6 +57,7 @@ type RecordingService struct {
 	onChunk  func(domain.Chunk)
 	onStop   func(meetingID string)
 	onState  func(recording bool)
+	visible  func() bool // the window's visibility; nil counts as visible
 	mu       sync.Mutex
 	active   *activeRecording
 }
@@ -155,6 +157,10 @@ func (s *RecordingService) Start(ctx context.Context, title string, lang domain.
 func (s *RecordingService) handleEvent(ctx context.Context, a *activeRecording, ev port.HelperEvent) {
 	if ev.Kind == "started" {
 		a.device = ev.Device
+		return
+	}
+	if ev.Kind == "level" {
+		s.forwardLevel(a, ev)
 		return
 	}
 	if ev.Kind != "chunk" {

@@ -18,8 +18,8 @@ type HelperEvent struct {
 	Code    string
 	Message string
 	Device  string  // the input device's name; on "started" and "device"
-	RMSdB   float64 // "level": the last 100 ms, in dBFS; -120 for digital silence
-	PeakDB  float64 // "level": the loudest sample of the last 100 ms, in dBFS; -120 for digital silence
+	RMSdB   float64 // "level": the last 100 ms (`level`) or 1/15 s of Track (`record`), in dBFS; -120 for digital silence
+	PeakDB  float64 // "level": the loudest sample of that stretch, in dBFS; -120 for digital silence
 }
 
 // RecorderExit is how the helper process ended.

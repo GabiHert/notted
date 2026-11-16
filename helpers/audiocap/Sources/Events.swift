@@ -18,12 +18,14 @@ struct DeviceEvent: Codable {
 }
 
 /// `level` prints one about every 100 ms: dBFS of that stretch, -120 for digital silence.
+/// `record` prints one per track 15 times a second, with `track` set to "mic" or "others".
 struct LevelEvent: Codable {
     var event = "level"
+    var track: String?
     var rmsDb: Double
     var peakDb: Double
-    enum CodingKeys: String, CodingKey { case event, rmsDb = "rms_db", peakDb = "peak_db" }
-    init(rmsDb: Double, peakDb: Double) { self.rmsDb = rmsDb; self.peakDb = peakDb }
+    enum CodingKeys: String, CodingKey { case event, track, rmsDb = "rms_db", peakDb = "peak_db" }
+    init(rmsDb: Double, peakDb: Double, track: String? = nil) { self.rmsDb = rmsDb; self.peakDb = peakDb; self.track = track }
 }
 
 struct ChunkEvent: Codable {
