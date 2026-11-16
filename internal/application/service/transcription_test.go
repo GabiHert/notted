@@ -503,3 +503,26 @@ func TestForgetDoesNotWaitForAnotherMeetingsChunk(t *testing.T) {
 	}
 	close(be.release)
 }
+
+func TestDrainedListenerRunsOnceTheQueueIsEmptyAfterTheLastChunk(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	drained := make(chan int, 8)
+	f.svc.SetDrainedListener(func() { drained <- f.eng.calls() })
+	f.start()
+	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
+	f.svc.Enqueue(f.addChunk(domain.TrackOthers, 1))
+	f.svc.MeetingStopped(f.meet.ID)
+	f.svc.Wait()
+	select {
+	case calls := <-drained:
+		// Items may drain the queue more than once as they arrive; the last drain follows every call.
+		for len(drained) > 0 {
+			calls = <-drained
+		}
+		if calls != 2 {
+			t.Fatalf("drained after %d engine calls, want 2", calls)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("drained listener was not called")
+	}
+}

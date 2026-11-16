@@ -80,7 +80,8 @@ func Run(assets embed.FS) error {
 	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
 	detector := speech.NewDetector(paths.ModelsDir())
 	models := speech.NewModelManager(paths.ModelsDir(), engine, detector)
-	trans := service.NewTranscriptionService(st, engine, detector, emitter, func(p string) ([]float32, int, error) {
+	worker := transcribeWorker(paths.ModelsDir(), engine)
+	trans := service.NewTranscriptionService(st, worker, detector, emitter, func(p string) ([]float32, int, error) {
 		b, err := os.ReadFile(p)
 		if err != nil {
 			return nil, 0, err
@@ -147,6 +148,12 @@ func Run(assets embed.FS) error {
 			}
 			recording.SetChunkListener(trans.Enqueue)
 			recording.SetStoppedListener(trans.MeetingStopped)
+			// Once the last chunk of a finished recording is transcribed, the model's memory goes back.
+			trans.SetDrainedListener(func() {
+				if recording.ActiveMeetingID() == "" {
+					worker.Unload()
+				}
+			})
 			menuBar.Attach()
 			statusItem.Install(menubar.Handlers{Start: menuBar.Start, Stop: menuBar.Stop, Open: emitter.Show, Quit: emitter.Quit})
 			startDebugServer(debugHooks{StartRecording: menuBar.Start, StopRecording: menuBar.Stop})
@@ -165,7 +172,7 @@ func Run(assets embed.FS) error {
 			_ = micTest.Stop()
 			recording.StopAll()
 			trans.Close()
-			engine.Unload()
+			worker.Unload()
 			if err := st.Close(); err != nil {
 				log.Printf("close store: %v", err)
 			}

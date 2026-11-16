@@ -72,6 +72,7 @@ func (s *MenuBarService) Stop() {
 
 // fail shows the window and tells the UI what went wrong.
 func (s *MenuBarService) fail(err error) {
+	log.Printf("menu bar: %v", err)
 	s.d.ShowWindow()
 	s.d.Emit.Emit("menubar:error", map[string]any{"message": err.Error()})
 }

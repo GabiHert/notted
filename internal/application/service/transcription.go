@@ -44,6 +44,7 @@ type TranscriptionService struct {
 	stop    chan struct{}
 	started bool
 	done    chan struct{}
+	drained func() // called when the worker has nothing left to do
 }
 
 // NewTranscriptionService builds the service; decode reads a WAV file into mono samples and their rate.
@@ -102,6 +103,14 @@ func (s *TranscriptionService) Close() {
 	}
 	close(s.stop)
 	<-s.done
+}
+
+// SetDrainedListener calls fn, on the worker goroutine, each time the last queued item is done.
+// Set it before Start.
+func (s *TranscriptionService) SetDrainedListener(fn func()) {
+	s.mu.Lock()
+	s.drained = fn
+	s.mu.Unlock()
 }
 
 // Enqueue queues a closed chunk. It never blocks.
@@ -205,8 +214,15 @@ func (s *TranscriptionService) finishItem() {
 	s.mu.Lock()
 	s.pending--
 	s.busy = ""
+	var drained func()
+	if s.pending == 0 {
+		drained = s.drained
+	}
 	s.idle.Broadcast() // Wait waits for an empty queue, Forget for the end of one item
 	s.mu.Unlock()
+	if drained != nil {
+		drained()
+	}
 }
 
 func (s *TranscriptionService) run(ctx context.Context) {

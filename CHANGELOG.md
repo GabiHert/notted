@@ -6,6 +6,12 @@ version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Changed
+- Phonon uses far less memory. The speech model now runs in a separate process that stops once a recording is transcribed, so Phonon drops back to about 50 MB instead of holding 1 to 5 GB for 10 minutes or more. A long transcription no longer grows without limit: the model process is replaced if it passes 3 GB.
+
+### Added
+- For measuring: `PHONON_DEBUG_ADDR=127.0.0.1:6061` serves Go profiles and recording start and stop on that loopback address. It is off unless set.
+
 ## [1.0.0] - 2026-11-11
 
 ### Changed
