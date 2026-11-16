@@ -149,6 +149,7 @@ func Run(assets embed.FS) error {
 			recording.SetStoppedListener(trans.MeetingStopped)
 			menuBar.Attach()
 			statusItem.Install(menubar.Handlers{Start: menuBar.Start, Stop: menuBar.Stop, Open: emitter.Show, Quit: emitter.Quit})
+			startDebugServer(debugHooks{StartRecording: menuBar.Start, StopRecording: menuBar.Stop})
 			models.SetOnReady(func(domain.Language) { trans.ResumeWaiting() })
 			if err := trans.Start(ctx); err != nil {
 				log.Printf("start transcription: %v", err)
