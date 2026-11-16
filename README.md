@@ -95,6 +95,7 @@ make install
 | The Wails CLI v2.12.0 | `make install` installs it; by hand: `go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0` |
 | Node 20.19 or later (Node 24 recommended) | `brew install node`, or [nodejs.org](https://nodejs.org/) |
 | Xcode Command Line Tools, which provide `swiftc` 6 and the macOS SDK | `xcode-select --install` |
+| CMake, which builds whisper.cpp (its v1.8.6 source is downloaded once by `make build`) | `brew install cmake` |
 | Claude Code installed and logged in, with `claude` on your login shell's `PATH` (aliases are not followed) | See [claude.com/claude-code](https://claude.com/claude-code) |
 | A folder for your meetings archive: an empty folder, or a clone of your team's archive | You choose it in Settings. Phonon sets it up the first time you choose it. |
 

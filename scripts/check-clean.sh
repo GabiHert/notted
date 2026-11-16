@@ -43,6 +43,7 @@ for f in $files; do
     while IFS= read -r url; do
       case "$url" in
         https://github.com/k2-fsa/sherpa-onnx/releases/download/*) ;;
+        https://github.com/ggml-org/whisper.cpp/archive/refs/tags/*) ;;  # scripts/build-whisper.sh
         https://api.github.com) ;; # internal/update: this repo's releases only
         'https://github.com/$REPO/releases/tag/'*) ;;
         https://github.com/GabiHert/notted/releases/*) ;; # this repo's releases # scripts/release.sh prints the new release

@@ -10,3 +10,5 @@ frontend/dist/*
 *.sqlite
 frontend/dist-preview/
 build/release/
+
+helpers/whisper/build/

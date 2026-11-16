@@ -49,6 +49,38 @@ SOFTWARE.
 | `frontend/src/components/CodeEditor.tsx` | `frontend/src/components/CodeEditor.tsx` (lines 1-77) | Markdown only; Ledger theme from CSS variables |
 | `frontend/src/components/FileEditor.tsx` | `frontend/src/components/FileTabPanel.tsx` (lines 15-21 and the text-file save flow) | instruction files only; no images, HTML or tabs |
 
+## whisper.cpp
+
+Phonon links whisper.cpp v1.8.6 and its ggml library (github.com/ggml-org/whisper.cpp) as static
+libraries into its binary; `scripts/build-whisper.sh` builds them from the release's source. The
+speech models it downloads (`ggml-large-v3-turbo-q5_0.bin` from huggingface.co/ggerganov/whisper.cpp
+and `ggml-silero-v5.1.2.bin` from huggingface.co/ggml-org/whisper-vad) are not bundled. whisper.cpp
+is under the MIT License:
+
+```
+MIT License
+
+Copyright (c) 2023-2026 The ggml authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## Fonts
 
 Geist and Geist Mono are bundled under the SIL Open Font License 1.1; see
