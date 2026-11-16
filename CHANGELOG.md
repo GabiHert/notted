@@ -6,6 +6,8 @@ version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-16
+
 ### Changed
 - New speech engine: whisper.cpp with Whisper large-v3-turbo (q5_0) on the Mac's GPU, for English and Portuguese, with whisper.cpp's own speech detector. It transcribes about 6 times faster, needs about 0.9 GB of memory instead of 2.4 to 3.2 GB, and writes whole sentences instead of fragments. Each language is forced from the meeting, and each 30 s part is transcribed whole. The meeting page offers to download the new models once (about 575 MB, from Hugging Face). Earlier transcripts and the old models stay as they are.
 - Phonon uses far less memory. The speech model now runs in a separate process that stops once a recording is transcribed, so Phonon drops back to about 50 MB instead of holding 1 to 5 GB for 10 minutes or more. A long transcription no longer grows without limit: the model process is replaced if it passes 3 GB.
