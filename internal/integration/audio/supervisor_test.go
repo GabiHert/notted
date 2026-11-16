@@ -111,6 +111,27 @@ func TestStartPassesExactArgvAndParsesEvents(t *testing.T) {
 	}
 }
 
+func TestRecordLevelsCarryTheirTrack(t *testing.T) {
+	s, out, _, _ := setup(t, "levels")
+	c := &collector{}
+	rec, err := s.Start(out, c.add)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = rec.Stop()
+	waitExit(t, rec)
+	ev := c.snapshot()
+	if len(ev) != 4 || ev[1].Kind != "level" || ev[2].Kind != "level" {
+		t.Fatalf("events = %+v", ev)
+	}
+	if ev[1].Track != domain.TrackMic || ev[1].RMSdB != -30.5 || ev[1].PeakDB != -9.5 {
+		t.Fatalf("mic level = %+v", ev[1])
+	}
+	if ev[2].Track != domain.TrackOthers || ev[2].RMSdB != -120 || ev[2].PeakDB != -120 {
+		t.Fatalf("others level = %+v", ev[2])
+	}
+}
+
 func TestStartFailsWithMappedMessage(t *testing.T) {
 	cases := map[string]string{
 		"mic-denied":    msgMic,

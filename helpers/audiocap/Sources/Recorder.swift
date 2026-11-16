@@ -11,6 +11,9 @@ final class Recorder: @unchecked Sendable {
     private var micWriter: TrackWriter?
     private var othersWriter: TrackWriter?
     private var timer: DispatchSourceTimer?
+    private var levelTimer: DispatchSourceTimer?
+    private var micLevel = LevelAccumulator()
+    private var othersLevel = LevelAccumulator()
     private var t0: DispatchTime?
     private var ticks = 0
     private var stopping = false
@@ -37,7 +40,7 @@ final class Recorder: @unchecked Sendable {
         do {
             try mic.start { [weak self] samples in
                 guard let self = self else { return }
-                self.writerQueue.async { self.micWriter?.append(samples) }
+                self.writerQueue.async { self.micWriter?.append(samples); self.micLevel.add(samples) }
             }
         } catch {
             fail("capture_failed", "Microphone failed to start: \(error.localizedDescription)", exitCode: ExitCode.failure)
@@ -45,7 +48,7 @@ final class Recorder: @unchecked Sendable {
         do {
             try await system.start(display: display, onSamples: { [weak self] samples in
                 guard let self = self else { return }
-                self.writerQueue.async { self.othersWriter?.append(samples) }
+                self.writerQueue.async { self.othersWriter?.append(samples); self.othersLevel.add(samples) }
             }, onFailure: { [weak self] error in
                 self?.shutdown(errorMessage: "System audio stopped: \(error.localizedDescription)")
             })
@@ -73,7 +76,27 @@ final class Recorder: @unchecked Sendable {
             }
             timer.resume()
             self.timer = timer
+            startLevels()
         }
+    }
+
+    /// Prints both tracks' levels 15 times a second on the writer queue: a steady, small stream
+    /// for the live wave, never audio. Runs only after `started`.
+    private func startLevels() {
+        _ = micLevel.take()
+        _ = othersLevel.take()
+        let t = DispatchSource.makeTimerSource(queue: writerQueue)
+        let interval = DispatchTimeInterval.microseconds(1_000_000 / recordLevelsPerSecond)
+        t.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(5))
+        t.setEventHandler { [self] in
+            if stopping { return }
+            let mic = micLevel.take()
+            let others = othersLevel.take()
+            emit(LevelEvent(rmsDb: mic.rmsDb, peakDb: mic.peakDb, track: "mic"))
+            emit(LevelEvent(rmsDb: others.rmsDb, peakDb: others.peakDb, track: "others"))
+        }
+        t.resume()
+        levelTimer = t
     }
 
     /// Stops both captures, closes the open chunks, prints `stopped`, exits 0.
@@ -84,6 +107,7 @@ final class Recorder: @unchecked Sendable {
             if stopping { return }
             stopping = true
             timer?.cancel()
+            levelTimer?.cancel()
             guard t0 != nil else {
                 // Stopped before both captures were running: nothing was recorded.
                 if let message = errorMessage {

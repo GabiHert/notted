@@ -44,6 +44,32 @@ struct LevelMeter {
     }
 }
 
+/// `record` reports each track's level this many times a second, whatever the buffer sizes.
+let recordLevelsPerSecond = 15
+
+/// Sums the samples a track delivered since the last `take`, for the timed levels of `record`.
+struct LevelAccumulator {
+    private var sumSquares = 0.0
+    private var count = 0
+    private var peak = 0.0
+
+    mutating func add(_ samples: [Int16]) {
+        for s in samples {
+            let v = abs(Double(s)) / 32768
+            sumSquares += v * v
+            peak = max(peak, v)
+        }
+        count += samples.count
+    }
+
+    /// The reading since the last call, then starts over; no samples read as the silence floor.
+    mutating func take() -> LevelReading {
+        defer { self = LevelAccumulator() }
+        guard count > 0 else { return LevelReading(rmsDb: silenceFloorDb, peakDb: silenceFloorDb) }
+        return LevelReading(rmsDb: levelDb((sumSquares / Double(count)).squareRoot()), peakDb: levelDb(min(peak, 1)))
+    }
+}
+
 /// The seconds of `audiocap level [--seconds N]`: 1...60, 10 by default; nil for anything else.
 func parseLevelSeconds(_ rest: [String]) -> Int? {
     if rest.isEmpty { return 10 }

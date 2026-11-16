@@ -84,6 +84,15 @@ case "$mode" in
   silent-hang)
     trap 'exit 0' INT TERM
     while true; do sleep 0.05; done ;;
+  levels)
+    stop=0
+    trap 'stop=1' INT TERM
+    echo '{"event":"started","t0_ms":1000}'
+    echo '{"event":"level","peak_db":-9.5,"rms_db":-30.5,"track":"mic"}'
+    echo '{"event":"level","peak_db":-120,"rms_db":-120,"track":"others"}'
+    while [ "$stop" -eq 0 ]; do sleep 0.05; done
+    echo '{"event":"stopped"}'
+    exit 0 ;;
   normal)
     stop=0
     trap 'stop=1' INT TERM

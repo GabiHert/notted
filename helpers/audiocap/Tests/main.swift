@@ -230,6 +230,24 @@ do {
     check((lone.first?.rmsDb ?? 0) < (lone.first?.peakDb ?? 0) - 20, "and barely moves the rms: \(lone)")
 }
 
+// 11. Level accumulator: the timed per-track levels of `record`
+do {
+    var a = LevelAccumulator()
+    let empty = a.take()
+    check(empty.rmsDb == -120 && empty.peakDb == -120, "no samples read as the floor: \(empty)")
+    a.add([Int16](repeating: 16384, count: 500))
+    a.add([Int16](repeating: 16384, count: 300))
+    let half = a.take()
+    check(half.rmsDb == -6.0 && half.peakDb == -6.0, "two buffers of half scale read -6 dB: \(half)")
+    let after = a.take()
+    check(after.rmsDb == -120 && after.peakDb == -120, "take starts over: \(after)")
+    a.add([Int16](repeating: 0, count: 100))
+    a.add([Int16.min])
+    check(a.take().peakDb == 0.0, "Int16.min peaks at 0 dB without overflow")
+    check(recordLevelsPerSecond >= 1 && recordLevelsPerSecond <= 15, "record sends at most 15 levels a second per track, 30 for both")
+    check(encodeEvent(LevelEvent(rmsDb: -30.5, peakDb: -12.0, track: "others")) == #"{"event":"level","peak_db":-12,"rms_db":-30.5,"track":"others"}"#, "record level event: \(encodeEvent(LevelEvent(rmsDb: -30.5, peakDb: -12.0, track: "others")))")
+}
+
 // 10. level arguments
 do {
     check(parseLevelSeconds([]) == 10, "default 10 seconds")
