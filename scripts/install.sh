@@ -60,6 +60,14 @@ check_xcode() {
   fi
 }
 
+check_cmake() {
+  if command -v cmake >/dev/null 2>&1; then
+    ok "CMake"
+  else
+    need "CMake" "install it with brew install cmake, then make install again."
+  fi
+}
+
 have_go=0
 check_go() {
   local v
@@ -128,6 +136,7 @@ check_claude() {
 
 check_macos
 check_xcode
+check_cmake
 check_go
 check_node
 check_wails

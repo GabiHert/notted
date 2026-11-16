@@ -18,40 +18,74 @@ type chunkKey struct {
 	index     int
 }
 
-// workItem is one unit for the worker: a chunk to transcribe, or a readiness check for a meeting.
+// workItem is one unit for the worker: a chunk to transcribe, a readiness check for a meeting,
+// or the next chunk of a meeting being transcribed again.
 type workItem struct {
 	chunk     domain.Chunk
-	meetingID string // set for a readiness check
+	meetingID string // set for a readiness check and a re-transcription step
 	check     bool
+	redo      bool
 }
 
+func (it workItem) meeting() string {
+	if it.check || it.redo {
+		return it.meetingID
+	}
+	return it.chunk.MeetingID
+}
+
+// redoJob is a meeting being transcribed again: new segments are held here until every chunk is
+// done, then swapped in for the old ones in one store transaction.
+type redoJob struct {
+	meeting domain.Meeting
+	chunks  []domain.Chunk
+	next    int
+	segs    []domain.Segment
+}
+
+// RetranscribeProgress says how far a re-transcription is.
+type RetranscribeProgress struct {
+	Running bool
+	Done    int // chunks transcribed
+	Total   int
+}
+
+// Re-transcription errors the app shows as they are.
+var (
+	ErrRetranscribeRunning  = errors.New("This meeting is already being transcribed again.")
+	ErrRetranscribeNotReady = errors.New("Only a finished meeting can be transcribed again.")
+	ErrRetranscribeNoAudio  = errors.New("This meeting has no audio to transcribe.")
+)
+
 // TranscriptionService turns each closed chunk into labelled, timed segments with one worker,
-// so the speech library is never called from two goroutines at once.
+// so the speech engine is never called from two goroutines at once.
 type TranscriptionService struct {
-	store    port.MeetingStore
-	engine   port.SpeechEngine
-	detector port.SpeechDetector
-	emit     port.EventEmitter
-	decode   func(path string) ([]float32, int, error)
+	store  port.MeetingStore
+	engine port.SpeechEngine
+	emit   port.EventEmitter
+	decode func(path string) ([]float32, int, error)
 
 	mu      sync.Mutex
 	idle    *sync.Cond
 	items   []workItem
 	parked  map[chunkKey]domain.Chunk
+	redo    map[string]*redoJob
 	pending int    // items queued or being processed
 	busy    string // the meeting whose item the worker is processing, "" when none
 	wake    chan struct{}
 	stop    chan struct{}
 	started bool
 	done    chan struct{}
+	drained func() // called when the worker has nothing left to do
 }
 
 // NewTranscriptionService builds the service; decode reads a WAV file into mono samples and their rate.
-func NewTranscriptionService(store port.MeetingStore, engine port.SpeechEngine, detector port.SpeechDetector,
+func NewTranscriptionService(store port.MeetingStore, engine port.SpeechEngine,
 	emit port.EventEmitter, decode func(path string) ([]float32, int, error)) *TranscriptionService {
 	s := &TranscriptionService{
-		store: store, engine: engine, detector: detector, emit: emit, decode: decode,
+		store: store, engine: engine, emit: emit, decode: decode,
 		parked: map[chunkKey]domain.Chunk{},
+		redo:   map[string]*redoJob{},
 		wake:   make(chan struct{}, 1),
 		stop:   make(chan struct{}),
 		done:   make(chan struct{}),
@@ -104,6 +138,14 @@ func (s *TranscriptionService) Close() {
 	<-s.done
 }
 
+// SetDrainedListener calls fn, on the worker goroutine, each time the last queued item is done.
+// Set it before Start.
+func (s *TranscriptionService) SetDrainedListener(fn func()) {
+	s.mu.Lock()
+	s.drained = fn
+	s.mu.Unlock()
+}
+
 // Enqueue queues a closed chunk. It never blocks.
 func (s *TranscriptionService) Enqueue(c domain.Chunk) { s.push(workItem{chunk: c}) }
 
@@ -126,18 +168,16 @@ func (s *TranscriptionService) ResumeWaiting() {
 	}
 }
 
-// Forget drops a meeting's queued and parked work, then waits for the item of that meeting the worker
-// is processing, if any. After it returns nothing more is written for the meeting.
+// Forget drops a meeting's queued and parked work and any re-transcription, then waits for the item
+// of that meeting the worker is processing, if any. After it returns nothing more is written for
+// the meeting.
 func (s *TranscriptionService) Forget(meetingID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.redo, meetingID)
 	kept := s.items[:0]
 	for _, it := range s.items {
-		id := it.meetingID
-		if !it.check {
-			id = it.chunk.MeetingID
-		}
-		if id == meetingID {
+		if it.meeting() == meetingID {
 			s.pending--
 			continue
 		}
@@ -194,10 +234,7 @@ func (s *TranscriptionService) next() (workItem, bool) {
 	it := s.items[0]
 	s.items[0] = workItem{}
 	s.items = s.items[1:]
-	s.busy = it.meetingID
-	if !it.check {
-		s.busy = it.chunk.MeetingID
-	}
+	s.busy = it.meeting()
 	return it, true
 }
 
@@ -205,8 +242,15 @@ func (s *TranscriptionService) finishItem() {
 	s.mu.Lock()
 	s.pending--
 	s.busy = ""
+	var drained func()
+	if s.pending == 0 {
+		drained = s.drained
+	}
 	s.idle.Broadcast() // Wait waits for an empty queue, Forget for the end of one item
 	s.mu.Unlock()
+	if drained != nil {
+		drained()
+	}
 }
 
 func (s *TranscriptionService) run(ctx context.Context) {
@@ -226,9 +270,12 @@ func (s *TranscriptionService) run(ctx context.Context) {
 			return
 		default:
 		}
-		if it.check {
+		switch {
+		case it.check:
 			s.checkReady(ctx, it.meetingID)
-		} else {
+		case it.redo:
+			s.redoStep(ctx, it.meetingID)
+		default:
 			s.process(ctx, it.chunk)
 		}
 		s.finishItem()
@@ -250,10 +297,6 @@ func (s *TranscriptionService) process(ctx context.Context, queued domain.Chunk)
 		return
 	}
 	if ready, _ := s.engine.Ready(m.Language); !ready {
-		s.park(cur)
-		return
-	}
-	if ready, _ := s.detector.Ready(); !ready {
 		s.park(cur)
 		return
 	}
@@ -290,30 +333,39 @@ func (s *TranscriptionService) park(c domain.Chunk) {
 	s.mu.Unlock()
 }
 
-func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Meeting, c domain.Chunk) error {
+// chunkSegments transcribes a whole chunk and returns its segments with absolute times.
+func (s *TranscriptionService) chunkSegments(ctx context.Context, m domain.Meeting, c domain.Chunk) ([]domain.Segment, error) {
 	samples, rate, err := s.decode(c.Path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if rate <= 0 {
-		return fmt.Errorf("unsupported sample rate %d", rate)
+		return nil, fmt.Errorf("unsupported sample rate %d", rate)
 	}
-	spans, err := s.detector.Detect(samples, rate)
+	if len(samples) == 0 {
+		return nil, nil
+	}
+	found, err := s.engine.Transcribe(ctx, samples, rate, m.Language)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for _, sp := range spans {
-		raw, err := s.engine.Transcribe(ctx, sp.Samples, rate, m.Language)
-		if err != nil {
-			return err
-		}
-		text := strings.Join(strings.Fields(raw), " ")
+	var out []domain.Segment
+	for _, f := range found {
+		text := strings.Join(strings.Fields(f.Text), " ")
 		if text == "" {
 			continue
 		}
-		start := c.StartMs + int64(sp.StartSample)*1000/int64(rate)
-		end := start + int64(len(sp.Samples))*1000/int64(rate)
-		seg := domain.Segment{MeetingID: c.MeetingID, Track: c.Track, StartMs: start, EndMs: end, Text: text}
+		out = append(out, domain.Segment{MeetingID: c.MeetingID, Track: c.Track, StartMs: c.StartMs + f.StartMs, EndMs: c.StartMs + f.EndMs, Text: text})
+	}
+	return out, nil
+}
+
+func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Meeting, c domain.Chunk) error {
+	segs, err := s.chunkSegments(ctx, m, c)
+	if err != nil {
+		return err
+	}
+	for _, seg := range segs {
 		id, err := s.store.AddSegment(ctx, seg)
 		if err != nil {
 			return err
@@ -321,11 +373,112 @@ func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Mee
 		s.emit.Emit("transcript:segment", map[string]any{
 			"meetingId": c.MeetingID,
 			"segment": map[string]any{
-				"id": id, "track": string(c.Track), "startMs": start, "endMs": end, "text": text,
+				"id": id, "track": string(c.Track), "startMs": seg.StartMs, "endMs": seg.EndMs, "text": seg.Text,
 			},
 		})
 	}
 	return nil
+}
+
+// Retranscribe transcribes every chunk of a finished meeting again with the current model. The new
+// segments are held aside and replace the old ones in one transaction once the last chunk is done;
+// until then, and when anything fails, the old transcript stays. Progress arrives as
+// transcript:retranscribe events. The meeting's state and summary are left alone.
+func (s *TranscriptionService) Retranscribe(ctx context.Context, meetingID string) error {
+	m, err := s.store.GetMeeting(ctx, meetingID)
+	if err != nil {
+		return err
+	}
+	if m.State != domain.StateReady && m.State != domain.StateSummarized {
+		return ErrRetranscribeNotReady
+	}
+	if ok, msg := s.engine.Ready(m.Language); !ok {
+		return fmt.Errorf("The speech models are not ready: %s.", msg)
+	}
+	chunks, err := s.store.ListChunks(ctx, meetingID)
+	if err != nil {
+		return err
+	}
+	if len(chunks) == 0 {
+		return ErrRetranscribeNoAudio
+	}
+	s.mu.Lock()
+	if s.redo[meetingID] != nil {
+		s.mu.Unlock()
+		return ErrRetranscribeRunning
+	}
+	s.redo[meetingID] = &redoJob{meeting: m, chunks: chunks}
+	s.mu.Unlock()
+	s.emitRedo(meetingID, "running", 0, len(chunks), "")
+	s.push(workItem{meetingID: meetingID, redo: true})
+	return nil
+}
+
+// RetranscribeStatus reports the meeting's re-transcription, Running false when there is none.
+func (s *TranscriptionService) RetranscribeStatus(meetingID string) RetranscribeProgress {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	j := s.redo[meetingID]
+	if j == nil {
+		return RetranscribeProgress{}
+	}
+	return RetranscribeProgress{Running: true, Done: j.next, Total: len(j.chunks)}
+}
+
+func (s *TranscriptionService) emitRedo(meetingID, state string, done, total int, msg string) {
+	p := map[string]any{"meetingId": meetingID, "state": state, "done": done, "total": total}
+	if msg != "" {
+		p["error"] = msg
+	}
+	s.emit.Emit("transcript:retranscribe", p)
+}
+
+// redoStep transcribes the job's next chunk, then queues the step after it at the back of the
+// queue, so a recording's chunks are not held up behind a long meeting. After the last chunk it
+// swaps the segments in.
+func (s *TranscriptionService) redoStep(ctx context.Context, meetingID string) {
+	s.mu.Lock()
+	j := s.redo[meetingID]
+	s.mu.Unlock()
+	if j == nil {
+		return // forgotten
+	}
+	total := len(j.chunks)
+	fail := func(err error) {
+		s.mu.Lock()
+		delete(s.redo, meetingID)
+		s.mu.Unlock()
+		log.Printf("transcription: re-transcribe %s: %v", meetingID, err)
+		s.emitRedo(meetingID, "error", j.next, total, fmt.Sprintf("Transcribing again failed: %v. The old transcript is kept.", err))
+	}
+	c := j.chunks[j.next]
+	segs, err := s.chunkSegments(ctx, j.meeting, c)
+	if err != nil {
+		fail(fmt.Errorf("%s part %d: %w", c.Track, c.Index, err))
+		return
+	}
+	s.mu.Lock()
+	if s.redo[meetingID] != j {
+		s.mu.Unlock()
+		return
+	}
+	j.segs = append(j.segs, segs...)
+	j.next++
+	done := j.next
+	s.mu.Unlock()
+	if done < total {
+		s.emitRedo(meetingID, "running", done, total, "")
+		s.push(workItem{meetingID: meetingID, redo: true})
+		return
+	}
+	if err := s.store.ReplaceSegments(ctx, meetingID, j.segs); err != nil {
+		fail(err)
+		return
+	}
+	s.mu.Lock()
+	delete(s.redo, meetingID)
+	s.mu.Unlock()
+	s.emitRedo(meetingID, "done", total, total, "")
 }
 
 // checkReady moves a transcribing meeting to ready once none of its chunks is pending.

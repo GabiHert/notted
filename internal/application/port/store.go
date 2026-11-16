@@ -28,6 +28,8 @@ type MeetingStore interface {
 	MarkChunkTranscribed(ctx context.Context, meetingID string, track domain.Track, idx int) error
 	AddSegment(ctx context.Context, s domain.Segment) (int64, error)
 	ListSegments(ctx context.Context, meetingID string) ([]domain.Segment, error) // start_ms ASC, mic before others, id ASC
+	// ReplaceSegments swaps all of a meeting's segments for segs in one transaction (domain.ErrNotFound when missing).
+	ReplaceSegments(ctx context.Context, meetingID string, segs []domain.Segment) error
 }
 
 // SettingsStore persists the person's settings.

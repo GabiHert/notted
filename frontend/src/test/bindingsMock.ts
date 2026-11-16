@@ -27,6 +27,10 @@ export const StartRecording = vi.fn();
 export const StopRecording = vi.fn();
 export const GetModelStatus = vi.fn();
 export const DownloadModels = vi.fn();
+export const GetUnusedModels = vi.fn();
+export const RemoveUnusedModel = vi.fn();
+export const Retranscribe = vi.fn();
+export const GetRetranscribeStatus = vi.fn();
 export const ListProjects = vi.fn();
 export const ListOpenForms = vi.fn(async () => []);
 export const AnswerForm = vi.fn(async () => {});
@@ -94,7 +98,7 @@ export const builtinThemes = () => [
 
 export function resetBindings() {
   handlers.clear();
-  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, CheckForUpdate, SetUpdateToken, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, ListThemes, GetSelectedTheme, SelectTheme, ImportVSCodeTheme, DeleteTheme, ExportTheme, EventsOn, EventsOff]) {
+  for (const f of [ListMeetings, GetMeeting, GetTranscript, StartRecording, StopRecording, GetModelStatus, DownloadModels, GetUnusedModels, RemoveUnusedModel, Retranscribe, GetRetranscribeStatus, ListProjects, SetMeetingProject, GenerateSummary, ReviewSuggestions, GetReviewState, GetReviewActWithoutAsking, SetReviewActWithoutAsking, CommitAndPushMeeting, GetSettings, SetSettings, ListInstructionFiles, ReadInstructionFile, WriteInstructionFile, PreviewPrompt, ChooseFolder, CloneArchive, InspectArchive, PrepareArchive, ListProfiles, CreateProfile, CreateProject, ListProfileFiles, DeleteProfile, ListMyProjectKeys, CreateMyProjectFile, StartSession, WriteSession, ResizeSession, StopSession, GetUpdateStatus, CheckForUpdate, SetUpdateToken, StartUpdate, GetPermissions, AskPermissions, OpenPermissionSettings, StartMicTest, StopMicTest, GetDeletePlan, GetProjectDeletePlan, DeleteProject, CommitProjectDeletion, DeleteMeeting, GetSetupPrompt, ListOpenForms, AnswerForm, DismissForm, SetWindowVisible, ClipboardSetText, ListThemes, GetSelectedTheme, SelectTheme, ImportVSCodeTheme, DeleteTheme, ExportTheme, EventsOn, EventsOff]) {
     f.mockReset();
   }
   EventsOn.mockImplementation((name: string, cb: Handler) => {
@@ -112,6 +116,10 @@ export function resetBindings() {
   SetWindowVisible.mockResolvedValue(undefined);
   GetTranscript.mockResolvedValue([]);
   DownloadModels.mockResolvedValue(undefined);
+  GetUnusedModels.mockResolvedValue([]);
+  RemoveUnusedModel.mockResolvedValue(undefined);
+  Retranscribe.mockResolvedValue(undefined);
+  GetRetranscribeStatus.mockResolvedValue({ running: false, done: 0, total: 0 });
   StopRecording.mockResolvedValue(undefined);
   ListProjects.mockResolvedValue(["acme", "globex"]);
   SetMeetingProject.mockResolvedValue(undefined);

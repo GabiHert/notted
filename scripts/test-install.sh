@@ -56,6 +56,7 @@ fresh() {
   fake sw_vers 'echo "sw_vers $*" >>"$T_FAKE/calls"; cat "$T_FAKE/macos"'
   fake uname 'cat "$T_FAKE/arch"'
   fake xcrun 'echo "xcrun $*" >>"$T_FAKE/calls"; exit 0'
+  fake cmake 'exit 0'
   fake go 'echo "go $*" >>"$T_FAKE/calls"
 case "$1 $2" in
   "env GOVERSION") cat "$T_FAKE/goversion" ;;
@@ -186,6 +187,7 @@ test_replace_existing() {
   check "preflight lines" out_has "ok  Go 1.26.5"
   check "macOS line" out_has "ok  macOS 14.5 on Apple silicon"
   check "Xcode line" out_has "ok  Xcode Command Line Tools"
+  check "CMake line" out_has "ok  CMake"
   check "Node line" out_has "ok  Node 24.16.0"
   check "Wails line" out_has "ok  Wails v2.12.0"
   check "claude line" out_has "ok  claude"
@@ -281,6 +283,17 @@ test_xcode_missing() {
   run_install
   check "exit 1" rc_is 1
   check "Xcode fix" out_has "missing  Xcode Command Line Tools: run xcode-select --install, then make install again."
+  finish
+}
+
+test_cmake_missing() {
+  begin "missing CMake, which builds whisper.cpp"
+  fresh
+  rm "$T/bin/cmake"
+  run_install
+  check "exit 1" rc_is 1
+  check "CMake fix" out_has "missing  CMake: install it with brew install cmake, then make install again."
+  check "make not run" calls_lack "make "
   finish
 }
 
@@ -677,6 +690,7 @@ test_intel
 test_old_go
 test_old_node
 test_xcode_missing
+test_cmake_missing
 test_wails_missing
 test_wails_install_fails
 test_claude_missing

@@ -72,3 +72,29 @@ func (a *App) DownloadModels(language string) error {
 	}()
 	return nil
 }
+
+// UnusedModelDTO is a file or folder in the models folder the current speech models do not use.
+type UnusedModelDTO struct {
+	Name  string `json:"name"`
+	Bytes int64  `json:"bytes"`
+}
+
+// GetUnusedModels lists what in the models folder the current speech models do not use, such as
+// the models of earlier versions, with sizes.
+func (a *App) GetUnusedModels() ([]UnusedModelDTO, error) {
+	list, err := a.models.Unused()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UnusedModelDTO, 0, len(list))
+	for _, m := range list {
+		out = append(out, UnusedModelDTO{Name: m.Name, Bytes: m.Bytes})
+	}
+	return out, nil
+}
+
+// RemoveUnusedModel deletes one entry GetUnusedModels lists. It refuses anything the current
+// models use or anything outside the models folder.
+func (a *App) RemoveUnusedModel(name string) error {
+	return a.models.RemoveUnused(name)
+}

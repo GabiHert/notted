@@ -21,7 +21,12 @@ type fakeEngine struct {
 	langs []domain.Language
 	n     int
 	fail  bool
+	none  bool // no speech found
 	text  func(n int) string
+	// failAt makes the n-th call fail, when set.
+	failAt int
+	// before, when set, runs at the start of each call with the number of calls before it.
+	before func(n int)
 }
 
 func (e *fakeEngine) Ready(domain.Language) (bool, string) {
@@ -32,42 +37,36 @@ func (e *fakeEngine) Ready(domain.Language) (bool, string) {
 
 func (e *fakeEngine) setReady(v bool) { e.mu.Lock(); e.ready = v; e.mu.Unlock() }
 
-func (e *fakeEngine) Transcribe(_ context.Context, _ []float32, _ int, lang domain.Language) (string, error) {
+// Transcribe finds one segment from 1 s to 3 s into the chunk.
+func (e *fakeEngine) Transcribe(_ context.Context, _ []float32, _ int, lang domain.Language) ([]port.SpeechSegment, error) {
+	if e.before != nil {
+		e.before(e.calls())
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.n++
 	e.langs = append(e.langs, lang)
-	if e.fail {
-		return "", errors.New("engine broke")
+	if e.fail || e.n == e.failAt {
+		return nil, errors.New("engine broke")
 	}
+	if e.none {
+		return nil, nil
+	}
+	text := fmt.Sprintf("text %d", e.n)
 	if e.text != nil {
-		return e.text(e.n), nil
+		text = e.text(e.n)
 	}
-	return fmt.Sprintf("text %d", e.n), nil
+	return []port.SpeechSegment{{StartMs: 1000, EndMs: 3000, Text: text}}, nil
 }
 
 func (e *fakeEngine) calls() int { e.mu.Lock(); defer e.mu.Unlock(); return e.n }
 
-type fakeDetector struct {
-	ready bool
-	def   []port.SpeechSpan
-}
-
-func (d *fakeDetector) Ready() (bool, string) { return d.ready, "missing" }
-
-func (d *fakeDetector) Detect([]float32, int) ([]port.SpeechSpan, error) { return d.def, nil }
-
 func decode30s(string) ([]float32, int, error) { return make([]float32, 16000*30), 16000, nil }
-
-func span(startSample, n int) port.SpeechSpan {
-	return port.SpeechSpan{StartSample: startSample, Samples: make([]float32, n)}
-}
 
 type transFixture struct {
 	t    *testing.T
 	st   *store.Store
 	eng  *fakeEngine
-	det  *fakeDetector
 	em   *recEmitter
 	svc  *TranscriptionService
 	ctx  context.Context
@@ -82,8 +81,8 @@ func newTransFixture(t *testing.T, lang domain.Language) *transFixture {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	f := &transFixture{t: t, st: st, eng: &fakeEngine{ready: true}, det: &fakeDetector{ready: true, def: []port.SpeechSpan{span(16000, 32000)}}, em: &recEmitter{}, ctx: context.Background()}
-	f.svc = NewTranscriptionService(st, f.eng, f.det, f.em, decode30s)
+	f := &transFixture{t: t, st: st, eng: &fakeEngine{ready: true}, em: &recEmitter{}, ctx: context.Background()}
+	f.svc = NewTranscriptionService(st, f.eng, f.em, decode30s)
 	f.meet = domain.Meeting{ID: "m1", Title: "t", StartedAt: time.Now().UTC(), Language: lang, State: domain.StateTranscribing}
 	if err := st.CreateMeeting(f.ctx, f.meet); err != nil {
 		t.Fatal(err)
@@ -141,7 +140,7 @@ func TestTranscribesBothTracksWithAbsoluteTimesAndEvents(t *testing.T) {
 	if segs[0].Track != domain.TrackMic || segs[1].Track != domain.TrackOthers {
 		t.Fatalf("tracks = %s,%s", segs[0].Track, segs[1].Track)
 	}
-	// chunk 2 starts at 30000; span starts at sample 16000 (1000 ms) and lasts 32000 samples (2000 ms)
+	// chunk 2 starts at 30000; the engine's segment runs from 1000 ms to 3000 ms into it
 	if segs[0].StartMs != 31000 || segs[0].EndMs != 33000 || segs[0].Text != "hello world 1" {
 		t.Fatalf("mic segment = %+v", segs[0])
 	}
@@ -184,12 +183,12 @@ func TestLanguagePassedToEngine(t *testing.T) {
 
 func TestNoSpeechAddsNoSegmentButMarksChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
-	f.det.def = nil
+	f.eng.none = true
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackOthers, 1))
 	f.svc.Wait()
 	segs, _ := f.svc.Transcript(f.ctx, "m1")
-	if len(segs) != 0 || f.eng.calls() != 0 || f.pending() != 0 {
+	if len(segs) != 0 || f.eng.calls() != 1 || f.pending() != 0 {
 		t.Fatalf("segs=%d calls=%d pending=%d", len(segs), f.eng.calls(), f.pending())
 	}
 }
@@ -207,7 +206,7 @@ func TestEmptyTextSpanAddsNoSegment(t *testing.T) {
 
 func TestDecodeErrorReportedOnceChunkSkippedMeetingReady(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
-	f.svc = NewTranscriptionService(f.st, f.eng, f.det, f.em, func(string) ([]float32, int, error) { return nil, 0, errors.New("bad wav") })
+	f.svc = NewTranscriptionService(f.st, f.eng, f.em, func(string) ([]float32, int, error) { return nil, 0, errors.New("bad wav") })
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackMic, 3))
 	f.svc.MeetingStopped("m1")
@@ -317,17 +316,6 @@ func TestParkedWhileEngineNotReadyThenResumed(t *testing.T) {
 	}
 }
 
-func TestParkedWhenDetectorNotReady(t *testing.T) {
-	f := newTransFixture(t, domain.LangEN)
-	f.det.ready = false
-	f.start()
-	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
-	f.svc.Wait()
-	if f.pending() != 1 {
-		t.Fatalf("pending = %d", f.pending())
-	}
-}
-
 func TestStartQueuesEveryPendingChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	f.addChunk(domain.TrackMic, 1)
@@ -395,7 +383,7 @@ type blockingEngine struct {
 	release chan struct{}
 }
 
-func (e *blockingEngine) Transcribe(ctx context.Context, s []float32, r int, l domain.Language) (string, error) {
+func (e *blockingEngine) Transcribe(ctx context.Context, s []float32, r int, l domain.Language) ([]port.SpeechSegment, error) {
 	select {
 	case e.entered <- struct{}{}:
 	default:
@@ -462,7 +450,7 @@ func TestForgetDropsParkedChunks(t *testing.T) {
 func TestForgetWaitsForTheChunkBeingTranscribed(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
-	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.svc = NewTranscriptionService(f.st, be, f.em, decode30s)
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
 	<-be.entered
@@ -486,7 +474,7 @@ func TestForgetDoesNotWaitForAnotherMeetingsChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	f.otherMeeting("m2")
 	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
-	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.svc = NewTranscriptionService(f.st, be, f.em, decode30s)
 	f.start()
 	c := domain.Chunk{MeetingID: "m2", Track: domain.TrackMic, Index: 1, EndMs: 30000, Path: "/a/m2.wav"}
 	if err := f.st.AddChunk(f.ctx, c); err != nil {
@@ -502,4 +490,239 @@ func TestForgetDoesNotWaitForAnotherMeetingsChunk(t *testing.T) {
 		t.Fatal("Forget blocked on another meeting's chunk")
 	}
 	close(be.release)
+}
+
+func TestDrainedListenerRunsOnceTheQueueIsEmptyAfterTheLastChunk(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	drained := make(chan int, 8)
+	f.svc.SetDrainedListener(func() { drained <- f.eng.calls() })
+	f.start()
+	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
+	f.svc.Enqueue(f.addChunk(domain.TrackOthers, 1))
+	f.svc.MeetingStopped(f.meet.ID)
+	f.svc.Wait()
+	select {
+	case calls := <-drained:
+		// Items may drain the queue more than once as they arrive; the last drain follows every call.
+		for len(drained) > 0 {
+			calls = <-drained
+		}
+		if calls != 2 {
+			t.Fatalf("drained after %d engine calls, want 2", calls)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("drained listener was not called")
+	}
+}
+
+// finishedMeeting makes m1 a transcribed meeting in state st with two chunks and old segments.
+func (f *transFixture) finishedMeeting(st domain.MeetingState) {
+	f.t.Helper()
+	for _, c := range []domain.Chunk{f.addChunk(domain.TrackMic, 1), f.addChunk(domain.TrackOthers, 1)} {
+		if err := f.st.MarkChunkTranscribed(f.ctx, c.MeetingID, c.Track, c.Index); err != nil {
+			f.t.Fatal(err)
+		}
+		if _, err := f.st.AddSegment(f.ctx, domain.Segment{MeetingID: "m1", Track: c.Track, StartMs: 0, EndMs: 500, Text: "old " + string(c.Track)}); err != nil {
+			f.t.Fatal(err)
+		}
+	}
+	if err := f.st.UpdateState(f.ctx, "m1", st); err != nil {
+		f.t.Fatal(err)
+	}
+	if st == domain.StateSummarized {
+		if err := f.st.SetSummary(f.ctx, "m1", "# summary"); err != nil {
+			f.t.Fatal(err)
+		}
+	}
+}
+
+func (f *transFixture) texts() []string {
+	f.t.Helper()
+	segs, err := f.st.ListSegments(f.ctx, "m1")
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	var out []string
+	for _, sg := range segs {
+		out = append(out, sg.Text)
+	}
+	return out
+}
+
+func (f *transFixture) redoEvents() []string {
+	var out []string
+	for _, ev := range f.em.named("transcript:retranscribe") {
+		out = append(out, fmt.Sprintf("%v %v/%v", ev.payload["state"], ev.payload["done"], ev.payload["total"]))
+	}
+	return out
+}
+
+func TestRetranscribeKeepsTheOldTranscriptUntilEveryChunkIsDone(t *testing.T) {
+	f := newTransFixture(t, domain.LangPTBR)
+	f.finishedMeeting(domain.StateSummarized)
+	var midway []string
+	f.eng.before = func(n int) {
+		if n == 1 {
+			midway = f.texts() // the second chunk is starting: the first one's new text is held aside
+		}
+	}
+	f.start()
+	f.svc.Wait()
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	if want := []string{"old mic", "old others"}; !reflect.DeepEqual(midway, want) {
+		t.Fatalf("midway = %v, want %v", midway, want)
+	}
+	if got, want := f.texts(), []string{"text 1", "text 2"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("after = %v, want %v", got, want)
+	}
+	segs, _ := f.st.ListSegments(f.ctx, "m1")
+	if segs[0].Track != domain.TrackMic || segs[0].StartMs != 1000 || segs[0].EndMs != 3000 || segs[1].Track != domain.TrackOthers {
+		t.Fatalf("segments = %+v", segs)
+	}
+	if got, want := f.redoEvents(), []string{"running 0/2", "running 1/2", "done 2/2"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("events = %v, want %v", got, want)
+	}
+	m, _ := f.st.GetMeeting(f.ctx, "m1")
+	if m.State != domain.StateSummarized || m.SummaryMD != "# summary" {
+		t.Fatalf("meeting changed: state %s summary %q", m.State, m.SummaryMD)
+	}
+	if len(f.eng.langs) != 2 || f.eng.langs[0] != domain.LangPTBR {
+		t.Fatalf("langs = %v", f.eng.langs)
+	}
+	if p := f.svc.RetranscribeStatus("m1"); p.Running {
+		t.Fatalf("status after done: %+v", p)
+	}
+	if len(f.em.named("transcript:segment")) != 0 {
+		t.Fatal("re-transcription emitted live segment events")
+	}
+}
+
+func TestRetranscribeFailureKeepsTheOldTranscript(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.finishedMeeting(domain.StateReady)
+	f.eng.failAt = 2
+	f.start()
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	if got, want := f.texts(), []string{"old mic", "old others"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("after a failure = %v, want %v", got, want)
+	}
+	evs := f.em.named("transcript:retranscribe")
+	last := evs[len(evs)-1].payload
+	if last["state"] != "error" || last["error"] != "Transcribing again failed: others part 1: engine broke. The old transcript is kept." {
+		t.Fatalf("last event = %v", last)
+	}
+	if p := f.svc.RetranscribeStatus("m1"); p.Running {
+		t.Fatalf("status after a failure: %+v", p)
+	}
+	// It can run again after a failure.
+	f.eng.failAt = 0
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	if got := f.texts(); len(got) != 2 || got[0] == "old mic" {
+		t.Fatalf("second run = %v", got)
+	}
+}
+
+func TestRetranscribeRefusals(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	for _, st := range []domain.MeetingState{domain.StateRecording, domain.StateTranscribing} {
+		if err := f.st.UpdateState(f.ctx, "m1", st); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.svc.Retranscribe(f.ctx, "m1"); !errors.Is(err, ErrRetranscribeNotReady) {
+			t.Fatalf("%s: err = %v", st, err)
+		}
+	}
+	if err := f.st.UpdateState(f.ctx, "m1", domain.StateReady); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Retranscribe(f.ctx, "m1"); !errors.Is(err, ErrRetranscribeNoAudio) {
+		t.Fatalf("no chunks: err = %v", err)
+	}
+	if err := f.svc.Retranscribe(f.ctx, "missing"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("missing meeting: err = %v", err)
+	}
+	f.addChunk(domain.TrackMic, 1)
+	f.eng.setReady(false)
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err == nil {
+		t.Fatal("ran without models")
+	}
+	f.eng.setReady(true)
+	// The worker is not started, so the first job stays queued.
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	if p := f.svc.RetranscribeStatus("m1"); !p.Running || p.Done != 0 || p.Total != 1 {
+		t.Fatalf("status = %+v", p)
+	}
+	if err := f.svc.Retranscribe(f.ctx, "m1"); !errors.Is(err, ErrRetranscribeRunning) {
+		t.Fatalf("second: err = %v", err)
+	}
+}
+
+func TestForgetStopsARetranscription(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.finishedMeeting(domain.StateReady)
+	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
+	f.svc = NewTranscriptionService(f.st, be, f.em, decode30s)
+	f.start()
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	<-be.entered
+	returned := make(chan struct{})
+	go func() { f.svc.Forget("m1"); close(returned) }()
+	time.Sleep(50 * time.Millisecond)
+	close(be.release)
+	<-returned
+	f.svc.Wait()
+	if be.calls() != 1 {
+		t.Fatalf("engine calls = %d, want the job to stop after the chunk in flight", be.calls())
+	}
+	if got, want := f.texts(), []string{"old mic", "old others"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("segments = %v, want %v", got, want)
+	}
+	if p := f.svc.RetranscribeStatus("m1"); p.Running {
+		t.Fatalf("status = %+v", p)
+	}
+}
+
+func TestRetranscribeLetsARecordingsChunksThrough(t *testing.T) {
+	f := newTransFixture(t, domain.LangEN)
+	f.finishedMeeting(domain.StateReady)
+	f.otherMeeting("m2")
+	live := domain.Chunk{MeetingID: "m2", Track: domain.TrackMic, Index: 1, EndMs: 30000, Path: "/a/m2.wav"}
+	var order []string
+	f.eng.before = func(n int) {
+		if n == 0 { // a recording's chunk closes while the first re-transcription chunk runs
+			if err := f.st.AddChunk(f.ctx, live); err != nil {
+				t.Error(err)
+			}
+			f.svc.Enqueue(live)
+		}
+	}
+	f.start()
+	f.svc.Wait()
+	if err := f.svc.Retranscribe(f.ctx, "m1"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.Wait()
+	for _, id := range []string{"m1", "m2"} {
+		segs, _ := f.st.ListSegments(f.ctx, id)
+		for _, sg := range segs {
+			order = append(order, id+":"+sg.Text)
+		}
+	}
+	// call 1 is m1 mic, call 2 the live chunk, call 3 m1 others
+	if want := []string{"m1:text 1", "m1:text 3", "m2:text 2"}; !reflect.DeepEqual(order, want) {
+		t.Fatalf("order = %v, want %v", order, want)
+	}
 }

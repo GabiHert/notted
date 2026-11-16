@@ -15,6 +15,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		os.Exit(infra.RunMCP(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == infra.TranscribeWorkerArg {
+		os.Exit(infra.RunTranscribeWorker(os.Args[2:]))
+	}
 	if err := infra.Run(assets); err != nil {
 		log.Fatal(err)
 	}

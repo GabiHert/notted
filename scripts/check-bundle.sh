@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bundle check: the built Phonon.app carries its helper and speech libraries and is signed ad hoc or with Phonon Local Signing.
+# Bundle check: the built Phonon.app carries its helper, links only system libraries and is signed ad hoc or with Phonon Local Signing.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,17 +13,16 @@ fail() {
 
 [ -x "$C/MacOS/Phonon" ] || fail "missing Contents/MacOS/Phonon"
 [ -x "$C/MacOS/audiocap" ] || fail "missing Contents/MacOS/audiocap"
-[ -f "$C/Frameworks/libsherpa-onnx-c-api.dylib" ] || fail "missing Contents/Frameworks/libsherpa-onnx-c-api.dylib"
-compgen -G "$C/Frameworks/libonnxruntime*.dylib" >/dev/null || fail "missing Contents/Frameworks/libonnxruntime*.dylib"
-
-rpaths="$(otool -l "$C/MacOS/Phonon" | awk '/LC_RPATH/{grab=2; next} grab && /path /{print $2; grab=0}')"
-case "$rpaths" in
-  *sherpa-onnx-go-macos*) fail "LC_RPATH into the Go module cache" ;;
-esac
-case "$rpaths" in
-  *"@executable_path/../Frameworks"*) ;;
-  *) fail "LC_RPATH @executable_path/../Frameworks not present" ;;
-esac
+# whisper.cpp is linked in statically: the binary needs only system libraries, Metal among them.
+libs="$(otool -L "$C/MacOS/Phonon" | tail -n +2 | awk '{print $1}')"
+grep -q '^/System/Library/Frameworks/Metal.framework/' <<<"$libs" || fail "Phonon does not link Metal"
+while IFS= read -r lib; do
+  case "$lib" in
+    /usr/lib/* | /System/Library/*) ;;
+    *) fail "Phonon links $lib, outside the system" ;;
+  esac
+done <<<"$libs"
+! compgen -G "$C/Frameworks/*.dylib" >/dev/null || fail "unexpected libraries in Contents/Frameworks"
 
 codesign --verify --deep --strict "$APP" 2>/dev/null || fail "codesign --verify --deep --strict"
 
@@ -48,7 +47,7 @@ kind_of() {
 }
 want="$(kind_of "$APP")"
 [ "$want" != other ] || fail "Phonon.app is signed neither ad hoc nor with Phonon Local Signing"
-for f in "$C/MacOS/audiocap" "$C"/Frameworks/*.dylib; do
+for f in "$C/MacOS/audiocap"; do
   [ -e "$f" ] || continue
   [ "$(kind_of "$f")" = "$want" ] || fail "${f#"$C/"} is signed differently from Phonon.app"
 done

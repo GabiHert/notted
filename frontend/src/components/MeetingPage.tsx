@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetTranscript, StopRecording, type wails } from "../api/bindings";
+import { DeleteMeeting, EventsOn, GetDeletePlan, GetMeeting, GetRetranscribeStatus, GetTranscript, Retranscribe, StopRecording, type wails } from "../api/bindings";
 import { errorMessage, formatDate, languageName } from "../format";
 import { useOpenFormsState } from "../forms";
 import { useReview } from "../review";
@@ -16,6 +16,8 @@ import { SummaryCard } from "./SummaryCard";
 import { TranscriptCard } from "./TranscriptCard";
 import "./MeetingPage.css";
 
+type Redo = { done: number; total: number };
+
 // onDeleted runs once the meeting is gone; the parent then leaves the page. The warning is "" unless something (the audio folder) was left behind.
 export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: string; revealSeq?: number; onDeleted?: (warning: string) => void }) {
   const [meeting, setMeeting] = useState<wails.MeetingDTO | null>(null);
@@ -25,6 +27,9 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
   const [stopping, setStopping] = useState(false);
   const [notCommitted, setNotCommitted] = useState(false);
   const [plan, setPlan] = useState<wails.DeletePlanDTO | null>(null);
+  // The re-transcription running for this meeting, null when none; askRedo shows its confirm dialog.
+  const [redo, setRedo] = useState<Redo | null>(null);
+  const [askRedo, setAskRedo] = useState(false);
   const deletedRef = useRef(false); // set once the meeting is gone: later events for it are ignored
   const loadRef = useRef<() => void>(() => {});
   const refresh = useCallback(() => loadRef.current(), []);
@@ -51,6 +56,8 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
     setStopping(false);
     setNotCommitted(false);
     setPlan(null);
+    setRedo(null);
+    setAskRedo(false);
     setSessionOpen(false);
     deletedRef.current = false;
     const load = () =>
@@ -79,11 +86,31 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
     const offExport = EventsOn("export:ready", (e: { meetingId: string }) => {
       if (e.meetingId === meetingId) setNotCommitted(false);
     });
+    GetRetranscribeStatus(meetingId)
+      .then((st) => live && st?.running && setRedo((cur) => cur ?? { done: st.done, total: st.total }))
+      .catch(() => {});
+    // A re-transcription swaps the whole transcript at its end, so the page loads it again then.
+    const offRedo = EventsOn("transcript:retranscribe", (e: { meetingId: string; state: string; done: number; total: number; error?: string }) => {
+      if (e.meetingId !== meetingId || deletedRef.current) return;
+      if (e.state === "running") {
+        setRedo({ done: e.done, total: e.total });
+        return;
+      }
+      setRedo(null);
+      if (e.state === "error") {
+        setError(e.error ?? "Transcribing again failed. The old transcript is kept.");
+        return;
+      }
+      GetTranscript(meetingId)
+        .then((list) => live && setSegments(list ?? []))
+        .catch((err) => live && setError(errorMessage(err)));
+    });
     return () => {
       live = false;
       offState();
       offSeg();
       offExport();
+      offRedo();
     };
   }, [meetingId]);
 
@@ -123,6 +150,17 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
     });
   };
 
+  const canRedo = (meeting.state === "ready" || meeting.state === "summarized") && redo === null;
+  const startRedo = () => {
+    setAskRedo(false);
+    setError("");
+    setRedo((cur) => cur ?? { done: 0, total: 0 });
+    Retranscribe(meetingId).catch((e) => {
+      setRedo(null);
+      setError(errorMessage(e));
+    });
+  };
+
   const askDelete = () => {
     setError("");
     GetDeletePlan(meetingId)
@@ -155,6 +193,16 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
               </button>
             </>
           )}
+          {(meeting.state === "ready" || meeting.state === "summarized") && (
+            <button
+              className="nt-btn"
+              onClick={() => setAskRedo(true)}
+              disabled={!canRedo}
+              title="Transcribe the audio again with the current speech model."
+            >
+              Re-transcribe
+            </button>
+          )}
           <button
             className="nt-btn nt-btn--danger-quiet"
             onClick={askDelete}
@@ -171,6 +219,20 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
           <span>Transcribing…</span>
           <div className="nt-bar nt-bar--indeterminate">
             <div className="nt-bar__fill" />
+          </div>
+        </div>
+      )}
+      {redo && (
+        <div className="nt-meeting__busy" role="status">
+          <span>{redo.total > 0 ? `Transcribing again… part ${Math.min(redo.done + 1, redo.total)} of ${redo.total}` : "Transcribing again…"}</span>
+          <div
+            className={redo.total > 0 ? "nt-bar" : "nt-bar nt-bar--indeterminate"}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={redo.total}
+            aria-valuenow={redo.done}
+          >
+            <div className="nt-bar__fill" style={redo.total > 0 ? { width: `${Math.round((redo.done / redo.total) * 100)}%` } : undefined} />
           </div>
         </div>
       )}
@@ -194,6 +256,17 @@ export function MeetingPage({ meetingId, revealSeq, onDeleted }: { meetingId: st
       <SuggestionsCard suggestionsMd={meeting.suggestionsMd} phase={review.phase} message={review.message} sessionOpen={sessionOpen} summaryRunning={summaryRun.pass !== null} onReview={review.start} />
       <SessionCard key={meetingId} meetingId={meetingId} hasSession={meeting.hasSession} reviewRunning={review.phase === "running"} onOpenChange={setSessionOpen} />
       <SaveDialog meetingId={meetingId} onDeclined={() => setNotCommitted(true)} />
+      {askRedo && (
+        <ConfirmDialog
+          title={`Transcribe “${meeting.title}” again?`}
+          body="Phonon transcribes the audio again with the current speech model. The transcript you see stays until the new one is complete, then the new one replaces it."
+          hint="The summary and the suggestions are not changed."
+          cancelLabel="Cancel"
+          confirmLabel="Re-transcribe"
+          onCancel={() => setAskRedo(false)}
+          onConfirm={startRedo}
+        />
+      )}
       {plan && (
         <ConfirmDialog
           title={`Delete “${meeting.title}”?`}

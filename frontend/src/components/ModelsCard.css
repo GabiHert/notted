@@ -1,0 +1,35 @@
+.nt-models__desc {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--fg3-text);
+}
+.nt-models__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.nt-models__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+}
+.nt-models__row + .nt-models__row {
+  border-top: 1px solid var(--border);
+}
+.nt-models__name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.nt-models__size {
+  font-size: 12px;
+  color: var(--fg3-text);
+  font-variant-numeric: tabular-nums;
+}
+.nt-models__error {
+  margin: 0;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+}

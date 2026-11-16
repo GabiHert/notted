@@ -3,6 +3,7 @@ import { CheckForUpdate, EventsOn, GetSettings, GetUpdateStatus, ListMyProjectKe
 import { errorMessage } from "../format";
 import { AppearanceCard } from "./AppearanceCard";
 import { InstructionFiles } from "./InstructionFiles";
+import { ModelsCard } from "./ModelsCard";
 import { PermissionsCard } from "./PermissionsCard";
 import { PromptPreview } from "./PromptPreview";
 import { ReviewModeCard } from "./ReviewModeCard";
@@ -155,6 +156,7 @@ export function SettingsView({ onDirtyPath }: { onDirtyPath?: (path: string | nu
         <AppearanceCard />
         <UpdatesCard appName="Phonon" api={updatesAPI} on={EventsOn} />
         <PermissionsCard />
+        <ModelsCard />
       </div>
     </div>
   );

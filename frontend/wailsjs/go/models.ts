@@ -300,6 +300,22 @@ export namespace wails {
 	        this.trackedRemoved = source["trackedRemoved"];
 	    }
 	}
+	export class RetranscribeDTO {
+	    running: boolean;
+	    done: number;
+	    total: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RetranscribeDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.running = source["running"];
+	        this.done = source["done"];
+	        this.total = source["total"];
+	    }
+	}
 	export class ReviewStateDTO {
 	    running: boolean;
 	
@@ -366,6 +382,20 @@ export namespace wails {
 	        this.mode = source["mode"];
 	        this.builtin = source["builtin"];
 	        this.tokens = source["tokens"];
+	    }
+	}
+	export class UnusedModelDTO {
+	    name: string;
+	    bytes: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new UnusedModelDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.bytes = source["bytes"];
 	    }
 	}
 	export class UpdateRelease {
