@@ -18,14 +18,13 @@ import (
 	"github.com/GabiHert/phonon/internal/domain"
 )
 
-// The speech model runs in a child process, the transcribe worker. A loaded Whisper turbo takes
-// about 2 GB, and sherpa-onnx keeps more with each call (about 90 MB per 30 s chunk in a real
-// meeting) and does not give it all back on unload. A worker that exits returns all of it, so
-// the worker is stopped once a recording is transcribed, and replaced when it grows past
-// MaxFootprint.
+// The speech model runs in a child process, the transcribe worker. whisper.cpp with the model
+// loaded on Metal takes about 0.9 GB. A worker that exits returns all of it, so the worker is
+// stopped once a recording is transcribed, and replaced when it grows past MaxFootprint.
 //
 // Wire format, both ways: a 4-byte little-endian length, then that many bytes of JSON. A
-// request's JSON is followed by Samples float32 values, little-endian.
+// request's JSON is followed by Samples float32 values, little-endian. The reply carries the
+// timed segments whisper.cpp found, times in ms from the start of the request's samples.
 
 var _ port.SpeechEngine = (*ProcessEngine)(nil)
 
@@ -35,18 +34,27 @@ type workerRequest struct {
 	Samples    int             `json:"samples"`
 }
 
+type workerSegment struct {
+	StartMs int64  `json:"startMs"`
+	EndMs   int64  `json:"endMs"`
+	Text    string `json:"text"`
+}
+
 type workerReply struct {
-	Text  string `json:"text"`
-	Error string `json:"error,omitempty"`
+	Segments []workerSegment `json:"segments"`
+	Error    string          `json:"error,omitempty"`
 	// Footprint is the worker's memory in bytes after the call, 0 when unknown.
 	Footprint uint64 `json:"footprint,omitempty"`
 }
 
-// DefaultMaxFootprint is the worker memory past which it is replaced: the model loads at about
-// 2 GB, and a fresh worker loads it again in about 1.5 s.
+// DefaultMaxFootprint is the worker memory past which it is replaced: the model runs in about
+// 0.9 GB, and a fresh worker loads it again in about a second.
 const DefaultMaxFootprint = 3 << 30
 
-// maxWorkerSamples bounds one request: 10 minutes at 48 kHz, far above the 20 s spans sent.
+// defaultIdleUnload stops a worker no call has used for this long.
+const defaultIdleUnload = 10 * time.Minute
+
+// maxWorkerSamples bounds one request: 10 minutes at 48 kHz, far above the 30 s chunks sent.
 const maxWorkerSamples = 10 * 60 * 48000
 
 func writeFrame(w io.Writer, v any) error {
@@ -69,7 +77,7 @@ func readFrame(r io.Reader, v any) error {
 		return err
 	}
 	size := binary.LittleEndian.Uint32(n[:])
-	if size > 1<<20 {
+	if size > 8<<20 {
 		return fmt.Errorf("transcribe worker: frame of %d bytes", size)
 	}
 	b := make([]byte, size)
@@ -108,7 +116,7 @@ func readSamples(r io.Reader, n int) ([]float32, error) {
 
 // Transcriber is what the worker serves; *Engine is one.
 type Transcriber interface {
-	TranscribeSamples(ctx context.Context, samples []float32, sampleRate int, lang domain.Language) (string, error)
+	TranscribeSamples(ctx context.Context, samples []float32, sampleRate int, lang domain.Language) ([]port.SpeechSegment, error)
 }
 
 // ServeWorker answers requests from r on w until r ends. It is the worker's main loop.
@@ -134,9 +142,13 @@ func serveWorker(r io.Reader, w io.Writer, t Transcriber, mem func() uint64) err
 			return err
 		}
 		var rep workerReply
-		rep.Text, err = t.TranscribeSamples(context.Background(), samples, req.SampleRate, req.Lang)
+		segs, err := t.TranscribeSamples(context.Background(), samples, req.SampleRate, req.Lang)
 		if err != nil {
 			rep.Error = err.Error()
+		}
+		rep.Segments = make([]workerSegment, 0, len(segs))
+		for _, s := range segs {
+			rep.Segments = append(rep.Segments, workerSegment{StartMs: s.StartMs, EndMs: s.EndMs, Text: s.Text})
 		}
 		rep.Footprint = mem()
 		if err := writeFrame(bw, rep); err != nil {
@@ -168,6 +180,15 @@ type ProcessEngine struct {
 	exited   chan struct{}
 	idle     *time.Timer
 	lastUsed time.Time
+	// footprint is what the worker reported after the last call, 0 before any.
+	footprint uint64
+}
+
+// Footprint is the worker's memory after the last call, in bytes, as the worker reported it.
+func (p *ProcessEngine) Footprint() uint64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.footprint
 }
 
 // Ready satisfies port.SpeechEngine: the model files for lang are on disk.
@@ -175,17 +196,17 @@ func (p *ProcessEngine) Ready(lang domain.Language) (bool, string) { return p.Fi
 
 // Transcribe sends the samples to the worker, starting it when it is not running. A worker that
 // fails or dies is stopped, and the next call starts a new one.
-func (p *ProcessEngine) Transcribe(ctx context.Context, samples []float32, sampleRate int, lang domain.Language) (string, error) {
+func (p *ProcessEngine) Transcribe(ctx context.Context, samples []float32, sampleRate int, lang domain.Language) ([]port.SpeechSegment, error) {
 	if err := ctx.Err(); err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(samples) == 0 {
-		return "", fmt.Errorf("empty audio")
+		return nil, fmt.Errorf("empty audio")
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if err := p.startLocked(); err != nil {
-		return "", err
+		return nil, err
 	}
 	defer p.touchLocked()
 
@@ -210,19 +231,24 @@ func (p *ProcessEngine) Transcribe(ctx context.Context, samples []float32, sampl
 	case r := <-done:
 		if r.err != nil {
 			p.stopLocked()
-			return "", fmt.Errorf("the transcribe worker stopped: %w", r.err)
+			return nil, fmt.Errorf("the transcribe worker stopped: %w", r.err)
 		}
+		p.footprint = r.rep.Footprint
 		if limit := p.maxFootprint(); r.rep.Footprint > limit {
 			p.stopLocked() // the next call starts a fresh worker
 		}
 		if r.rep.Error != "" {
-			return "", errors.New(r.rep.Error)
+			return nil, errors.New(r.rep.Error)
 		}
-		return r.rep.Text, nil
+		out := make([]port.SpeechSegment, 0, len(r.rep.Segments))
+		for _, s := range r.rep.Segments {
+			out = append(out, port.SpeechSegment{StartMs: s.StartMs, EndMs: s.EndMs, Text: s.Text})
+		}
+		return out, nil
 	case <-ctx.Done():
 		p.stopLocked()
 		<-done
-		return "", ctx.Err()
+		return nil, ctx.Err()
 	}
 }
 

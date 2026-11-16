@@ -126,6 +126,10 @@ export function GetTranscript(arg1) {
   return window['go']['wails']['App']['GetTranscript'](arg1);
 }
 
+export function GetUnusedModels() {
+  return window['go']['wails']['App']['GetUnusedModels']();
+}
+
 export function GetUpdateStatus() {
   return window['go']['wails']['App']['GetUpdateStatus']();
 }
@@ -184,6 +188,10 @@ export function PreviewPrompt(arg1) {
 
 export function ReadInstructionFile(arg1) {
   return window['go']['wails']['App']['ReadInstructionFile'](arg1);
+}
+
+export function RemoveUnusedModel(arg1) {
+  return window['go']['wails']['App']['RemoveUnusedModel'](arg1);
 }
 
 export function ResizeSession(arg1, arg2, arg3) {

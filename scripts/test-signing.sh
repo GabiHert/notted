@@ -4,7 +4,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 root=$(pwd)
 pass=0
-total=12
+total=13
 tmps=()
 cleanup() { for t in "${tmps[@]:-}"; do [ -n "$t" ] && rm -rf "$t"; done; }
 trap cleanup EXIT
@@ -69,20 +69,17 @@ exit 0
 FAKE
   cat >"$tmp/bin/otool" <<'FAKE'
 #!/bin/sh
-echo "Load command 20"
-echo "          cmd LC_RPATH"
-echo "      cmdsize 48"
-echo "         path @executable_path/../Frameworks (offset 12)"
+echo "$2:"
+printf '\t/System/Library/Frameworks/Metal.framework/Versions/A/Metal (compatibility version 1.0.0)\n'
+printf '\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0)\n'
 FAKE
   printf '#!/bin/sh\necho tech.bhlabs.phonon\n' >"$tmp/bin/plutil"
   chmod +x "$tmp/bin/"*
   local c="$tmp/Phonon.app/Contents"
-  mkdir -p "$c/MacOS" "$c/Frameworks"
+  mkdir -p "$c/MacOS"
   printf '#!/bin/sh\n' >"$c/MacOS/Phonon"
   printf '#!/bin/sh\n' >"$c/MacOS/audiocap"
   chmod +x "$c/MacOS/Phonon" "$c/MacOS/audiocap"
-  : >"$c/Frameworks/libonnxruntime.1.17.1.dylib"
-  : >"$c/Frameworks/libsherpa-onnx-c-api.dylib"
   : >"$c/Info.plist"
 }
 
@@ -125,9 +122,7 @@ verdict identity-missing $?
 fresh valid
 app="$tmp/Phonon.app"
 run scripts/sign-bundle.sh "$app"
-want="codesign -f -s $HASH $app/Contents/Frameworks/libonnxruntime.1.17.1.dylib
-codesign -f -s $HASH $app/Contents/Frameworks/libsherpa-onnx-c-api.dylib
-codesign -f -s $HASH --identifier tech.bhlabs.phonon.audiocap $app/Contents/MacOS/audiocap
+want="codesign -f -s $HASH --identifier tech.bhlabs.phonon.audiocap $app/Contents/MacOS/audiocap
 codesign -f -s $HASH $app"
 [ "$rc" -eq 0 ] && has 'sign-bundle: signing with "Phonon Local Signing"' && [ "$(grep '^codesign' "$tmp/calls")" = "$want" ]
 verdict sign-local $?
@@ -135,7 +130,7 @@ verdict sign-local $?
 fresh none
 app="$tmp/Phonon.app"
 run scripts/sign-bundle.sh "$app"
-[ "$rc" -eq 0 ] && has "$NOTFOUND" && [ "$(grep -c '^codesign' "$tmp/calls")" -eq 4 ] && [ "$(grep '^codesign' "$tmp/calls" | grep -c -- ' -s - ')" -eq 4 ]
+[ "$rc" -eq 0 ] && has "$NOTFOUND" && [ "$(grep -c '^codesign' "$tmp/calls")" -eq 2 ] && [ "$(grep '^codesign' "$tmp/calls" | grep -c -- ' -s - ')" -eq 2 ]
 verdict sign-adhoc $?
 
 fresh none adhoc
@@ -147,6 +142,13 @@ fresh none local
 run scripts/check-bundle.sh "$tmp/Phonon.app"
 [ "$rc" -eq 0 ] && has 'check-bundle: OK (signed with Phonon Local Signing)'
 verdict check-local $?
+
+fresh none adhoc
+mkdir -p "$tmp/Phonon.app/Contents/Frameworks"
+: >"$tmp/Phonon.app/Contents/Frameworks/libonnxruntime.1.17.1.dylib"
+run scripts/check-bundle.sh "$tmp/Phonon.app"
+[ "$rc" -eq 1 ] && has 'check-bundle: FAIL unexpected libraries in Contents/Frameworks'
+verdict check-stray-library $?
 
 fresh none mixed
 run scripts/check-bundle.sh "$tmp/Phonon.app"

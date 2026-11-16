@@ -42,7 +42,8 @@ for f in $files; do
     rest=${hit#*:}
     while IFS= read -r url; do
       case "$url" in
-        https://github.com/k2-fsa/sherpa-onnx/releases/download/*) ;;
+        https://huggingface.co/ggerganov/whisper.cpp/resolve/main/*) ;; # speech model
+        https://huggingface.co/ggml-org/whisper-vad/resolve/main/*) ;;   # speech detector model
         https://github.com/ggml-org/whisper.cpp/archive/refs/tags/*) ;;  # scripts/build-whisper.sh
         https://api.github.com) ;; # internal/update: this repo's releases only
         'https://github.com/$REPO/releases/tag/'*) ;;

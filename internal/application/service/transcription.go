@@ -25,14 +25,20 @@ type workItem struct {
 	check     bool
 }
 
+func (it workItem) meeting() string {
+	if it.check {
+		return it.meetingID
+	}
+	return it.chunk.MeetingID
+}
+
 // TranscriptionService turns each closed chunk into labelled, timed segments with one worker,
-// so the speech library is never called from two goroutines at once.
+// so the speech engine is never called from two goroutines at once.
 type TranscriptionService struct {
-	store    port.MeetingStore
-	engine   port.SpeechEngine
-	detector port.SpeechDetector
-	emit     port.EventEmitter
-	decode   func(path string) ([]float32, int, error)
+	store  port.MeetingStore
+	engine port.SpeechEngine
+	emit   port.EventEmitter
+	decode func(path string) ([]float32, int, error)
 
 	mu      sync.Mutex
 	idle    *sync.Cond
@@ -48,10 +54,10 @@ type TranscriptionService struct {
 }
 
 // NewTranscriptionService builds the service; decode reads a WAV file into mono samples and their rate.
-func NewTranscriptionService(store port.MeetingStore, engine port.SpeechEngine, detector port.SpeechDetector,
+func NewTranscriptionService(store port.MeetingStore, engine port.SpeechEngine,
 	emit port.EventEmitter, decode func(path string) ([]float32, int, error)) *TranscriptionService {
 	s := &TranscriptionService{
-		store: store, engine: engine, detector: detector, emit: emit, decode: decode,
+		store: store, engine: engine, emit: emit, decode: decode,
 		parked: map[chunkKey]domain.Chunk{},
 		wake:   make(chan struct{}, 1),
 		stop:   make(chan struct{}),
@@ -142,11 +148,7 @@ func (s *TranscriptionService) Forget(meetingID string) {
 	defer s.mu.Unlock()
 	kept := s.items[:0]
 	for _, it := range s.items {
-		id := it.meetingID
-		if !it.check {
-			id = it.chunk.MeetingID
-		}
-		if id == meetingID {
+		if it.meeting() == meetingID {
 			s.pending--
 			continue
 		}
@@ -203,10 +205,7 @@ func (s *TranscriptionService) next() (workItem, bool) {
 	it := s.items[0]
 	s.items[0] = workItem{}
 	s.items = s.items[1:]
-	s.busy = it.meetingID
-	if !it.check {
-		s.busy = it.chunk.MeetingID
-	}
+	s.busy = it.meeting()
 	return it, true
 }
 
@@ -269,10 +268,6 @@ func (s *TranscriptionService) process(ctx context.Context, queued domain.Chunk)
 		s.park(cur)
 		return
 	}
-	if ready, _ := s.detector.Ready(); !ready {
-		s.park(cur)
-		return
-	}
 	if err := s.transcribeChunk(ctx, m, cur); err != nil {
 		s.emit.Emit("recording:state", map[string]any{
 			"meetingId": m.ID,
@@ -306,30 +301,39 @@ func (s *TranscriptionService) park(c domain.Chunk) {
 	s.mu.Unlock()
 }
 
-func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Meeting, c domain.Chunk) error {
+// chunkSegments transcribes a whole chunk and returns its segments with absolute times.
+func (s *TranscriptionService) chunkSegments(ctx context.Context, m domain.Meeting, c domain.Chunk) ([]domain.Segment, error) {
 	samples, rate, err := s.decode(c.Path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if rate <= 0 {
-		return fmt.Errorf("unsupported sample rate %d", rate)
+		return nil, fmt.Errorf("unsupported sample rate %d", rate)
 	}
-	spans, err := s.detector.Detect(samples, rate)
+	if len(samples) == 0 {
+		return nil, nil
+	}
+	found, err := s.engine.Transcribe(ctx, samples, rate, m.Language)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for _, sp := range spans {
-		raw, err := s.engine.Transcribe(ctx, sp.Samples, rate, m.Language)
-		if err != nil {
-			return err
-		}
-		text := strings.Join(strings.Fields(raw), " ")
+	var out []domain.Segment
+	for _, f := range found {
+		text := strings.Join(strings.Fields(f.Text), " ")
 		if text == "" {
 			continue
 		}
-		start := c.StartMs + int64(sp.StartSample)*1000/int64(rate)
-		end := start + int64(len(sp.Samples))*1000/int64(rate)
-		seg := domain.Segment{MeetingID: c.MeetingID, Track: c.Track, StartMs: start, EndMs: end, Text: text}
+		out = append(out, domain.Segment{MeetingID: c.MeetingID, Track: c.Track, StartMs: c.StartMs + f.StartMs, EndMs: c.StartMs + f.EndMs, Text: text})
+	}
+	return out, nil
+}
+
+func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Meeting, c domain.Chunk) error {
+	segs, err := s.chunkSegments(ctx, m, c)
+	if err != nil {
+		return err
+	}
+	for _, seg := range segs {
 		id, err := s.store.AddSegment(ctx, seg)
 		if err != nil {
 			return err
@@ -337,7 +341,7 @@ func (s *TranscriptionService) transcribeChunk(ctx context.Context, m domain.Mee
 		s.emit.Emit("transcript:segment", map[string]any{
 			"meetingId": c.MeetingID,
 			"segment": map[string]any{
-				"id": id, "track": string(c.Track), "startMs": start, "endMs": end, "text": text,
+				"id": id, "track": string(c.Track), "startMs": seg.StartMs, "endMs": seg.EndMs, "text": seg.Text,
 			},
 		})
 	}

@@ -363,7 +363,7 @@ export async function GetTranscript(id: string) {
   return id === "fx-transcribing" ? [] : transcript;
 }
 export async function GetModelStatus(language: string) {
-  return { language, ready: !modelsMissing, missing: modelsMissing ? "whisper-turbo" : "", downloadBytes: 563_800_000, downloading: false };
+  return { language, ready: !modelsMissing, missing: modelsMissing ? "speech models are not installed" : "", downloadBytes: 574_926_293, downloading: false };
 }
 export async function StartRecording(title: string, language: string) {
   return { ...meetings[0], title: title || "Untitled", language };
@@ -385,6 +385,10 @@ export async function DeleteProject(key: string, _plan: unknown) {
 }
 export async function CommitProjectDeletion(_key: string, _paths: string[]) {}
 export async function DownloadModels(_language: string) {}
+export async function GetUnusedModels() {
+  return modelsMissing ? [] : [{ name: "sherpa-onnx-whisper-small", bytes: 1_300_000_000 }, { name: "sherpa-onnx-whisper-turbo", bytes: 989_000_000 }, { name: "silero_vad", bytes: 644_000 }];
+}
+export async function RemoveUnusedModel(_name: string) {}
 export async function ListOpenForms() {
   if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];
   const f = fixtureFor(screen === "waiting-dot" ? "form-choice" : screen);

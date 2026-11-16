@@ -77,11 +77,9 @@ func Run(assets embed.FS) error {
 		log.Printf("forms: %v", err) // the app runs on; ask then reports "Phonon is not running"
 	}
 	recording := service.NewRecordingService(st, audio.NewSupervisor(helperPath()), emitter, paths.AudioDir, wavinfo.Inspector{})
-	engine := speech.New(speech.Config{ModelsDir: paths.ModelsDir()})
-	detector := speech.NewDetector(paths.ModelsDir())
-	models := speech.NewModelManager(paths.ModelsDir(), engine, detector)
-	worker := transcribeWorker(paths.ModelsDir(), engine)
-	trans := service.NewTranscriptionService(st, worker, detector, emitter, func(p string) ([]float32, int, error) {
+	models := speech.NewModelManager(paths.ModelsDir())
+	worker := transcribeWorker(paths.ModelsDir())
+	trans := service.NewTranscriptionService(st, worker, emitter, func(p string) ([]float32, int, error) {
 		b, err := os.ReadFile(p)
 		if err != nil {
 			return nil, 0, err

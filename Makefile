@@ -17,7 +17,6 @@ build: helper whisper
 	touch frontend/dist/.gitkeep
 	cp helpers/audiocap/build/audiocap $(APP)/Contents/MacOS/audiocap
 	cp build/darwin/iconfile.icns $(APP)/Contents/Resources/iconfile.icns
-	bash scripts/fixup-macos-dylibs.sh $(APP)/Contents/MacOS/Phonon
 	bash scripts/sign-bundle.sh $(APP)
 	bash scripts/check-bundle.sh
 	bash scripts/make-notted-bridge.sh

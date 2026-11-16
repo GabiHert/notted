@@ -64,6 +64,8 @@ export function GetSetupPrompt():Promise<string>;
 
 export function GetTranscript(arg1:string):Promise<Array<wails.SegmentDTO>>;
 
+export function GetUnusedModels():Promise<Array<wails.UnusedModelDTO>>;
+
 export function GetUpdateStatus():Promise<wails.UpdateStatusDTO>;
 
 export function ImportVSCodeTheme():Promise<wails.ThemeDTO>;
@@ -93,6 +95,8 @@ export function PrepareArchive(arg1:string):Promise<void>;
 export function PreviewPrompt(arg1:string):Promise<string>;
 
 export function ReadInstructionFile(arg1:string):Promise<string>;
+
+export function RemoveUnusedModel(arg1:string):Promise<void>;
 
 export function ResizeSession(arg1:string,arg2:number,arg3:number):Promise<void>;
 

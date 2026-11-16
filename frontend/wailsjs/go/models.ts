@@ -368,6 +368,20 @@ export namespace wails {
 	        this.tokens = source["tokens"];
 	    }
 	}
+	export class UnusedModelDTO {
+	    name: string;
+	    bytes: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new UnusedModelDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.bytes = source["bytes"];
+	    }
+	}
 	export class UpdateRelease {
 	    tag: string;
 	    name: string;

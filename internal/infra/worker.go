@@ -33,9 +33,9 @@ func RunTranscribeWorker(args []string) int {
 }
 
 // transcribeWorker runs the speech model in a child Phonon, so its memory goes back when it stops.
-func transcribeWorker(modelsDir string, files *speech.Engine) *speech.ProcessEngine {
+func transcribeWorker(modelsDir string) *speech.ProcessEngine {
 	return &speech.ProcessEngine{
-		Files: files,
+		Files: speech.Files{ModelsDir: modelsDir},
 		Command: func() *exec.Cmd {
 			exe, err := os.Executable()
 			if err != nil {

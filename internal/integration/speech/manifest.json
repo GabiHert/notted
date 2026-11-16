@@ -1,30 +1,22 @@
 {
-  "schema": 2,
-  "version": "whisper turbo + small.en (int8) + silero vad",
+  "schema": 3,
+  "version": "whisper.cpp large-v3-turbo q5_0 + silero vad v5.1.2",
   "models": [
     {
-      "name": "whisper small.en",
-      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.en.tar.bz2",
-      "sha256": "0cdba2b8aaab69e04847f3427cc9709574112e67913a1a84b7fec3a8729faa9a",
-      "size": 635693775,
-      "dir": "sherpa-onnx-whisper-small.en",
-      "lang": "en"
-    },
-    {
-      "name": "whisper turbo",
-      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-turbo.tar.bz2",
-      "sha256": "b11acbbcd660b44a8e0df33724feb5aaa709cf65668f2823d59f656312544f22",
-      "size": 563790207,
-      "dir": "sherpa-onnx-whisper-turbo",
-      "lang": "pt-BR"
+      "name": "whisper large-v3-turbo",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+      "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+      "size": 574041195,
+      "dir": "whisper-large-v3-turbo-q5_0",
+      "file": "ggml-large-v3-turbo-q5_0.bin"
     },
     {
       "name": "silero vad",
-      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
-      "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
-      "size": 643854,
-      "dir": "silero_vad",
-      "file": "silero_vad.onnx"
+      "url": "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin",
+      "sha256": "29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf",
+      "size": 885098,
+      "dir": "silero-vad-v5.1.2",
+      "file": "ggml-silero-v5.1.2.bin"
     }
   ]
 }

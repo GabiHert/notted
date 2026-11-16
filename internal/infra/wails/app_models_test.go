@@ -2,6 +2,7 @@ package wails
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,8 +11,20 @@ import (
 )
 
 type fakeModels struct {
-	status port.ModelStatus
-	steps  []port.ModelProgress
+	status  port.ModelStatus
+	steps   []port.ModelProgress
+	unused  []port.UnusedModel
+	removed *[]string
+}
+
+func (f fakeModels) Unused() ([]port.UnusedModel, error) { return f.unused, nil }
+
+func (f fakeModels) RemoveUnused(name string) error {
+	if name == "in-use" {
+		return errors.New("That model is in use and cannot be removed.")
+	}
+	*f.removed = append(*f.removed, name)
+	return nil
 }
 
 func (f fakeModels) Status(lang domain.Language) port.ModelStatus {
@@ -70,5 +83,24 @@ func TestDownloadModelsEmitsProgressEvents(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Fatalf("event %d never arrived", i)
 		}
+	}
+}
+
+func TestUnusedModelsAndRemove(t *testing.T) {
+	var removed []string
+	a := New(&Emitter{}, Deps{Models: fakeModels{removed: &removed, unused: []port.UnusedModel{{Name: "sherpa-onnx-whisper-turbo", Bytes: 989}}}})
+	got, err := a.GetUnusedModels()
+	if err != nil || len(got) != 1 || got[0] != (UnusedModelDTO{Name: "sherpa-onnx-whisper-turbo", Bytes: 989}) {
+		t.Fatalf("unused = %+v, %v", got, err)
+	}
+	if err := a.RemoveUnusedModel("sherpa-onnx-whisper-turbo"); err != nil || len(removed) != 1 {
+		t.Fatalf("remove: %v %v", err, removed)
+	}
+	if err := a.RemoveUnusedModel("in-use"); err == nil {
+		t.Fatal("removed a model in use")
+	}
+	empty := New(&Emitter{}, Deps{Models: fakeModels{}})
+	if got, err := empty.GetUnusedModels(); err != nil || got == nil || len(got) != 0 {
+		t.Fatalf("empty = %#v, %v", got, err)
 	}
 }

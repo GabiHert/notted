@@ -10,20 +10,33 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GabiHert/phonon/internal/application/port"
 	"github.com/GabiHert/phonon/internal/domain"
 )
 
-// fakeTranscriber echoes what it got. A first sample of -1 makes the worker die, -2 an error reply.
+// fakeTranscriber echoes what it got as one segment spanning the audio, plus a second fixed one.
+// A first sample of -1 makes the worker die, -2 an error reply.
 type fakeTranscriber struct{}
 
-func (fakeTranscriber) TranscribeSamples(_ context.Context, s []float32, rate int, lang domain.Language) (string, error) {
+func (fakeTranscriber) TranscribeSamples(_ context.Context, s []float32, rate int, lang domain.Language) ([]port.SpeechSegment, error) {
 	switch s[0] {
 	case -1:
 		os.Exit(3)
 	case -2:
-		return "", errors.New("model failed")
+		return nil, errors.New("model failed")
 	}
-	return fmt.Sprintf("%s %d %d %.2f %.2f", lang, rate, len(s), s[0], s[len(s)-1]), nil
+	return []port.SpeechSegment{
+		{StartMs: 0, EndMs: int64(len(s)) * 1000 / int64(rate), Text: fmt.Sprintf("%s %d %d %.2f %.2f", lang, rate, len(s), s[0], s[len(s)-1])},
+		{StartMs: 1230, EndMs: 4560, Text: "olá, mundo"},
+	}, nil
+}
+
+// firstText is the echo segment's text.
+func firstText(segs []port.SpeechSegment) string {
+	if len(segs) == 0 {
+		return ""
+	}
+	return segs[0].Text
 }
 
 // TestHelperTranscribeWorker is the worker process the tests start; it does nothing in a normal run.
@@ -74,13 +87,17 @@ func TestProcessEngineSendsSamplesToAWorkerStartedOnFirstUse(t *testing.T) {
 	if p.Running() {
 		t.Fatal("a worker runs before the first call")
 	}
-	// 20 s at 16 kHz, the longest span the detector cuts.
-	got, err := p.Transcribe(context.Background(), ramp(320000), 16000, domain.LangPTBR)
+	// 30 s at 16 kHz, one whole chunk.
+	got, err := p.Transcribe(context.Background(), ramp(480000), 16000, domain.LangPTBR)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := "pt-BR 16000 320000 0.00 1.00"; got != want {
-		t.Fatalf("got %q, want %q", got, want)
+	want := []port.SpeechSegment{
+		{StartMs: 0, EndMs: 30000, Text: "pt-BR 16000 480000 0.00 1.00"},
+		{StartMs: 1230, EndMs: 4560, Text: "olá, mundo"},
+	}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("got %+v, want %+v", got, want)
 	}
 	if _, err := p.Transcribe(context.Background(), ramp(10), 16000, domain.LangEN); err != nil {
 		t.Fatal(err)
@@ -149,8 +166,8 @@ func TestProcessEngineRecoversFromAWorkerThatDies(t *testing.T) {
 		t.Fatalf("err = %v, want the worker stopped", err)
 	}
 	got, err := p.Transcribe(context.Background(), []float32{0.5}, 16000, domain.LangEN)
-	if err != nil || got != "en 16000 1 0.50 0.50" {
-		t.Fatalf("after a crash: %q, %v", got, err)
+	if err != nil || firstText(got) != "en 16000 1 0.50 0.50" {
+		t.Fatalf("after a crash: %+v, %v", got, err)
 	}
 	if *starts != 2 {
 		t.Fatalf("starts = %d, want a new worker", *starts)

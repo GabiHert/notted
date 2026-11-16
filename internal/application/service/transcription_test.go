@@ -21,7 +21,12 @@ type fakeEngine struct {
 	langs []domain.Language
 	n     int
 	fail  bool
+	none  bool // no speech found
 	text  func(n int) string
+	// failAt makes the n-th call fail, when set.
+	failAt int
+	// before, when set, runs at the start of each call with the number of calls before it.
+	before func(n int)
 }
 
 func (e *fakeEngine) Ready(domain.Language) (bool, string) {
@@ -32,42 +37,36 @@ func (e *fakeEngine) Ready(domain.Language) (bool, string) {
 
 func (e *fakeEngine) setReady(v bool) { e.mu.Lock(); e.ready = v; e.mu.Unlock() }
 
-func (e *fakeEngine) Transcribe(_ context.Context, _ []float32, _ int, lang domain.Language) (string, error) {
+// Transcribe finds one segment from 1 s to 3 s into the chunk.
+func (e *fakeEngine) Transcribe(_ context.Context, _ []float32, _ int, lang domain.Language) ([]port.SpeechSegment, error) {
+	if e.before != nil {
+		e.before(e.calls())
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.n++
 	e.langs = append(e.langs, lang)
-	if e.fail {
-		return "", errors.New("engine broke")
+	if e.fail || e.n == e.failAt {
+		return nil, errors.New("engine broke")
 	}
+	if e.none {
+		return nil, nil
+	}
+	text := fmt.Sprintf("text %d", e.n)
 	if e.text != nil {
-		return e.text(e.n), nil
+		text = e.text(e.n)
 	}
-	return fmt.Sprintf("text %d", e.n), nil
+	return []port.SpeechSegment{{StartMs: 1000, EndMs: 3000, Text: text}}, nil
 }
 
 func (e *fakeEngine) calls() int { e.mu.Lock(); defer e.mu.Unlock(); return e.n }
 
-type fakeDetector struct {
-	ready bool
-	def   []port.SpeechSpan
-}
-
-func (d *fakeDetector) Ready() (bool, string) { return d.ready, "missing" }
-
-func (d *fakeDetector) Detect([]float32, int) ([]port.SpeechSpan, error) { return d.def, nil }
-
 func decode30s(string) ([]float32, int, error) { return make([]float32, 16000*30), 16000, nil }
-
-func span(startSample, n int) port.SpeechSpan {
-	return port.SpeechSpan{StartSample: startSample, Samples: make([]float32, n)}
-}
 
 type transFixture struct {
 	t    *testing.T
 	st   *store.Store
 	eng  *fakeEngine
-	det  *fakeDetector
 	em   *recEmitter
 	svc  *TranscriptionService
 	ctx  context.Context
@@ -82,8 +81,8 @@ func newTransFixture(t *testing.T, lang domain.Language) *transFixture {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	f := &transFixture{t: t, st: st, eng: &fakeEngine{ready: true}, det: &fakeDetector{ready: true, def: []port.SpeechSpan{span(16000, 32000)}}, em: &recEmitter{}, ctx: context.Background()}
-	f.svc = NewTranscriptionService(st, f.eng, f.det, f.em, decode30s)
+	f := &transFixture{t: t, st: st, eng: &fakeEngine{ready: true}, em: &recEmitter{}, ctx: context.Background()}
+	f.svc = NewTranscriptionService(st, f.eng, f.em, decode30s)
 	f.meet = domain.Meeting{ID: "m1", Title: "t", StartedAt: time.Now().UTC(), Language: lang, State: domain.StateTranscribing}
 	if err := st.CreateMeeting(f.ctx, f.meet); err != nil {
 		t.Fatal(err)
@@ -141,7 +140,7 @@ func TestTranscribesBothTracksWithAbsoluteTimesAndEvents(t *testing.T) {
 	if segs[0].Track != domain.TrackMic || segs[1].Track != domain.TrackOthers {
 		t.Fatalf("tracks = %s,%s", segs[0].Track, segs[1].Track)
 	}
-	// chunk 2 starts at 30000; span starts at sample 16000 (1000 ms) and lasts 32000 samples (2000 ms)
+	// chunk 2 starts at 30000; the engine's segment runs from 1000 ms to 3000 ms into it
 	if segs[0].StartMs != 31000 || segs[0].EndMs != 33000 || segs[0].Text != "hello world 1" {
 		t.Fatalf("mic segment = %+v", segs[0])
 	}
@@ -184,12 +183,12 @@ func TestLanguagePassedToEngine(t *testing.T) {
 
 func TestNoSpeechAddsNoSegmentButMarksChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
-	f.det.def = nil
+	f.eng.none = true
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackOthers, 1))
 	f.svc.Wait()
 	segs, _ := f.svc.Transcript(f.ctx, "m1")
-	if len(segs) != 0 || f.eng.calls() != 0 || f.pending() != 0 {
+	if len(segs) != 0 || f.eng.calls() != 1 || f.pending() != 0 {
 		t.Fatalf("segs=%d calls=%d pending=%d", len(segs), f.eng.calls(), f.pending())
 	}
 }
@@ -207,7 +206,7 @@ func TestEmptyTextSpanAddsNoSegment(t *testing.T) {
 
 func TestDecodeErrorReportedOnceChunkSkippedMeetingReady(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
-	f.svc = NewTranscriptionService(f.st, f.eng, f.det, f.em, func(string) ([]float32, int, error) { return nil, 0, errors.New("bad wav") })
+	f.svc = NewTranscriptionService(f.st, f.eng, f.em, func(string) ([]float32, int, error) { return nil, 0, errors.New("bad wav") })
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackMic, 3))
 	f.svc.MeetingStopped("m1")
@@ -317,17 +316,6 @@ func TestParkedWhileEngineNotReadyThenResumed(t *testing.T) {
 	}
 }
 
-func TestParkedWhenDetectorNotReady(t *testing.T) {
-	f := newTransFixture(t, domain.LangEN)
-	f.det.ready = false
-	f.start()
-	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
-	f.svc.Wait()
-	if f.pending() != 1 {
-		t.Fatalf("pending = %d", f.pending())
-	}
-}
-
 func TestStartQueuesEveryPendingChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	f.addChunk(domain.TrackMic, 1)
@@ -395,7 +383,7 @@ type blockingEngine struct {
 	release chan struct{}
 }
 
-func (e *blockingEngine) Transcribe(ctx context.Context, s []float32, r int, l domain.Language) (string, error) {
+func (e *blockingEngine) Transcribe(ctx context.Context, s []float32, r int, l domain.Language) ([]port.SpeechSegment, error) {
 	select {
 	case e.entered <- struct{}{}:
 	default:
@@ -462,7 +450,7 @@ func TestForgetDropsParkedChunks(t *testing.T) {
 func TestForgetWaitsForTheChunkBeingTranscribed(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
-	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.svc = NewTranscriptionService(f.st, be, f.em, decode30s)
 	f.start()
 	f.svc.Enqueue(f.addChunk(domain.TrackMic, 1))
 	<-be.entered
@@ -486,7 +474,7 @@ func TestForgetDoesNotWaitForAnotherMeetingsChunk(t *testing.T) {
 	f := newTransFixture(t, domain.LangEN)
 	f.otherMeeting("m2")
 	be := &blockingEngine{fakeEngine: fakeEngine{ready: true}, entered: make(chan struct{}, 1), release: make(chan struct{})}
-	f.svc = NewTranscriptionService(f.st, be, f.det, f.em, decode30s)
+	f.svc = NewTranscriptionService(f.st, be, f.em, decode30s)
 	f.start()
 	c := domain.Chunk{MeetingID: "m2", Track: domain.TrackMic, Index: 1, EndMs: 30000, Path: "/a/m2.wav"}
 	if err := f.st.AddChunk(f.ctx, c); err != nil {

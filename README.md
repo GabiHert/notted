@@ -210,7 +210,7 @@ To delete a meeting, click **Delete meeting** on its page. Phonon lists what it 
 | --- | --- |
 | The app | A Go and [Wails](https://wails.io) app with a React window. It keeps the state of every meeting in SQLite. |
 | `audiocap` | A small Swift helper in `helpers/audiocap`. It records your microphone and the system audio as two separate tracks, which is why the transcript tells your lines (**You**) from everyone else's (**Others**). |
-| Whisper and Silero | Local speech models, run through sherpa-onnx. Phonon transcribes on your Mac and downloads the models once. See [What Phonon downloads](#what-phonon-downloads). |
+| whisper.cpp | Runs the Whisper large-v3-turbo speech model and its Silero speech detector on your Mac's GPU, built into the app from the pinned release by `scripts/build-whisper.sh`. Phonon transcribes on your Mac and downloads the models once. See [What Phonon downloads](#what-phonon-downloads). |
 | SQLite and audio | `~/.phonon/meetings.sqlite` and `~/.phonon/audio/<meeting-id>/`. See [Your data](#your-data). |
 | The archive | A git folder you own. It holds your instructions, the prompts and the saved meetings. `bin/meeting prompt --project <key>` in the archive builds the prompt for a project's meetings. |
 | Claude Code | Phonon runs your own `claude` headless for the summary and the suggestions, with your subscription and no API key. Each meeting also gets its own Claude Code session. |
@@ -233,7 +233,7 @@ Claude Code is the only model Phonon uses, and it needs no API key: `ANTHROPIC_A
 
 ### What Phonon downloads
 
-On first use per language, Phonon downloads the Whisper model (about 640 MB for English `small.en`, about 564 MB for Portuguese `turbo`) and the Silero speech detector (0.6 MB) from the sherpa-onnx releases on GitHub (`https://github.com/k2-fsa/sherpa-onnx/releases`). It verifies each file by SHA-256 and stores it in `~/.phonon/models`. These, and the releases below, are the only downloads Phonon makes itself; the `claude` program talks to Anthropic on its own. To update, it asks `api.github.com` for this repository's newest release and downloads it from there (see [Updates](#updates)). Phonon also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, and **Commit and push** runs `git push`.
+On first use, Phonon downloads the Whisper large-v3-turbo model in whisper.cpp's q5_0 format (about 574 MB, `https://huggingface.co/ggerganov/whisper.cpp`) and the Silero speech detector (0.9 MB, `https://huggingface.co/ggml-org/whisper-vad`). Both languages use them. It verifies each file by SHA-256 and stores it in `~/.phonon/models`. Models that earlier versions downloaded stay there until you remove them in **Settings**, under **Unused speech models**. These, and the releases below, are the only downloads Phonon makes itself; the `claude` program talks to Anthropic on its own. To update, it asks `api.github.com` for this repository's newest release and downloads it from there (see [Updates](#updates)). Phonon also runs your own git, with your own login, against your own remotes: **Clone the archive from GitHub instead** runs `git clone`, and **Commit and push** runs `git push`.
 
 ## Updates
 
