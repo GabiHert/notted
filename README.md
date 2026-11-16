@@ -178,6 +178,8 @@ Phonon then asks **Commit and push the deletion?** **Commit and push** commits o
 2. Give the meeting a **Title** and choose its **Language** (Portuguese (Brazil) or English), then click **Start recording**.
 3. Click **Stop recording** when the meeting ends. Phonon then transcribes the audio.
 
+To transcribe a finished meeting again with the current speech model, for example one transcribed by an earlier version, click **Re-transcribe** on its page. The page shows its progress; the old transcript stays until the new one is complete, and the summary and suggestions are not changed.
+
 If Phonon hears no sound from your microphone, it shows a warning during the recording. For example, a MacBook's built-in microphone is off while the lid is closed. Open the lid, or choose another input in System Settings > Sound > Input.
 
 ### Menu bar

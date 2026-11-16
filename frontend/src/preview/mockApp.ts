@@ -389,6 +389,10 @@ export async function GetUnusedModels() {
   return modelsMissing ? [] : [{ name: "sherpa-onnx-whisper-small", bytes: 1_300_000_000 }, { name: "sherpa-onnx-whisper-turbo", bytes: 989_000_000 }, { name: "silero_vad", bytes: 644_000 }];
 }
 export async function RemoveUnusedModel(_name: string) {}
+export async function Retranscribe(_id: string) {}
+export async function GetRetranscribeStatus(_id: string) {
+  return { running: false, done: 0, total: 0 };
+}
 export async function ListOpenForms() {
   if (screen === "review-form-arrives") return formArrived ? [fixtureFor("form-multi")!] : [];
   const f = fixtureFor(screen === "waiting-dot" ? "form-choice" : screen);

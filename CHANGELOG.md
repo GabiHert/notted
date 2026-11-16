@@ -12,6 +12,7 @@ version and uses it as the release notes.
 
 ### Added
 - Settings → Unused speech models lists the models earlier versions downloaded that nothing uses now, with their sizes, and removes one after you confirm. Phonon never removes them on its own.
+- **Re-transcribe** on a finished meeting's page transcribes its audio again with the current model. The page shows part n of N; the old transcript stays until the new one is complete, then the new one replaces it. If it fails or Phonon quits first, the old transcript is kept. The summary and suggestions are not changed.
 - For measuring: `PHONON_DEBUG_ADDR=127.0.0.1:6061` serves Go profiles and recording start and stop on that loopback address. It is off unless set.
 
 ## [1.0.0] - 2026-11-11

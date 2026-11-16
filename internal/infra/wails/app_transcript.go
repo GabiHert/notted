@@ -21,3 +21,22 @@ func (a *App) GetTranscript(id string) ([]SegmentDTO, error) {
 	}
 	return out, nil
 }
+
+// RetranscribeDTO says how far a meeting's re-transcription is.
+type RetranscribeDTO struct {
+	Running bool `json:"running"`
+	Done    int  `json:"done"`
+	Total   int  `json:"total"`
+}
+
+// Retranscribe transcribes a finished meeting again with the current speech model. The old
+// transcript stays until every chunk is done; progress arrives as transcript:retranscribe events.
+func (a *App) Retranscribe(id string) error {
+	return a.transcr.Retranscribe(a.context(), id)
+}
+
+// GetRetranscribeStatus reports a meeting's re-transcription.
+func (a *App) GetRetranscribeStatus(id string) RetranscribeDTO {
+	p := a.transcr.RetranscribeStatus(id)
+	return RetranscribeDTO{Running: p.Running, Done: p.Done, Total: p.Total}
+}

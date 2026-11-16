@@ -31,3 +31,19 @@ func TestGetTranscriptMapsSegments(t *testing.T) {
 		t.Fatalf("empty = %#v, want non-nil empty slice", got)
 	}
 }
+
+type recordingStore struct{ port.MeetingStore }
+
+func (recordingStore) GetMeeting(_ context.Context, id string) (domain.Meeting, error) {
+	return domain.Meeting{ID: id, State: domain.StateRecording}, nil
+}
+
+func TestRetranscribeRefusesARecordingAndReportsNoJob(t *testing.T) {
+	a := New(&Emitter{}, Deps{Transcription: service.NewTranscriptionService(recordingStore{}, nil, nil, nil)})
+	if err := a.Retranscribe("m1"); err == nil || err.Error() != "Only a finished meeting can be transcribed again." {
+		t.Fatalf("err = %v", err)
+	}
+	if got := a.GetRetranscribeStatus("m1"); got != (RetranscribeDTO{}) {
+		t.Fatalf("status = %+v", got)
+	}
+}

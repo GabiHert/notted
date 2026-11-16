@@ -102,6 +102,10 @@ export function GetProjectDeletePlan(arg1) {
   return window['go']['wails']['App']['GetProjectDeletePlan'](arg1);
 }
 
+export function GetRetranscribeStatus(arg1) {
+  return window['go']['wails']['App']['GetRetranscribeStatus'](arg1);
+}
+
 export function GetReviewActWithoutAsking() {
   return window['go']['wails']['App']['GetReviewActWithoutAsking']();
 }
@@ -196,6 +200,10 @@ export function RemoveUnusedModel(arg1) {
 
 export function ResizeSession(arg1, arg2, arg3) {
   return window['go']['wails']['App']['ResizeSession'](arg1, arg2, arg3);
+}
+
+export function Retranscribe(arg1) {
+  return window['go']['wails']['App']['Retranscribe'](arg1);
 }
 
 export function ReviewSuggestions(arg1) {

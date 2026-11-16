@@ -235,6 +235,34 @@ func (s *Store) AddSegment(ctx context.Context, sg domain.Segment) (int64, error
 	return res.LastInsertId()
 }
 
+// ReplaceSegments swaps a meeting's segments for segs in one transaction: either every old
+// segment is gone and every new one is in, or nothing changed. domain.ErrNotFound when the meeting
+// is missing.
+func (s *Store) ReplaceSegments(ctx context.Context, meetingID string, segs []domain.Segment) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }() // a no-op once committed
+	var one int
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM meetings WHERE id = ?`, meetingID).Scan(&one); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrNotFound
+		}
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM segments WHERE meeting_id = ?`, meetingID); err != nil {
+		return err
+	}
+	for _, sg := range segs {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO segments (meeting_id, track, start_ms, end_ms, text) VALUES (?,?,?,?,?)`,
+			meetingID, string(sg.Track), sg.StartMs, sg.EndMs, sg.Text); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func (s *Store) ListSegments(ctx context.Context, meetingID string) ([]domain.Segment, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id, meeting_id, track, start_ms, end_ms, text FROM segments
 WHERE meeting_id = ? ORDER BY start_ms, `+trackOrder+`, id`, meetingID)

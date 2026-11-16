@@ -639,3 +639,74 @@ func TestMigration4KeepsSettings(t *testing.T) {
 		t.Fatalf("schema_migrations rows = %d, %v", n, err)
 	}
 }
+
+func segmentTexts(t *testing.T, s *Store, id string) []string {
+	t.Helper()
+	got, err := s.ListSegments(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []string
+	for _, sg := range got {
+		out = append(out, sg.Text)
+	}
+	return out
+}
+
+func TestReplaceSegmentsSwapsOnlyThatMeeting(t *testing.T) {
+	s, _ := openTemp(t)
+	ctx := context.Background()
+	seed(t, s, "m", time.Now())
+	seed(t, s, "other", time.Now())
+	for _, sg := range []domain.Segment{
+		{MeetingID: "m", Track: domain.TrackMic, StartMs: 0, EndMs: 1, Text: "old1"},
+		{MeetingID: "m", Track: domain.TrackOthers, StartMs: 2, EndMs: 3, Text: "old2"},
+		{MeetingID: "other", Track: domain.TrackMic, StartMs: 0, EndMs: 1, Text: "keep"},
+	} {
+		if _, err := s.AddSegment(ctx, sg); err != nil {
+			t.Fatal(err)
+		}
+	}
+	err := s.ReplaceSegments(ctx, "m", []domain.Segment{
+		{Track: domain.TrackOthers, StartMs: 500, EndMs: 900, Text: "new2"},
+		{MeetingID: "ignored", Track: domain.TrackMic, StartMs: 100, EndMs: 300, Text: "new1"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := segmentTexts(t, s, "m"); !reflect.DeepEqual(got, []string{"new1", "new2"}) {
+		t.Fatalf("m = %v", got)
+	}
+	if got := segmentTexts(t, s, "other"); !reflect.DeepEqual(got, []string{"keep"}) {
+		t.Fatalf("other = %v", got)
+	}
+	if err := s.ReplaceSegments(ctx, "m", nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := segmentTexts(t, s, "m"); len(got) != 0 {
+		t.Fatalf("after an empty replace: %v", got)
+	}
+}
+
+func TestReplaceSegmentsIsAllOrNothing(t *testing.T) {
+	s, _ := openTemp(t)
+	ctx := context.Background()
+	seed(t, s, "m", time.Now())
+	if _, err := s.AddSegment(ctx, domain.Segment{MeetingID: "m", Track: domain.TrackMic, Text: "old"}); err != nil {
+		t.Fatal(err)
+	}
+	// The second row breaks the track CHECK, so the delete and the first insert roll back.
+	err := s.ReplaceSegments(ctx, "m", []domain.Segment{{Track: domain.TrackMic, Text: "new"}, {Track: "bad", Text: "x"}})
+	if err == nil {
+		t.Fatal("want an error")
+	}
+	if got := segmentTexts(t, s, "m"); !reflect.DeepEqual(got, []string{"old"}) {
+		t.Fatalf("after a failed replace: %v", got)
+	}
+	if err := s.ReplaceSegments(ctx, "missing", []domain.Segment{{Track: domain.TrackMic, Text: "x"}}); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("missing meeting: %v", err)
+	}
+	if got := segmentTexts(t, s, "missing"); len(got) != 0 {
+		t.Fatalf("segments written for a missing meeting: %v", got)
+	}
+}
